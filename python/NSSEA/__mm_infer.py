@@ -99,7 +99,7 @@ class MMStats:
 ## Functions ##
 ###############
 
-def infer_multi_model( coffeeIn , mm_method , verbose = False ):
+def infer_multi_model( coffeeIn , mm_method = "classic" , verbose = False ):
 	"""
 	NSSEA.infer_multi_model
 	=======================

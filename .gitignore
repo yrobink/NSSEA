@@ -2,5 +2,6 @@
 *.o
 a.out
 *.exe
+*.swp
 .DS_Store
 notebook/.ipynb_checkpoints
