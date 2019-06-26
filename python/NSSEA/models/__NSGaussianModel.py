@@ -75,7 +75,7 @@ class NSGaussianModel(NSAbstractModel):
 		default: dict
 			Arguments of __init__, elements of "arg" are kept
 		"""
-		default = { "link_fct_loc" : sdt.IdLinkFct() , "link_fct_scale" : sdt.ExpLinkFct() , method : "MLE" , "verbose" : False }
+		default = { "link_fct_loc" : sdt.IdLinkFct() , "link_fct_scale" : sdt.ExpLinkFct() , "method" : "MLE" , "verbose" : False }
 		if arg is not None:
 			for key in arg:
 				default[key] = arg[key]
