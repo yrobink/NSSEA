@@ -52,7 +52,8 @@ if( is_test )
 
 
 ## Path
-pathInput  = "data"
+pathInput = "data"
+pathOut   = "/home/robiny/Local/scratch"
 #pathOutput = "/home/yrobin/Local/scratch/EUPHEME/R"
 
 ## Command line arguments
@@ -61,15 +62,15 @@ code      = "yrobin"
 
 ## Global parameters
 n_sample    = if( is_test ) 10 else 100
-ns_law      = NSModel::NSGaussianModel
+ns_law      = NSSEA::NSGaussianModel
 ns_law_args = NULL #list( use_phi = FALSE )
 gam_dof     = 7
 verbose     = TRUE
 time        = 1850:2100
 n_time      = length(time)
 
-#event       = NSSEA::make_event( "EHW03" , base::file.path( pathOutput , mm_method , code ) , 2003 , 5. , 1961:1990 , "tas" , "high" )
-#cx_params   = NSSEA::make_CXParams( centering = TRUE , ref = 1961:1990 , trust = FALSE )
+event       = NSSEA::make_event( "EHW03" , pathOut , 2003 , 5. , 1961:1990 , "tas" , "high" )
+cx_params   = NSSEA::make_CXParams( centering = TRUE , ref = 1961:1990 , trust = FALSE )
 
 
 ## Load models and covariates
@@ -89,26 +90,22 @@ base::load( base::file.path( pathInput , "Xo.Rdata" ) )
 base::load( base::file.path( pathInput , "Yo.Rdata" ) )
 
 
-### Aggregate covariate
-#Xd = array( NA , dim = base::c( n_time , n_models ) , dimnames = list( time = time , models = models ) )
-#for( i in 1:n_models )
-#{
-#	xf = X_full[[ models[i] ]]
-#	agg = stats::aggregate( xf , by = list( time = names(xf) ) , base::mean )
-#	Xd[,i] = agg$x[ agg$time %in% time ]
-#}
-#
-#
-#base::load( base::file.path( pathInput , "XoYo.RData" ) )
-#Xo = XoYo$Xo
-#Yo = XoYo$Yo
-#
-### Define coffee variable from input
-#coffee = make_coffee( time , n_sample , models , ns_law , ns_law_args )
-#
-#
+## Aggregate covariate
+Xd = array( NA , dim = base::c( n_time , n_models ) , dimnames = list( time = time , models = models ) )
+for( i in 1:n_models )
+{
+	xf = X_full[[ models[i] ]]
+	agg = stats::aggregate( xf , by = list( time = names(xf) ) , base::mean )
+	Xd[,i] = agg$x[ agg$time %in% time ]
+}
+
+
+## Define coffee variable from input
+coffee = make_coffee( time , n_sample , models , ns_law , ns_law_args )
+
+
 ### Split
-#Enat = NSSEA::ebm_response( coffee$time , coffee$n_sample )
+Enat = NSSEA::ebm_response( coffee$time , coffee$n_sample )
 #X_splitted = NSSEA::gam_decomposition( X_full , Enat , Sigma , event$time , gam_dof , verbose = verbose , code = code )
 #coffee$X = if( is.null(X_splitted$X_center) ) X_splitted$X else X_splitted$X_center
 #
