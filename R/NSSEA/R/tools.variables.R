@@ -11,8 +11,6 @@
 #' make_coffee
 #'
 #' Build the coffee variable containing results of execution of NSSEA
-#' 
-#' @importFrom NSModel NSGaussianModel
 #'
 #' @usage make_coffee( time , n_sample , models , ns_law , ns_law_arg )
 #'

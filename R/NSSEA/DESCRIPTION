@@ -8,5 +8,5 @@ Description: This library makes it possible to estimate probability of extreme e
 License: CeCILL-C
 Encoding: UTF-8
 LazyData: true
-Imports: NSModel, R6, abind, mgcv, latex2exp, RColorBrewer
+Imports: SDFC, R6, abind, mgcv, latex2exp, RColorBrewer
 RoxygenNote: 6.1.1
