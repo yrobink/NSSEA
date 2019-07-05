@@ -65,7 +65,7 @@ NSGaussianModel = R6::R6Class( "NSGaussianModel" ,
 	mu1     = NULL,
 	scale0  = NULL,
 	scale1  = NULL,
-	
+	norm    = NULL,
 	
 	#################
 	## Constructor ##
@@ -103,6 +103,18 @@ NSGaussianModel = R6::R6Class( "NSGaussianModel" ,
 	## Accessors ##
 	###############
 	
+	meant = function(t) ##{{{
+	{
+		return( private$mut_(t) )
+	},
+	##}}}
+	
+	mediant = function(t) ##{{{
+	{
+		return( private$mut_(t) )
+	},
+	##}}}
+	
 	mut = function(t) ##{{{
 	{ return(private$mut_(t)) },
 	##}}}
@@ -136,10 +148,10 @@ NSGaussianModel = R6::R6Class( "NSGaussianModel" ,
 	fit = function( Y , X ) ##{{{
 	{
 		norm$fit( Y , loc_cov = X , scale_cov = X )
-		self$mu0    = norm$coef_[1]
-		self$mu1    = norm$coef_[2]
-		self$scale0 = norm$coef_[3]
-		self$scale1 = norm$coef_[4]
+		self$mu0    = norm$loc_$coef_[1]
+		self$mu1    = norm$loc_$coef_[2]
+		self$scale0 = norm$scale_$coef_[1]
+		self$scale1 = norm$scale_$coef_[2]
 	},
 	##}}}
 	
@@ -150,20 +162,20 @@ NSGaussianModel = R6::R6Class( "NSGaussianModel" ,
 			t = base::seq( 1 , length(X) )
 		}
 		
-		private$mut_    = stats::approxfun( t , self$mu0 + X * self$mu1 )
-		private$scalet_ = stats::approxfun( t , self$scale0 + X * self$scale1 )
+		private$mut_    = stats::approxfun( t , self$norm$loc_$linkFct$eval( self$mu0 + X * self$mu1 ) )
+		private$scalet_ = stats::approxfun( t , self$norm$scale_$linkFct$eval( self$scale0 + X * self$scale1 ) )
 	},
 	##}}}
 	
 	rvs = function(t) ##{{{
 	{
-		return( stats::rnorm( length(t) , mean = private$mutfn(t) , sd = private$scaletfn(t) ) )
+		return( stats::rnorm( length(t) , mean = private$mut_(t) , sd = private$scalet_(t) ) )
 	},
 	##}}}
 	
 	cdf = function( Y , t ) ##{{{
 	{
-		return( stats::pnorm( Y , mean = private$mutfn(t) , sd = private$scaletfn(t) ) )
+		return( stats::pnorm( Y , mean = private$mut_(t) , sd = private$scalet_(t) ) )
 	},
 	##}}}
 	
@@ -171,25 +183,19 @@ NSGaussianModel = R6::R6Class( "NSGaussianModel" ,
 	{
 		q[ !(q>0) ] = .Machine$double.eps
 		q[ !(q<1) ] = 1. - .Machine$double.eps
-		return( stats::qnorm( q , mean = private$mutfn(t) , sd = private$scaletfn(t) ) )
+		return( stats::qnorm( q , mean = private$mut_(t) , sd = private$scalet_(t) ) )
 	},
 	##}}}
 	
 	sf = function( Y , t ) ##{{{
 	{
-		return( stats::pnorm( Y , mean = private$mutfn(t) , sd = private$scaletfn(t) , lower.tail = FALSE ) )
+		return( stats::pnorm( Y , mean = private$mut_(t) , sd = private$scalet_(t) , lower.tail = FALSE ) )
 	},
 	##}}}
 	
 	isf = function( q , t ) ##{{{
 	{
-		return( stats::qnorm( q , mean = private$mutfn(t) , sd = private$scaletfn(t) , lower.tail = FALSE ) )
-	},
-	##}}}
-	
-	mean = function(t) ##{{{
-	{
-		return( self$mut(t) )
+		return( stats::qnorm( q , mean = private$mut_(t) , sd = private$scalet_(t) , lower.tail = FALSE ) )
 	}
 	##}}}
 	
@@ -208,9 +214,8 @@ NSGaussianModel = R6::R6Class( "NSGaussianModel" ,
 	## Private arguments ##
 	#######################
 	
-	mutfn    = NULL,
-	scaletfn = NULL
-	
+	mut_    = NULL,
+	scalet_ = NULL
 	
 	) ##Private list
 ) ## NSGaussianModel

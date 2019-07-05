@@ -23,11 +23,11 @@
 #'
 #' @examples
 #' ## Define models
-#' mod0 = NSSEA::DiracModel$new(0)
+#' #mod0 = NSSEA::DiracModel$new(0)
 #' mod1 = NSSEA::NSGaussianModel$new()
-#' mod2 = NSSEA::NSGPDModel$new()
-#' mod3 = NSSEA::NSNPModel$new()
-#' mod4 = NSSEA::NSNPTailsModel$new()
+#' #mod2 = NSSEA::NSGPDModel$new()
+#' #mod3 = NSSEA::NSNPModel$new()
+#' #mod4 = NSSEA::NSNPTailsModel$new()
 #'
 #' ## Test
 #' "NSAbstractModel" %in% class(mod0) ## TRUE
