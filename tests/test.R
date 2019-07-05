@@ -106,6 +106,30 @@ coffee = make_coffee( time , n_sample , models , ns_law , ns_law_args )
 
 ### Split
 Enat = NSSEA::ebm_response( coffee$time , coffee$n_sample )
+
+dof = 7
+		x      = X_full[[i]]
+		time_x = as.numeric(names(x))
+		idx_Xl = match( time_x , as.numeric(names(Enat[,1])) )
+		Xl = Enat[idx_Xl,1]
+		
+		## Best estimate
+		tol = 1e-2
+		edof = dof + 1. + tol
+		rup = 1e2
+		rlo = 1e-2
+		while( abs( dof - edof ) > tol )
+		{
+			r = (rup + rlo) / 2
+			print(r)
+			gam_model = mgcv::gam( X ~ s( t , k = dof + 2 , fx = FALSE , sp = r ) + Xl , data = data.frame( X = x , Xl = Xl , t = time_x ) )
+			edof = sum( gam_model$edf )
+			if( edof < dof )
+				rup = r
+			else
+				rlo = r
+		}
+
 #X_splitted = NSSEA::gam_decomposition( X_full , Enat , Sigma , event$time , gam_dof , verbose = verbose , code = code )
 #coffee$X = if( is.null(X_splitted$X_center) ) X_splitted$X else X_splitted$X_center
 #

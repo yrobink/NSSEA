@@ -223,7 +223,6 @@ gam_decomposition_yrobin = function( Xd , Enat , Sigma = NULL , time_center = NU
 		{
 			
 			if(verbose) pb$print()
-#			gam_model = mgcv::gam( X ~ s( t , k = gam_dof - 1 , fx = FALSE ) + Xl , data = data.frame( X = x , Xl = Enat[,i+1] , t = time ) )
 			gam_model$coefficients = mean_gam + std_gam %*% stats::rnorm( length(mean_gam) , mean = 0 , sd = 1 )
 			
 			X[,j+1,"all",i] = mgcv::predict.gam( gam_model , newdata = data.frame( t = time   , Xl = Enat[,j+1] ) )
