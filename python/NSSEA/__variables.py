@@ -44,9 +44,11 @@ class Event: ##{{{
 		Unit of variable
 	side     : str
 		"upper" or "lower" extremes event
+	def_type : str
+		If is is anomaly bellow a threshold ("threshold") or a hard value ("hard_value")
 	"""
 	
-	def __init__( self , name , dir_name , time , anom , ref_anom , var , unit , side ):
+	def __init__( self , name , dir_name , time , anom , ref_anom , var , unit , side , def_type = "threshold" ):
 		"""
 		Constructor of Event
 		
@@ -70,7 +72,7 @@ class Event: ##{{{
 		"""
 		self.name     = name
 		self.dir_name = dir_name
-		self.def_type = "threshold"
+		self.def_type = def_type
 		self.time     = time
 		self.anom     = anom
 		self.ref_anom = ref_anom
