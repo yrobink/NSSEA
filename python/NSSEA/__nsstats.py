@@ -83,7 +83,7 @@ def extremes_stats( coffee , event , threshold_by_world = False , verbose = Fals
 			law.set_covariable( coffee.X.loc[:,s,"all",m].values , time )
 			if event.def_type == "threshold":
 				threshold = np.zeros(n_time) + np.mean( law.meant(event.ref_anom) ) + event.anom
-			else
+			else:
 				threshold = np.zeros(n_time) + event.anom
 			
 			## Find pall
