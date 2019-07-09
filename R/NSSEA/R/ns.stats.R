@@ -100,7 +100,12 @@ extremes_stats_yrobin = function( coffee , event , threshold_by_world = FALSE , 
 			
 			## Find threshold
 			law$set_covariable( coffee$X[,j,"all",i] , time )
-			threshold = numeric(n_time) + base::mean( law$mean(event$ref_anom) ) + event$anom
+			if( event$def_type == "threshold" )
+			{
+				threshold = numeric(n_time) + base::mean( law$meant(event$ref_anom) ) + event$anom
+			}
+			else
+				threshold = numeric(n_time) + event$anom
 			
 			## Find pall
 			stats[,j,"pall",i] = if( upper_side ) law$sf( threshold , time ) else law$cdf( threshold , time )

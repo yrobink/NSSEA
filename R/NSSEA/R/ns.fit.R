@@ -10,7 +10,7 @@
 
 #' nslaw_fit
 #'
-#' Fit non stationary parameters. Fit only Gaussian currently
+#' Fit non stationary parameters.
 #'
 #' @usage nslaw_fit( lY , coffee , verbose , code )
 #'

@@ -73,7 +73,7 @@ NSGaussianModel = R6::R6Class( "NSGaussianModel" ,
 	
 	initialize = function( link_fct_loc = IdLinkFct$new() , link_fct_scale = ExpLinkFct$new() , method = "MLE" ) ##{{{
 	{
-		self$norm = SDFC::NormalLaw( link_fct_loc = link_fct_loc , link_fct_scale = link_fct_scale , method = method )
+		self$norm = SDFC::NormalLaw$new( link_fct_loc = link_fct_loc , link_fct_scale = link_fct_scale , method = method )
 	},
 	##}}}
 	
@@ -147,11 +147,11 @@ NSGaussianModel = R6::R6Class( "NSGaussianModel" ,
 	
 	fit = function( Y , X ) ##{{{
 	{
-		norm$fit( Y , loc_cov = X , scale_cov = X )
-		self$mu0    = norm$loc_$coef_[1]
-		self$mu1    = norm$loc_$coef_[2]
-		self$scale0 = norm$scale_$coef_[1]
-		self$scale1 = norm$scale_$coef_[2]
+		self$norm$fit( Y , loc_cov = X , scale_cov = X )
+		self$mu0    = self$norm$loc_$coef_[1]
+		self$mu1    = self$norm$loc_$coef_[2]
+		self$scale0 = self$norm$scale_$coef_[1]
+		self$scale1 = self$norm$scale_$coef_[2]
 	},
 	##}}}
 	

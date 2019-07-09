@@ -60,7 +60,7 @@ generic_constraint = function( x , SX , y , SY , H )
 #' ##
 #' 
 #' @export
-constraints_CX = function( coffee , Xo , cx_params , Sigma , verbose = FALSE )
+constraints_CX = function( coffee , Xo , cx_params , Sigma = NULL , verbose = FALSE )
 {
 	if(verbose) cat( "Constraints CX         \r" )
 	
@@ -71,6 +71,8 @@ constraints_CX = function( coffee , Xo , cx_params , Sigma , verbose = FALSE )
 	n_time_Xo   = length(time_Xo)
 	n_mm_params = coffee$n_mm_params
 	n_sample    = coffee$n_sample
+	if( is.null(Sigma) )
+		Sigma = base::diag( base::rep( 1 , n_time ) )
 	
 	## Time of observed X
 	idx_obs     = time %in% time_Xo
@@ -218,7 +220,7 @@ constraints_C0 = function( coffee , Yo , event , verbose = FALSE )
 		Yo_bs_mu0[,,models[i]] = Yo_bs[,,models[i]] - ns_params_C0["mu0",,models[i]]
 		sig1X[,,models[i]]     = X_bs[,,models[i]] * ns_params_C0["sig1",,models[i]]
 	}
-	Yo_bs_full_corrected   = Yo_bs_mu0 - mu1X / ( 1. + sig1X )
+	Yo_bs_full_corrected   = (Yo_bs_mu0 - mu1X) / ( 1. + sig1X )
 	ns_params_C0["sig0",,] = base::apply( Yo_bs_full_corrected , base::c(2,3) , stats::sd )
 	
 	ns_params_C0["sig1",,] = ns_params_C0["sig1",,] * ns_params_C0["sig0",,]
