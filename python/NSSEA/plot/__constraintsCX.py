@@ -12,12 +12,10 @@ import numpy  as np
 import pandas as pd
 import xarray as xr
 
-try:
-	import matplotlib.pyplot as plt
-except:
-	import matplotlib as mpl
-	mpl.use("Qt5Agg")
-	import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.use("pdf")
+import matplotlib.pyplot as plt
+import matplotlib.backends.backend_pdf as mpdf
 
 import matplotlib.backends.backend_pdf as mpdf
 
@@ -76,7 +74,7 @@ def constraints_CX( coffee , coffeeCX , Xo , cx_params , ofile , ci = 0.05 , ver
 	ax.fill_between( X.time  , Xl  , Xu  , color = "red" , alpha = 0.2 )
 	ax.fill_between( cX.time , cXl , cXu , color = "red" , alpha = 0.5 )
 	
-	plt.tight_layout()
+	fig.set_tight_layout(True)
 	plt.savefig( ofile )
 	
 	if verbose: print( "Plot constraints CX (Done)" )

@@ -12,12 +12,9 @@ import numpy  as np
 import pandas as pd
 import xarray as xr
 
-try:
-	import matplotlib.pyplot as plt
-except:
-	import matplotlib as mpl
-	mpl.use("Qt5Agg")
-	import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.use("pdf")
+import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as mpdf
 
 
@@ -66,7 +63,7 @@ def	ns_params( coffee , ofile , ci = 0.05 , verbose = False ):##{{{
 		ax.set_xlabel( "Parameters" )
 		ax.set_ylabel( "Anomalies parameters" )
 		
-		fig.tight_layout()
+		fig.set_tight_layout(True)
 		pdf.savefig(fig)
 		plt.close(fig)
 	
@@ -129,7 +126,7 @@ def	ns_params_comparison( coffee , coffee2 , ofile , ci = 0.05 , verbose = False
 		ax.set_xlabel( "Parameters" )
 		ax.set_ylabel( "Anomalies parameters" )
 		
-		fig.tight_layout()
+		fig.set_tight_layout(True)
 		pdf.savefig(fig)
 		plt.close(fig)
 	

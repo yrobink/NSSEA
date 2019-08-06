@@ -12,12 +12,9 @@ import numpy  as np
 import pandas as pd
 import xarray as xr
 
-try:
-	import matplotlib.pyplot as plt
-except:
-	import matplotlib as mpl
-	mpl.use("Qt5Agg")
-	import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.use("pdf")
+import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as mpdf
 
 from NSSEA.plot.__linkParams import LinkParams
@@ -138,7 +135,7 @@ def stats_event( coffee , event_time , ofile , ci = 0.05 , verbose = False ):##{
 	ax.set_title( "di" )
 	
 	
-	fig.tight_layout()
+	fig.set_tight_layout(True)
 	fig.savefig( ofile )
 	plt.close(fig)
 	
@@ -226,7 +223,7 @@ def stats_relative( statsIn , event , ofile , time_event = None , ci = 0.05 , ve
 		ax.set_xlim(xlim)
 		ax.set_ylim(ylim)
 		
-		fig.tight_layout()
+		fig.set_tight_layout(True)
 		pdf.savefig( fig )
 		plt.close(fig)
 	
