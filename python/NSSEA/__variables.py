@@ -84,7 +84,7 @@ class Event: ##{{{
 		return self.__str__()
 	
 	def __str__(self):
-		return "Event:\nname: {},\ntime: {},\nanom: {},\nvar : {},\nside: {}\n".format(self.name,self.time,self.anom,self.var,self.side)
+		return "Event    : {},\ntime     : {},\nanom     : {},\nref_anom : {} / {},\nvar      : {},\nside     : {}\n".format(self.name,self.time,self.anom,self.ref_anom.min(),self.ref_anom.max(),self.var,self.side)
 ##}}}
 
 class Coffee: ##{{{
