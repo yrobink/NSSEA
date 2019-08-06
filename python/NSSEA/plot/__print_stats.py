@@ -14,21 +14,38 @@ import xarray as xr
 import texttable as tt
 
 
-try:
-	import matplotlib.pyplot as plt
-except:
-	import matplotlib as mpl
-	mpl.use("Qt5Agg")
-	import matplotlib.pyplot as plt
-import matplotlib.backends.backend_pdf as mpdf
-
-
 
 ###############
 ## Functions ##
 ###############
 
-def print_time_stats( S , time , model = "multi" , digit = 3 , ci = 0.05 ):
+def print_time_stats( S , time , model = "multi" , digit = 3 , ci = 0.05 , verbose = False ):##{{{
+	"""
+	NSSEA.plot.print_time_stats
+	===========================
+	Print in a string a tabular summarizing statistics (FAR,RR,dI,p1,p0,I1,I0) at a time.
+	
+	Parameters
+	----------
+	S       : xr.DataArray
+		Statistics from coffee (coffee.stats)
+	time    : time type
+		A time compatible with S.time
+	model   : string
+		The model chosen (default is multi)
+	digit   : float
+		number of digits (default is 3)
+	ci      : float
+		Level of confidence interval, default is 0.05 (95%)
+	verbose : bool
+		Print begin / end of execution
+	
+	Return
+	------
+	tab : string
+		A tabular of statistics
+	"""
+	if verbose: print( "Print time stats" , end = "\r" )
 	try:
 		S = S.loc[time,:,:,model].copy()
 	except:
@@ -49,10 +66,39 @@ def print_time_stats( S , time , model = "multi" , digit = 3 , ci = 0.05 ):
 	for name,s in zip(["RR","dI","p1","p0","I1","I0"],["rr","di","pall","pnat","iall","inat"]):
 		tab.add_row( [ name , float(S.loc["be",s]) , float(Sq.loc["q0",s]) , float(Sq.loc["qm",s]), float(Sq.loc["q1",s]) ] )
 	
+	if verbose: print( "Print time stats (Done)" )
 	return tab.draw() + "\n"
+##}}}
 
-
-def print_relative_time_stats( S , time , time_rel , model = "multi" , digit = 3 , ci = 0.05 ):
+def print_relative_time_stats( S , time , time_rel , model = "multi" , digit = 3 , ci = 0.05 , verbose = False ):##{{{
+	"""
+	NSSEA.plot.print_relative_time_stats
+	====================================
+	Print in a string a tabular summarizing statistics (FAR,RR,dI,p1,p0,I1,I0) at a time relative to a second time time_rel.
+	
+	Parameters
+	----------
+	S        : xr.DataArray
+		Statistics from coffee (coffee.stats)
+	time     : time type
+		A time compatible with S.time
+	time_rel : time type
+		A time compatible with S.time
+	model    : string
+		The model chosen (default is multi)
+	digit    : float
+		number of digits (default is 3)
+	ci       : float
+		Level of confidence interval, default is 0.05 (95%)
+	verbose  : bool
+		Print begin / end of execution
+	
+	Return
+	------
+	tab : string
+		A tabular of statistics
+	"""
+	if verbose: print( "Print relative time stats" , end = "\r" )
 	try:
 		Sr = S.loc[time,:,:,model].copy()
 		d  = ["pnat","pall","rr"]
@@ -79,19 +125,8 @@ def print_relative_time_stats( S , time , time_rel , model = "multi" , digit = 3
 	for name,s in zip(["RR","dI","p1","p0","I1","I0"],["rr","di","pall","pnat","iall","inat"]):
 		tab.add_row( [ name , float(S.loc["be",s]) , float(Sq.loc["q0",s]) , float(Sq.loc["qm",s]), float(Sq.loc["q1",s]) ] )
 	
+	if verbose: print( "Print relative time stats (Done)" )
 	return tab.draw() + "\n"
-
-#	Sq = S.quantile( [ ci / 2 , 1 - ci / 2 ] , dim = "sample" ).assign_coords( quantile = ["q0","q1"] )
-#	out =  "#######################################################\n"
-#	out += "## Relative values at time {}\n".format(time_rel)
-#	out += "## Time : {}\n".format(time)
-#	out += "## CI   : {}%\n".format(100*(1-ci))
-#	s = "rr"
-#	out += "## FAR  : {} ( {} \/ {} )\n".format( float( (1-1/S.loc["be",s]).round(digit)) , float( (1-1/Sq).loc["q0",s].round(digit)) , float((1-1/Sq).loc["q1",s].round(digit)) )
-#	for name,s in zip(["RR","dI","p1","p0","I1","I0"],["rr","di","pall","pnat","iall","inat"]):
-#		out += "## {}   : {} ( {} \/ {} )\n".format( name , float(S.loc["be",s].round(digit)) , float(Sq.loc["q0",s].round(digit)) , float(Sq.loc["q1",s].round(digit)) )
-#	out += "#######################################################\n"
-#	return out
-
+##}}}
 
 
