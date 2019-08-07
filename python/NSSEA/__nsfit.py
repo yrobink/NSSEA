@@ -65,11 +65,11 @@ def nslaw_fit( lY , coffee , verbose = False ):
 		law.fit(Y.values,X.values)
 		coffee.ns_params.loc[:,"be",models[i]] = law.get_params()
 		
-		
 		for j in range(n_sample):
 			if verbose: pb.print()
 			
 			idx = np.random.choice( tY.size , tY.size , replace = True )
+			
 			tYs = tY.values[idx]
 			Ys = Y.iloc[idx].values
 			Xs = coffee.X.loc[tYs,sample[j+1],"all",models[i]].values
