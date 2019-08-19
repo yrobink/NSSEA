@@ -461,9 +461,10 @@ def constraints_C0_GEV_exp_bound_valid( coffeeIn , Yo , event , verbose = False 
 				## Here I test if the bound from params from bootstrap is compatible with observed values
 				law = coffee.ns_law( **coffee.ns_law_args )
 				law.set_params( np.array( [ns_params.loc["loc0",s,m],ns_params.loc["loc1",s,m],gev.coef_[0],ns_params.loc["scale1",s,m],gev.coef_[1]] , dtype = np.float ) )
-				law.set_covariable( coffee.X.loc[time_Yo,s,"all",m].values , time_Yo )
+				test = law.check( Yo.values.squeeze() , coffee.X.loc[time_Yo,s,"all",m] , time_Yo )
+#				law.set_covariable( coffee.X.loc[time_Yo,s,"all",m].values , time_Yo )
 #				print( np.all( Yo < law.upper_boundt(time_Yo) ) )
-				test = np.all( np.logical_and( Yo.values.squeeze() > law.lower_boundt(time_Yo) , Yo.values.squeeze() < law.upper_boundt(time_Yo) ) )
+#				test = np.all( np.logical_and( Yo.values.squeeze() > law.lower_boundt(time_Yo) , Yo.values.squeeze() < law.upper_boundt(time_Yo) ) )
 			ns_params.loc["scale0",s,m] = gev.coef_[0]
 			ns_params.loc["shape",s,m]  = gev.coef_[1]
 	

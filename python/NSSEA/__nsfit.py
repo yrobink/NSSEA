@@ -68,13 +68,17 @@ def nslaw_fit( lY , coffee , verbose = False ):
 		for j in range(n_sample):
 			if verbose: pb.print()
 			
-			idx = np.random.choice( tY.size , tY.size , replace = True )
+			test = False
+			while not test:
 			
-			tYs = tY.values[idx]
-			Ys = Y.iloc[idx].values
-			Xs = coffee.X.loc[tYs,sample[j+1],"all",models[i]].values
-			law = ns_law(**ns_law_args)
-			law.fit(Ys,Xs)
+				idx = np.random.choice( tY.size , tY.size , replace = True )
+				
+				tYs = tY.values[idx]
+				Ys = Y.iloc[idx].values
+				Xs = coffee.X.loc[tYs,sample[j+1],"all",models[i]].values
+				law = ns_law(**ns_law_args)
+				law.fit(Ys,Xs)
+				test = law.check( Y.values.squeeze() , X.values.squeeze() , np.arange( 0 , tY.size , 1 ) )
 			coffee.ns_params.loc[:,sample[j+1],models[i]] = law.get_params()
 	
 	if verbose: pb.end()
