@@ -37,6 +37,9 @@ class NSAbstractModel:
 	def set_covariable( self , X , t = None ):
 		pass
 	
+	def check( self , Y , X , t = None ):
+		pass
+	
 	def rvs( self , t ):
 		pass
 	

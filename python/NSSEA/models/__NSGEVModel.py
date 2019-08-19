@@ -61,12 +61,13 @@ class NSGEVModel(NSAbstractModel):
 	## Constructor ##
 	#################
 	
-	def __init__( self , tails = "upper" , link_fct_loc = sdt.IdLinkFct() , link_fct_scale = sdt.ExpLinkFct() , link_fct_shape = sdt.LogitLinkFct( -0.5 , 0.5 ) , method = "MLE" , verbose = False ): ##{{{
+	def __init__( self , tails = "upper" , link_fct_loc = sdt.IdLinkFct() , link_fct_scale = sdt.ExpLinkFct() , link_fct_shape = sdt.LogitLinkFct( -0.5 , 0.5 ) , method = "MLE" , no_test = True , verbose = False ): ##{{{
 		"""
 		"""
 		NSAbstractModel.__init__(self)
 		self._tails   = 1 if tails == "upper" else -1
 		self._gev     = sd.GEVLaw( method = method , link_fct_loc = link_fct_loc , link_fct_scale = link_fct_scale , link_fct_shape = link_fct_shape )
+		self._no_test = no_test
 		self._verbose = verbose
 		
 		self._loc0    = None
@@ -99,7 +100,7 @@ class NSGEVModel(NSAbstractModel):
 		default: dict
 			Arguments of __init__, elements of "arg" are kept
 		"""
-		default = { "tails" : "upper" , "link_fct_loc" : sdt.IdLinkFct() , "link_fct_scale" : sdt.ExpLinkFct() , "link_fct_shape" : sdt.LogitLinkFct( -0.5 , 0.5 ) , "method" : "MLE" , "verbose" : False }
+		default = { "tails" : "upper" , "link_fct_loc" : sdt.IdLinkFct() , "link_fct_scale" : sdt.ExpLinkFct() , "link_fct_shape" : sdt.LogitLinkFct( -0.5 , 0.5 ) , "method" : "MLE" , "no_test" : True , "verbose" : False }
 		if arg is not None:
 			for key in arg:
 				default[key] = arg[key]
@@ -194,6 +195,13 @@ class NSGEVModel(NSAbstractModel):
 		self._scale1  = coef_[3]
 		self._shape   = coef_[4]
 	#}}}
+	
+	def check( self , Y , X , t = None ):##{{{
+		if self._no_test : return True
+		self.set_covariable( X , t )
+		return np.all( np.logical_and( Y < self.upper_boundt(t) , Y > self.lower_boundt(t) ) )
+#		return True
+	##}}}
 	
 	
 	###############

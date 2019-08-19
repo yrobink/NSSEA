@@ -178,6 +178,10 @@ class NSGaussianModel(NSAbstractModel):
 		self.scale1 = coef_[3]
 	#}}}
 	
+	def check( self , Y , X , t = None ):##{{{
+		return True
+	##}}}
+	
 	
 	#############
 	## Methods ##
