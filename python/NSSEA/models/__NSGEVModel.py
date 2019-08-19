@@ -211,7 +211,7 @@ class NSGEVModel(NSAbstractModel):
 	
 	def loct( self , t ): ##{{{
 		"""
-		Location of the Generalized Pareto Model at time t
+		Location of the GEV Model at time t
 		
 		Parameters
 		----------
@@ -228,7 +228,7 @@ class NSGEVModel(NSAbstractModel):
 	
 	def scalet( self , t ):##{{{
 		"""
-		Scale of the Generalized Pareto Model at time t
+		Scale of the GEV Model at time t
 		
 		Parameters
 		----------
@@ -245,7 +245,7 @@ class NSGEVModel(NSAbstractModel):
 	
 	def shapet( self , t ):##{{{
 		"""
-		Shape of the Generalized Pareto Model at time t
+		Shape of the GEV Model at time t
 		
 		Parameters
 		----------
@@ -260,7 +260,20 @@ class NSGEVModel(NSAbstractModel):
 		return self._shapet(t)
 	##}}}
 	
-	def upper_boundt( self , t ):
+	def upper_boundt( self , t ):##{{{
+		"""
+		Upper bound of GEV model (can be infinite)
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		bound : np.array
+			bound at time t
+		"""
 		loc   = self.loct(t)
 		scale = self.scalet(t)
 		shape = self.shapet(t)
@@ -268,8 +281,22 @@ class NSGEVModel(NSAbstractModel):
 		idx   = np.logical_not( shape < 0 )
 		bound[idx] = np.inf
 		return bound
+	##}}}
 	
-	def lower_boundt( self , t ):
+	def lower_boundt( self , t ):##{{{
+		"""
+		Lower bound of GEV model (can be -infinite)
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		bound : np.array
+			bound at time t
+		"""
 		loc   = self.loct(t)
 		scale = self.scalet(t)
 		shape = self.shapet(t)
@@ -277,6 +304,7 @@ class NSGEVModel(NSAbstractModel):
 		idx   = shape < 0
 		bound[idx] = - np.inf
 		return bound
+	##}}}
 	
 	
 	#############
