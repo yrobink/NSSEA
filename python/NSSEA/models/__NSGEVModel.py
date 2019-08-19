@@ -260,6 +260,24 @@ class NSGEVModel(NSAbstractModel):
 		return self._shapet(t)
 	##}}}
 	
+	def upper_boundt( self , t ):
+		loc   = self.loct(t)
+		scale = self.scalet(t)
+		shape = self.shapet(t)
+		bound = loc - scale / shape
+		idx   = np.logical_not( shape < 0 )
+		bound[idx] = np.inf
+		return bound
+	
+	def lower_boundt( self , t ):
+		loc   = self.loct(t)
+		scale = self.scalet(t)
+		shape = self.shapet(t)
+		bound = loc - scale / shape
+		idx   = shape < 0
+		bound[idx] = - np.inf
+		return bound
+	
 	
 	#############
 	## Methods ##
