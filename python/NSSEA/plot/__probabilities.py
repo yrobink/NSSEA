@@ -47,8 +47,8 @@ def probabilities( stats , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 	
 	if verbose: print( "Plot probabilities" , end = "\r" )
 	
-	statsu = stats[:,1:,:3,:].quantile( ci / 2.      , dim = "sample" )
-	statsl = stats[:,1:,:3,:].quantile( 1. - ci / 2. , dim = "sample" )
+	statsl = stats[:,1:,:3,:].quantile( ci / 2.      , dim = "sample" )
+	statsu = stats[:,1:,:3,:].quantile( 1. - ci / 2. , dim = "sample" )
 	
 	lp = LinkParams()
 	
