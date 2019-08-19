@@ -313,6 +313,64 @@ def constraints_C0_GEV( coffeeIn , Yo , event , verbose = False ): ##{{{
 	return coffee
 ##}}}
 
+def constraints_C0_GEV_bound_valid( coffeeIn , Yo , event , verbose = False ): ##{{{
+	
+	if verbose: print( "Constraints C0 (GEV)" , end = "\r" )
+	
+	coffee  = coffeeIn.copy()
+	n_models  = coffee.X.models.size
+	n_sample  = coffee.n_sample
+	models    = coffee.X.models
+	time      = coffee.time
+	time_Yo   = Yo.index
+	n_time_Yo = Yo.size
+	sample = coffee.X.sample
+	
+	# New NS_param
+	ns_params = coffee.ns_params
+	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] / ns_params.loc["scale0",:,:]
+	
+	
+	gev = sd.GEVLaw(  method = coffee.ns_law_args["method"] , link_fct_shape = coffee.ns_law_args["link_fct_shape"] )
+	for m in models:
+		X   = coffee.X.loc[time_Yo,"be","all",m].values.squeeze()
+		Ybs = Yo.values.squeeze()
+		ns_params.loc["loc0","be",m] = np.quantile( Ybs - float(ns_params.loc["loc1","be",m]) * X , np.exp(-1) )
+		Yo_sta = ( Ybs - float(ns_params.loc["loc1","be",m]) * X - float(ns_params.loc["loc0","be",m]) ) / ( 1. + float(ns_params.loc["scale1","be",m]) * X )
+		gev.fit( Yo_sta , floc = 0 )
+		ns_params.loc["scale0","be",m] = gev.coef_[0]
+		ns_params.loc["shape","be",m]  = gev.coef_[1]
+		
+		for s in sample[1:]:
+			test = False
+			while not test:
+				idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
+				X   = coffee.X.loc[idx,s,"all",m].values.squeeze()
+				Xcont = coffee.X.loc[time_Yo,s,"all",m].values.squeeze()
+				Ybs = Yo.loc[idx].values.squeeze()
+				ns_params.loc["loc0",s,m] = np.quantile( Ybs - float(ns_params.loc["loc1",s,m]) * X , np.exp(-1) )
+				Yo_sta  = ( Ybs - float(ns_params.loc["loc1",s,m]) * X     - float(ns_params.loc["loc0",s,m]) ) / ( 1. + float(ns_params.loc["scale1",s,m]) * X )
+				Yo_cont = ( Yo.values.squeeze()  - float(ns_params.loc["loc1",s,m]) * Xcont - float(ns_params.loc["loc0",s,m]) ) / np.exp( float(ns_params.loc["scale1",s,m]) * Xcont )
+				gev.fit( Yo_sta , floc = 0 )
+				
+				## Here I test if the bound from params from bootstrap is compatible with observed values
+				law = coffee.ns_law( **coffee.ns_law_args )
+				law.set_params( np.array( [ns_params.loc["loc0",s,m],ns_params.loc["loc1",s,m],gev.coef_[0],ns_params.loc["scale1",s,m],gev.coef_[1]] , dtype = np.float ) )
+				law.set_covariable( coffee.X.loc[time_Yo,s,"all",m].values , time_Yo )
+#				print( np.all( Yo < law.upper_boundt(time_Yo) ) )
+				test = np.all( np.logical_and( Yo.values.squeeze() > law.lower_boundt(time_Yo) , Yo.values.squeeze() < law.upper_boundt(time_Yo) ) )
+			ns_params.loc["scale0",s,m] = gev.coef_[0]
+			ns_params.loc["shape",s,m]  = gev.coef_[1]
+	
+	## Save
+	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] * coffeeIn.ns_params.loc["scale0",:,:]
+	coffee.ns_params = ns_params
+	
+	if verbose: print( "Constraints C0 (GEV, Done)" )
+	
+	return coffee
+##}}}
+
 def constraints_C0_GEV_exp( coffeeIn , Yo , event , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEVExp)" , end = "\r" )
@@ -361,46 +419,7 @@ def constraints_C0_GEV_exp( coffeeIn , Yo , event , verbose = False ): ##{{{
 	return coffee
 ##}}}
 
-def constraints_C0( coffeeIn , Yo , event , verbose = False ): ##{{{
-	"""
-	NSSEA.constraintsC0
-	===================
-	Constrain stationary parameters by observations
-	
-	Arguments
-	---------
-	coffeeIn : NSSEA.Coffee
-		coffee variable
-	Yo       : pandas.DataFrame
-		Observations
-	event    : NSSEA.Event
-		Event
-	verbose  : bool
-		Print (or not) state of execution
-	
-	Returns
-	-------
-	coffee : NSSEA.Coffee
-		A COPY of coffeeIn constrained by Yo. coffeeIn is NOT MODIFIED.
-	"""
-	
-	if coffeeIn.ns_law == NSGaussianModel:
-		if isinstance(coffeeIn.ns_law_args["link_fct_scale"],IdLinkFct):
-			return constraints_C0_Gaussian( coffeeIn , Yo , event , verbose )
-		elif isinstance(coffeeIn.ns_law_args["link_fct_scale"],ExpLinkFct):
-			return constraints_C0_Gaussian_exp( coffeeIn , Yo , event , verbose )
-	if coffeeIn.ns_law == NSGEVModel:
-		if isinstance(coffeeIn.ns_law_args["link_fct_scale"],IdLinkFct):
-			return constraints_C0_GEV( coffeeIn , Yo , event , verbose )
-		elif isinstance(coffeeIn.ns_law_args["link_fct_scale"],ExpLinkFct):
-			return constraints_C0_GEV_exp( coffeeIn , Yo , event , verbose )
-	
-	return coffeeIn.copy()
-##}}}
-
-
-
-def constraints_C0_GEV_exp_test( coffeeIn , Yo , event , verbose = False ): ##{{{
+def constraints_C0_GEV_exp_bound_valid( coffeeIn , Yo , event , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEVExp)" , end = "\r" )
 	
@@ -416,28 +435,6 @@ def constraints_C0_GEV_exp_test( coffeeIn , Yo , event , verbose = False ): ##{{
 	# New NS_param
 	ns_params = coffee.ns_params
 	
-	## Bootstrap on Yo
-#	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,coffee.X.sample] , dims = ["time","sample"] )
-#	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,coffee.X.sample,models] , dims = ["time","sample","models"] )
-#	Yo_bs.loc[:,"be"] = np.ravel(Yo)
-#	Xo_bs.loc[:,"be",:] = coffee.X.loc[time_Yo,"be","all",:]
-#	for s in sample[1:]:
-#		idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
-#		Yo_bs.loc[:,s] = np.ravel( Yo.loc[idx].values )
-#		for m in models:
-#			Xo_bs.loc[:,s,m] = coffee.X.loc[idx,s,"all",m].values
-#	
-#	## Fit loc0
-#	ns_params.loc["loc0",:,:] = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs ).quantile( np.exp(-1) , dim = "time" )
-#	
-#	## Fit scale0 and shape
-#	Yo_GEV_stats = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs - ns_params.loc["loc0",:,:]) / np.exp( ns_params.loc["scale1",:,:] * Xo_bs ) ## Hypothesis : follow GEV(0,scale0,shape)
-#	for s in sample:
-#		for m in models:
-#			gev = sd.GEVLaw(  method = coffee.ns_law_args["method"] , link_fct_scale = ExpLinkFct() , link_fct_shape = coffee.ns_law_args["link_fct_shape"] )
-#			gev.fit( Yo_GEV_stats.loc[:,s,m].values , floc = 0 )
-#			ns_params.loc["scale0",s,m] = gev.coef_[0]
-#			ns_params.loc["shape",s,m]  = gev.coef_[1]
 	
 	gev = sd.GEVLaw(  method = coffee.ns_law_args["method"] , link_fct_scale = ExpLinkFct() , link_fct_shape = coffee.ns_law_args["link_fct_shape"] )
 	for m in models:
@@ -462,13 +459,13 @@ def constraints_C0_GEV_exp_test( coffeeIn , Yo , event , verbose = False ): ##{{
 				gev.fit( Yo_sta , floc = 0 )
 				
 				## Here I test if the bound from params from bootstrap is compatible with observed values
-#				if gev.coef_[1] < 0:
-#					test = np.all( - gev.scale / gev.shape > Yo_cont )
-#				elif gev.coef_[1] > 0:
-#					test = np.all( -gev.scale / gev.shape < Yo_cont )
-				test = True
-				ns_params.loc["scale0",s,m] = gev.coef_[0]
-				ns_params.loc["shape",s,m]  = gev.coef_[1]
+				law = coffee.ns_law( **coffee.ns_law_args )
+				law.set_params( np.array( [ns_params.loc["loc0",s,m],ns_params.loc["loc1",s,m],gev.coef_[0],ns_params.loc["scale1",s,m],gev.coef_[1]] , dtype = np.float ) )
+				law.set_covariable( coffee.X.loc[time_Yo,s,"all",m].values , time_Yo )
+#				print( np.all( Yo < law.upper_boundt(time_Yo) ) )
+				test = np.all( np.logical_and( Yo.values.squeeze() > law.lower_boundt(time_Yo) , Yo.values.squeeze() < law.upper_boundt(time_Yo) ) )
+			ns_params.loc["scale0",s,m] = gev.coef_[0]
+			ns_params.loc["shape",s,m]  = gev.coef_[1]
 	
 	## Save
 	coffee.ns_params = ns_params
@@ -477,3 +474,51 @@ def constraints_C0_GEV_exp_test( coffeeIn , Yo , event , verbose = False ): ##{{
 	
 	return coffee
 ##}}}
+
+def constraints_C0( coffeeIn , Yo , event , gev_bound_valid = False , verbose = False ): ##{{{
+	"""
+	NSSEA.constraintsC0
+	===================
+	Constrain stationary parameters by observations
+	
+	Arguments
+	---------
+	coffeeIn : NSSEA.Coffee
+		coffee variable
+	Yo       : pandas.DataFrame
+		Observations
+	event    : NSSEA.Event
+		Event
+	gev_bound_valid : bool
+		For GEVLaw, use only bootstrap where observations are between the bound of the GEV.
+	verbose  : bool
+		Print (or not) state of execution
+	
+	Returns
+	-------
+	coffee : NSSEA.Coffee
+		A COPY of coffeeIn constrained by Yo. coffeeIn is NOT MODIFIED.
+	"""
+	
+	if coffeeIn.ns_law == NSGaussianModel:
+		if isinstance(coffeeIn.ns_law_args["link_fct_scale"],IdLinkFct):
+			return constraints_C0_Gaussian( coffeeIn , Yo , event , verbose )
+		elif isinstance(coffeeIn.ns_law_args["link_fct_scale"],ExpLinkFct):
+			return constraints_C0_Gaussian_exp( coffeeIn , Yo , event , verbose )
+	if coffeeIn.ns_law == NSGEVModel:
+		if isinstance(coffeeIn.ns_law_args["link_fct_scale"],IdLinkFct):
+			if gev_bound_valid:
+				return constraints_C0_GEV_bound_valid( coffeeIn , Yo , event , verbose )
+			else:
+				return constraints_C0_GEV( coffeeIn , Yo , event , verbose )
+		elif isinstance(coffeeIn.ns_law_args["link_fct_scale"],ExpLinkFct):
+			if gev_bound_valid:
+				return constraints_C0_GEV_exp_bound_valid( coffeeIn , Yo , event , verbose )
+			else:
+				return constraints_C0_GEV_exp( coffeeIn , Yo , event , verbose )
+	
+	return coffeeIn.copy()
+##}}}
+
+
+
