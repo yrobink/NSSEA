@@ -91,8 +91,8 @@ def extremes_stats( coffee , event , threshold_by_world = False , verbose = Fals
 			
 			## Find probability of the event in factual world
 			pf = np.zeros(n_time) + ( law.sf( np.array([threshold[0]]) , np.array([event_time]) ) if upper_side else law.cdf( np.array([threshold[0]]) , np.array([event_time]) ) )
-			pf[ np.logical_not(pf>0) ] = tol
-			pf[ np.logical_not(pf<1) ] = 1. - tol
+#			pf[ np.logical_not(pf>0) ] = tol
+#			pf[ np.logical_not(pf<1) ] = 1. - tol
 			
 			## I1
 			stats.loc[:,s,"iall",m] = law.isf( pf , time ) if upper_side else law.icdf( pf , time )
@@ -112,7 +112,7 @@ def extremes_stats( coffee , event , threshold_by_world = False , verbose = Fals
 	
 	## RR
 	stats.loc[:,:,"rr",:] = stats.loc[:,:,"pall",:] / stats.loc[:,:,"pnat",:]
-	stats.loc[:,:,"rr",:] = stats.loc[:,:,"rr",:].where( stats.loc[:,:,"rr",:] > 0 , np.inf )
+#	stats.loc[:,:,"rr",:] = stats.loc[:,:,"rr",:].where( stats.loc[:,:,"rr",:] > 0 , np.inf )
 	
 	
 	## deltaI
