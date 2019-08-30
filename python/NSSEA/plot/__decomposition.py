@@ -36,7 +36,7 @@ def decomposition( lX , Xd , X , event , ofile , ci = 0.05 , verbose = False ): 
 	Xd        : pandas.DataFrame
 		Covariates before decomposition
 	X         : xarray
-		Covariates afer decomposition (NSSEA.Coffee.X)
+		Covariates afer decomposition (NSSEA.Climatology.X)
 	event     : NSSEA.Event
 		Event variable
 	ofile     : str

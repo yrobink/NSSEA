@@ -34,7 +34,7 @@ def probabilities( stats , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 	Arguments
 	---------
 	stats     : xarray
-		NSSEA.Coffee.stats
+		NSSEA.Climatology.stats
 	event     : NSSEA.Event
 		Event variable
 	ofile     : str

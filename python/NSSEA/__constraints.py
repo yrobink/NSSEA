@@ -62,16 +62,16 @@ class GenericConstraint: ##{{{
 ## Functions ##
 ###############
 
-def constraints_CX( coffeeIn , Xo , cx_params , Sigma = None , verbose = False ): ##{{{
+def constraints_CX( climIn , Xo , cx_params , Sigma = None , verbose = False ): ##{{{
 	"""
 	NSSEA.constraintsCX
 	===================
-	Constrain covariates of coffee by the observed covariates Xo
+	Constrain covariates of clim by the observed covariates Xo
 	
 	Arguments
 	---------
-	coffeeIn : NSSEA.Coffee
-		coffee variable
+	climIn : NSSEA.Climatology
+		clim variable
 	Xo       : pandas.DataFrame
 		Covariate observed
 	cx_params: NSSEA.CXParams
@@ -83,22 +83,22 @@ def constraints_CX( coffeeIn , Xo , cx_params , Sigma = None , verbose = False )
 	
 	Returns
 	-------
-	coffee : NSSEA.Coffee
-		A COPY of coffeeIn constrained by Xo. coffeIn is NOT MODIFIED.
+	clim : NSSEA.Climatology
+		A COPY of climIn constrained by Xo. coffeIn is NOT MODIFIED.
 	"""
 	
 	if verbose: print( "Constraints CX" , end = "\r" )
 	
 	## Parameters
-	coffee = coffeeIn.copy()
-	time        = coffee.time
+	clim = climIn.copy()
+	time        = clim.time
 	time_Xo     = Xo.index
-	n_time      = coffee.n_time
+	n_time      = clim.n_time
 	n_time_Xo   = time_Xo.size
-	n_mm_params = coffee.n_mm_params
-	n_ns_params = coffee.n_ns_params
-	n_sample    = coffee.n_sample
-	sample      = coffee.X.sample
+	n_mm_params = clim.n_mm_params
+	n_ns_params = clim.n_ns_params
+	n_sample    = clim.n_sample
+	sample      = clim.X.sample
 	Sigma       = Sigma if Sigma is not None else np.identity(n_time)
 	Sigma       = xr.DataArray( Sigma , coords = [time,time] , dims = ["time1","time2"] )
 	
@@ -118,8 +118,8 @@ def constraints_CX( coffeeIn , Xo , cx_params , Sigma = None , verbose = False )
 	
 	
 	# Other inputs : x, SX, y, SY
-	X  = coffee.mm_params.mean
-	SX = coffee.mm_params.cov
+	X  = clim.mm_params.mean
+	SX = clim.mm_params.cov
 	Y  = np.ravel(centerY @ Xo)
 	SY = centerY @ Sigma.loc[time_Xo,time_Xo].values @ centerY.T
 	
@@ -144,7 +144,7 @@ def constraints_CX( coffeeIn , Xo , cx_params , Sigma = None , verbose = False )
 	
 	## Constraints and sample
 	gc = GenericConstraint( X , SX , Y , SY , H )
-	cx_sample = xr.DataArray( np.zeros( (n_time,n_sample + 1,3) ) , coords = [ coffee.X.time , sample , coffee.X.forcing ] , dims = ["time","sample","forcing"] )
+	cx_sample = xr.DataArray( np.zeros( (n_time,n_sample + 1,3) ) , coords = [ clim.X.time , sample , clim.X.forcing ] , dims = ["time","sample","forcing"] )
 	
 	cx_sample.loc[:,"be","all"] = gc.mean[:n_time]
 	cx_sample.loc[:,"be","nat"] = gc.mean[n_time:(2*n_time)]
@@ -154,43 +154,43 @@ def constraints_CX( coffeeIn , Xo , cx_params , Sigma = None , verbose = False )
 		cx_sample.loc[:,s,"all"] = draw[:n_time]
 		cx_sample.loc[:,s,"nat"] = draw[n_time:(2*n_time)]
 	
-	for m in coffee.X.models:
-		coffee.X.loc[:,:,:,m] = cx_sample.values
+	for m in clim.X.models:
+		clim.X.loc[:,:,:,m] = cx_sample.values
 	
-	coffee.X.loc[:,:,"ant",:] = coffee.X.loc[:,:,"all",:] - coffee.X.loc[:,:,"nat",:]
+	clim.X.loc[:,:,"ant",:] = clim.X.loc[:,:,"all",:] - clim.X.loc[:,:,"nat",:]
 	
 	if verbose: print( "Constraints CX (Done)" )
 	
-	return coffee
+	return clim
 ##}}}
 
 
-def constraints_C0_Gaussian( coffeeIn , Yo , event , verbose = False ): ##{{{
+def constraints_C0_Gaussian( climIn , Yo , event , verbose = False ): ##{{{
 	if verbose: print( "Constraints C0 (Gaussian)" , end = "\r" )
 	
-	coffee  = coffeeIn.copy()
-	n_models  = coffee.X.models.size
-	n_sample  = coffee.n_sample
-	models    = coffee.X.models
-	time      = coffee.time
+	clim  = climIn.copy()
+	n_models  = clim.X.models.size
+	n_sample  = clim.n_sample
+	models    = clim.X.models
+	time      = clim.time
 	time_Yo   = Yo.index
 	n_time_Yo = Yo.size
-	sample = coffee.X.sample
+	sample = clim.X.sample
 	
 	# New NS_param
-	ns_params = coffee.ns_params
+	ns_params = clim.ns_params
 	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] / ns_params.loc["scale0",:,:]
 	
 	## Bootstrap on Yo
-	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,coffee.X.sample] , dims = ["time","sample"] )
-	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,coffee.X.sample,models] , dims = ["time","sample","models"] )
+	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,clim.X.sample] , dims = ["time","sample"] )
+	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,clim.X.sample,models] , dims = ["time","sample","models"] )
 	Yo_bs.loc[:,"be"] = np.ravel(Yo)
-	Xo_bs.loc[:,"be",:] = coffee.X.loc[time_Yo,"be","all",:]
+	Xo_bs.loc[:,"be",:] = clim.X.loc[time_Yo,"be","all",:]
 	for s in sample[1:]:
 		idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
 		Yo_bs.loc[:,s] = np.ravel( Yo.loc[idx].values )
 		for m in models:
-			Xo_bs.loc[:,s,m] = coffee.X.loc[idx,s,"all",m].values
+			Xo_bs.loc[:,s,m] = clim.X.loc[idx,s,"all",m].values
 	
 	
 	## Correction of loc0
@@ -207,39 +207,39 @@ def constraints_C0_Gaussian( coffeeIn , Yo , event , verbose = False ): ##{{{
 	ns_params.loc["scale0",:,:] = Yo_bs_full_corrected.std( axis = 0 )
 	
 	## Save
-	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] * coffeeIn.ns_params.loc["scale0",:,:]
-	coffee.ns_params = ns_params
+	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] * climIn.ns_params.loc["scale0",:,:]
+	clim.ns_params = ns_params
 	
 	if verbose: print( "Constraints C0 (Gaussian, Done)" )
 	
-	return coffee
+	return clim
 ##}}}
 
-def constraints_C0_Gaussian_exp( coffeeIn , Yo , event , verbose = False ): ##{{{
+def constraints_C0_Gaussian_exp( climIn , Yo , event , verbose = False ): ##{{{
 	if verbose: print( "Constraints C0 (GaussianExp)" , end = "\r" )
 	
-	coffee  = coffeeIn.copy()
-	n_models  = coffee.X.models.size
-	n_sample  = coffee.n_sample
-	models    = coffee.X.models
-	time      = coffee.time
+	clim  = climIn.copy()
+	n_models  = clim.X.models.size
+	n_sample  = clim.n_sample
+	models    = clim.X.models
+	time      = clim.time
 	time_Yo   = Yo.index
 	n_time_Yo = Yo.size
-	sample = coffee.X.sample
+	sample = clim.X.sample
 	
 	# New NS_param
-	ns_params = coffee.ns_params
+	ns_params = clim.ns_params
 	
 	## Bootstrap on Yo
-	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,coffee.X.sample] , dims = ["time","sample"] )
-	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,coffee.X.sample,models] , dims = ["time","sample","models"] )
+	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,clim.X.sample] , dims = ["time","sample"] )
+	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,clim.X.sample,models] , dims = ["time","sample","models"] )
 	Yo_bs.loc[:,"be"] = np.ravel(Yo)
-	Xo_bs.loc[:,"be",:] = coffee.X.loc[time_Yo,"be","all",:]
+	Xo_bs.loc[:,"be",:] = clim.X.loc[time_Yo,"be","all",:]
 	for s in sample[1:]:
 		idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
 		Yo_bs.loc[:,s] = np.ravel( Yo.loc[idx].values )
 		for m in models:
-			Xo_bs.loc[:,s,m] = coffee.X.loc[idx,s,"all",m].values
+			Xo_bs.loc[:,s,m] = clim.X.loc[idx,s,"all",m].values
 	
 	
 	## Correction of loc0
@@ -256,40 +256,40 @@ def constraints_C0_Gaussian_exp( coffeeIn , Yo , event , verbose = False ): ##{{
 	ns_params.loc["scale0",:,:] = np.log( Yo_bs_full_corrected.std( axis = 0 ) )
 	
 	## Save
-	coffee.ns_params = ns_params
+	clim.ns_params = ns_params
 	
 	if verbose: print( "Constraints C0 (GaussianExp, Done)" )
 	
-	return coffee
+	return clim
 ##}}}
 
-def constraints_C0_GEV( coffeeIn , Yo , event , verbose = False ): ##{{{
+def constraints_C0_GEV( climIn , Yo , event , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEV)" , end = "\r" )
 	
-	coffee  = coffeeIn.copy()
-	n_models  = coffee.X.models.size
-	n_sample  = coffee.n_sample
-	models    = coffee.X.models
-	time      = coffee.time
+	clim  = climIn.copy()
+	n_models  = clim.X.models.size
+	n_sample  = clim.n_sample
+	models    = clim.X.models
+	time      = clim.time
 	time_Yo   = Yo.index
 	n_time_Yo = Yo.size
-	sample = coffee.X.sample
+	sample = clim.X.sample
 	
 	# New NS_param
-	ns_params = coffee.ns_params
+	ns_params = clim.ns_params
 	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] / ns_params.loc["scale0",:,:]
 	
 	## Bootstrap on Yo
-	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,coffee.X.sample] , dims = ["time","sample"] )
-	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,coffee.X.sample,models] , dims = ["time","sample","models"] )
+	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,clim.X.sample] , dims = ["time","sample"] )
+	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,clim.X.sample,models] , dims = ["time","sample","models"] )
 	Yo_bs.loc[:,"be"] = np.ravel(Yo)
-	Xo_bs.loc[:,"be",:] = coffee.X.loc[time_Yo,"be","all",:]
+	Xo_bs.loc[:,"be",:] = clim.X.loc[time_Yo,"be","all",:]
 	for s in sample[1:]:
 		idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
 		Yo_bs.loc[:,s] = np.ravel( Yo.loc[idx].values )
 		for m in models:
-			Xo_bs.loc[:,s,m] = coffee.X.loc[idx,s,"all",m].values
+			Xo_bs.loc[:,s,m] = clim.X.loc[idx,s,"all",m].values
 	
 	## Fit loc0
 	ns_params.loc["loc0",:,:] = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs ).quantile( np.exp(-1) , dim = "time" )
@@ -298,42 +298,42 @@ def constraints_C0_GEV( coffeeIn , Yo , event , verbose = False ): ##{{{
 	Yo_GEV_stats = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs - ns_params.loc["loc0",:,:]) / ( 1 + ns_params.loc["scale1",:,:] * Xo_bs ) ## Hypothesis : follow GEV(0,scale0,shape)
 	for s in sample:
 		for m in models:
-			gev = sd.GEVLaw( method = coffee.ns_law_args["method"] , link_fct_shape = coffee.ns_law_args["link_fct_shape"] )
+			gev = sd.GEVLaw( method = clim.ns_law_args["method"] , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
 			gev.fit( Yo_GEV_stats.loc[:,s,m].values , floc = 0 )
 			ns_params.loc["scale0",s,m] = gev.coef_[0]
 			ns_params.loc["shape",s,m]  = gev.coef_[1]
 	
 	
 	## Save
-	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] * coffeeIn.ns_params.loc["scale0",:,:]
-	coffee.ns_params = ns_params
+	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] * climIn.ns_params.loc["scale0",:,:]
+	clim.ns_params = ns_params
 	
 	if verbose: print( "Constraints C0 (GEV, Done)" )
 	
-	return coffee
+	return clim
 ##}}}
 
-def constraints_C0_GEV_bound_valid( coffeeIn , Yo , event , verbose = False ): ##{{{
+def constraints_C0_GEV_bound_valid( climIn , Yo , event , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEV)" , end = "\r" )
 	
-	coffee  = coffeeIn.copy()
-	n_models  = coffee.X.models.size
-	n_sample  = coffee.n_sample
-	models    = coffee.X.models
-	time      = coffee.time
+	clim  = climIn.copy()
+	n_models  = clim.X.models.size
+	n_sample  = clim.n_sample
+	models    = clim.X.models
+	time      = clim.time
 	time_Yo   = Yo.index
 	n_time_Yo = Yo.size
-	sample = coffee.X.sample
+	sample = clim.X.sample
 	
 	# New NS_param
-	ns_params = coffee.ns_params
+	ns_params = clim.ns_params
 	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] / ns_params.loc["scale0",:,:]
 	
 	
-	gev = sd.GEVLaw(  method = coffee.ns_law_args["method"] , link_fct_shape = coffee.ns_law_args["link_fct_shape"] )
+	gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
 	for m in models:
-		X   = coffee.X.loc[time_Yo,"be","all",m].values.squeeze()
+		X   = clim.X.loc[time_Yo,"be","all",m].values.squeeze()
 		Ybs = Yo.values.squeeze()
 		ns_params.loc["loc0","be",m] = np.quantile( Ybs - float(ns_params.loc["loc1","be",m]) * X , np.exp(-1) )
 		Yo_sta = ( Ybs - float(ns_params.loc["loc1","be",m]) * X - float(ns_params.loc["loc0","be",m]) ) / ( 1. + float(ns_params.loc["scale1","be",m]) * X )
@@ -345,8 +345,8 @@ def constraints_C0_GEV_bound_valid( coffeeIn , Yo , event , verbose = False ): #
 			test = False
 			while not test:
 				idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
-				X   = coffee.X.loc[idx,s,"all",m].values.squeeze()
-				Xcont = coffee.X.loc[time_Yo,s,"all",m].values.squeeze()
+				X   = clim.X.loc[idx,s,"all",m].values.squeeze()
+				Xcont = clim.X.loc[time_Yo,s,"all",m].values.squeeze()
 				Ybs = Yo.loc[idx].values.squeeze()
 				ns_params.loc["loc0",s,m] = np.quantile( Ybs - float(ns_params.loc["loc1",s,m]) * X , np.exp(-1) )
 				Yo_sta  = ( Ybs - float(ns_params.loc["loc1",s,m]) * X     - float(ns_params.loc["loc0",s,m]) ) / ( 1. + float(ns_params.loc["scale1",s,m]) * X )
@@ -354,49 +354,49 @@ def constraints_C0_GEV_bound_valid( coffeeIn , Yo , event , verbose = False ): #
 				gev.fit( Yo_sta , floc = 0 )
 				
 				## Here I test if the bound from params from bootstrap is compatible with observed values
-				law = coffee.ns_law( **coffee.ns_law_args )
+				law = clim.ns_law( **clim.ns_law_args )
 				law.set_params( np.array( [ns_params.loc["loc0",s,m],ns_params.loc["loc1",s,m],gev.coef_[0],ns_params.loc["scale1",s,m],gev.coef_[1]] , dtype = np.float ) )
-				law.set_covariable( coffee.X.loc[time_Yo,s,"all",m].values , time_Yo )
+				law.set_covariable( clim.X.loc[time_Yo,s,"all",m].values , time_Yo )
 #				print( np.all( Yo < law.upper_boundt(time_Yo) ) )
 				test = np.all( np.logical_and( Yo.values.squeeze() > law.lower_boundt(time_Yo) , Yo.values.squeeze() < law.upper_boundt(time_Yo) ) )
 			ns_params.loc["scale0",s,m] = gev.coef_[0]
 			ns_params.loc["shape",s,m]  = gev.coef_[1]
 	
 	## Save
-	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] * coffeeIn.ns_params.loc["scale0",:,:]
-	coffee.ns_params = ns_params
+	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] * climIn.ns_params.loc["scale0",:,:]
+	clim.ns_params = ns_params
 	
 	if verbose: print( "Constraints C0 (GEV, Done)" )
 	
-	return coffee
+	return clim
 ##}}}
 
-def constraints_C0_GEV_exp( coffeeIn , Yo , event , verbose = False ): ##{{{
+def constraints_C0_GEV_exp( climIn , Yo , event , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEVExp)" , end = "\r" )
 	
-	coffee  = coffeeIn.copy()
-	n_models  = coffee.X.models.size
-	n_sample  = coffee.n_sample
-	models    = coffee.X.models
-	time      = coffee.time
+	clim  = climIn.copy()
+	n_models  = clim.X.models.size
+	n_sample  = clim.n_sample
+	models    = clim.X.models
+	time      = clim.time
 	time_Yo   = Yo.index
 	n_time_Yo = Yo.size
-	sample = coffee.X.sample
+	sample = clim.X.sample
 	
 	# New NS_param
-	ns_params = coffee.ns_params
+	ns_params = clim.ns_params
 	
 	## Bootstrap on Yo
-	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,coffee.X.sample] , dims = ["time","sample"] )
-	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,coffee.X.sample,models] , dims = ["time","sample","models"] )
+	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,clim.X.sample] , dims = ["time","sample"] )
+	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,clim.X.sample,models] , dims = ["time","sample","models"] )
 	Yo_bs.loc[:,"be"] = np.ravel(Yo)
-	Xo_bs.loc[:,"be",:] = coffee.X.loc[time_Yo,"be","all",:]
+	Xo_bs.loc[:,"be",:] = clim.X.loc[time_Yo,"be","all",:]
 	for s in sample[1:]:
 		idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
 		Yo_bs.loc[:,s] = np.ravel( Yo.loc[idx].values )
 		for m in models:
-			Xo_bs.loc[:,s,m] = coffee.X.loc[idx,s,"all",m].values
+			Xo_bs.loc[:,s,m] = clim.X.loc[idx,s,"all",m].values
 	
 	## Fit loc0
 	ns_params.loc["loc0",:,:] = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs ).quantile( np.exp(-1) , dim = "time" )
@@ -405,40 +405,40 @@ def constraints_C0_GEV_exp( coffeeIn , Yo , event , verbose = False ): ##{{{
 	Yo_GEV_stats = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs - ns_params.loc["loc0",:,:]) / np.exp( ns_params.loc["scale1",:,:] * Xo_bs ) ## Hypothesis : follow GEV(0,scale0,shape)
 	for s in sample:
 		for m in models:
-			gev = sd.GEVLaw(  method = coffee.ns_law_args["method"] , link_fct_scale = ExpLinkFct() , link_fct_shape = coffee.ns_law_args["link_fct_shape"] )
+			gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_scale = ExpLinkFct() , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
 			gev.fit( Yo_GEV_stats.loc[:,s,m].values , floc = 0 )
 			ns_params.loc["scale0",s,m] = gev.coef_[0]
 			ns_params.loc["shape",s,m]  = gev.coef_[1]
 	
 	
 	## Save
-	coffee.ns_params = ns_params
+	clim.ns_params = ns_params
 	
 	if verbose: print( "Constraints C0 (GEVExp, Done)" )
 	
-	return coffee
+	return clim
 ##}}}
 
-def constraints_C0_GEV_exp_bound_valid( coffeeIn , Yo , event , verbose = False ): ##{{{
+def constraints_C0_GEV_exp_bound_valid( climIn , Yo , event , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEVExp)" , end = "\r" )
 	
-	coffee  = coffeeIn.copy()
-	n_models  = coffee.X.models.size
-	n_sample  = coffee.n_sample
-	models    = coffee.X.models
-	time      = coffee.time
+	clim  = climIn.copy()
+	n_models  = clim.X.models.size
+	n_sample  = clim.n_sample
+	models    = clim.X.models
+	time      = clim.time
 	time_Yo   = Yo.index
 	n_time_Yo = Yo.size
-	sample = coffee.X.sample
+	sample = clim.X.sample
 	
 	# New NS_param
-	ns_params = coffee.ns_params
+	ns_params = clim.ns_params
 	
 	
-	gev = sd.GEVLaw(  method = coffee.ns_law_args["method"] , link_fct_scale = ExpLinkFct() , link_fct_shape = coffee.ns_law_args["link_fct_shape"] )
+	gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_scale = ExpLinkFct() , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
 	for m in models:
-		X   = coffee.X.loc[time_Yo,"be","all",m].values.squeeze()
+		X   = clim.X.loc[time_Yo,"be","all",m].values.squeeze()
 		Ybs = Yo.values.squeeze()
 		ns_params.loc["loc0","be",m] = np.quantile( Ybs - float(ns_params.loc["loc1","be",m]) * X , np.exp(-1) )
 		Yo_sta = ( Ybs - float(ns_params.loc["loc1","be",m]) * X - float(ns_params.loc["loc0","be",m]) ) / np.exp( float(ns_params.loc["scale1","be",m]) * X )
@@ -450,8 +450,8 @@ def constraints_C0_GEV_exp_bound_valid( coffeeIn , Yo , event , verbose = False 
 			test = False
 			while not test:
 				idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
-				X   = coffee.X.loc[idx,s,"all",m].values.squeeze()
-				Xcont = coffee.X.loc[time_Yo,s,"all",m].values.squeeze()
+				X   = clim.X.loc[idx,s,"all",m].values.squeeze()
+				Xcont = clim.X.loc[time_Yo,s,"all",m].values.squeeze()
 				Ybs = Yo.loc[idx].values.squeeze()
 				ns_params.loc["loc0",s,m] = np.quantile( Ybs - float(ns_params.loc["loc1",s,m]) * X , np.exp(-1) )
 				Yo_sta  = ( Ybs - float(ns_params.loc["loc1",s,m]) * X     - float(ns_params.loc["loc0",s,m]) ) / np.exp( float(ns_params.loc["scale1",s,m]) * X )
@@ -459,24 +459,24 @@ def constraints_C0_GEV_exp_bound_valid( coffeeIn , Yo , event , verbose = False 
 				gev.fit( Yo_sta , floc = 0 )
 				
 				## Here I test if the bound from params from bootstrap is compatible with observed values
-				law = coffee.ns_law( **coffee.ns_law_args )
+				law = clim.ns_law( **clim.ns_law_args )
 				law.set_params( np.array( [ns_params.loc["loc0",s,m],ns_params.loc["loc1",s,m],gev.coef_[0],ns_params.loc["scale1",s,m],gev.coef_[1]] , dtype = np.float ) )
-				test = law.check( Yo.values.squeeze() , coffee.X.loc[time_Yo,s,"all",m] , time_Yo )
-#				law.set_covariable( coffee.X.loc[time_Yo,s,"all",m].values , time_Yo )
+				test = law.check( Yo.values.squeeze() , clim.X.loc[time_Yo,s,"all",m] , time_Yo )
+#				law.set_covariable( clim.X.loc[time_Yo,s,"all",m].values , time_Yo )
 #				print( np.all( Yo < law.upper_boundt(time_Yo) ) )
 #				test = np.all( np.logical_and( Yo.values.squeeze() > law.lower_boundt(time_Yo) , Yo.values.squeeze() < law.upper_boundt(time_Yo) ) )
 			ns_params.loc["scale0",s,m] = gev.coef_[0]
 			ns_params.loc["shape",s,m]  = gev.coef_[1]
 	
 	## Save
-	coffee.ns_params = ns_params
+	clim.ns_params = ns_params
 	
 	if verbose: print( "Constraints C0 (GEVExp, Done)" )
 	
-	return coffee
+	return clim
 ##}}}
 
-def constraints_C0( coffeeIn , Yo , event , gev_bound_valid = False , verbose = False ): ##{{{
+def constraints_C0( climIn , Yo , event , gev_bound_valid = False , verbose = False ): ##{{{
 	"""
 	NSSEA.constraintsC0
 	===================
@@ -484,8 +484,8 @@ def constraints_C0( coffeeIn , Yo , event , gev_bound_valid = False , verbose = 
 	
 	Arguments
 	---------
-	coffeeIn : NSSEA.Coffee
-		coffee variable
+	climIn : NSSEA.Climatology
+		clim variable
 	Yo       : pandas.DataFrame
 		Observations
 	event    : NSSEA.Event
@@ -497,28 +497,28 @@ def constraints_C0( coffeeIn , Yo , event , gev_bound_valid = False , verbose = 
 	
 	Returns
 	-------
-	coffee : NSSEA.Coffee
-		A COPY of coffeeIn constrained by Yo. coffeeIn is NOT MODIFIED.
+	clim : NSSEA.Climatology
+		A COPY of climIn constrained by Yo. climIn is NOT MODIFIED.
 	"""
 	
-	if coffeeIn.ns_law == NSGaussianModel:
-		if isinstance(coffeeIn.ns_law_args["link_fct_scale"],IdLinkFct):
-			return constraints_C0_Gaussian( coffeeIn , Yo , event , verbose )
-		elif isinstance(coffeeIn.ns_law_args["link_fct_scale"],ExpLinkFct):
-			return constraints_C0_Gaussian_exp( coffeeIn , Yo , event , verbose )
-	if coffeeIn.ns_law == NSGEVModel:
-		if isinstance(coffeeIn.ns_law_args["link_fct_scale"],IdLinkFct):
+	if climIn.ns_law == NSGaussianModel:
+		if isinstance(climIn.ns_law_args["link_fct_scale"],IdLinkFct):
+			return constraints_C0_Gaussian( climIn , Yo , event , verbose )
+		elif isinstance(climIn.ns_law_args["link_fct_scale"],ExpLinkFct):
+			return constraints_C0_Gaussian_exp( climIn , Yo , event , verbose )
+	if climIn.ns_law == NSGEVModel:
+		if isinstance(climIn.ns_law_args["link_fct_scale"],IdLinkFct):
 			if gev_bound_valid:
-				return constraints_C0_GEV_bound_valid( coffeeIn , Yo , event , verbose )
+				return constraints_C0_GEV_bound_valid( climIn , Yo , event , verbose )
 			else:
-				return constraints_C0_GEV( coffeeIn , Yo , event , verbose )
-		elif isinstance(coffeeIn.ns_law_args["link_fct_scale"],ExpLinkFct):
+				return constraints_C0_GEV( climIn , Yo , event , verbose )
+		elif isinstance(climIn.ns_law_args["link_fct_scale"],ExpLinkFct):
 			if gev_bound_valid:
-				return constraints_C0_GEV_exp_bound_valid( coffeeIn , Yo , event , verbose )
+				return constraints_C0_GEV_exp_bound_valid( climIn , Yo , event , verbose )
 			else:
-				return constraints_C0_GEV_exp( coffeeIn , Yo , event , verbose )
+				return constraints_C0_GEV_exp( climIn , Yo , event , verbose )
 	
-	return coffeeIn.copy()
+	return climIn.copy()
 ##}}}
 
 

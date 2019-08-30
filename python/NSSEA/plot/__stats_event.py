@@ -26,7 +26,7 @@ from NSSEA.__nsstats         import stats_relative_event
 ###############
 
 
-def stats_event( coffee , event_time , event , ofile , ci = 0.05 , verbose = False ):##{{{
+def stats_event( clim , event_time , event , ofile , ci = 0.05 , verbose = False ):##{{{
 	"""
 	NSSEA.plot.stats_event
 	======================
@@ -35,8 +35,8 @@ def stats_event( coffee , event_time , event , ofile , ci = 0.05 , verbose = Fal
 	
 	Arguments
 	---------
-	coffee    : NSSEA.Coffee
-		A coffee variable
+	clim    : NSSEA.Climatology
+		A clim variable
 	event_time: time
 		time to plot
 	ofile     : str
@@ -50,7 +50,7 @@ def stats_event( coffee , event_time , event , ofile , ci = 0.05 , verbose = Fal
 	if verbose: print( "Plot stats event" , end = "\r" )
 	
 	## Extract parameters
-	statsEvent = coffee.stats.loc[event_time,:,:,:]
+	statsEvent = clim.stats.loc[event_time,:,:,:]
 	Sq = statsEvent[1:,:,:].quantile( [ci/2,1-ci/2] , dim = "sample" ).assign_coords( quantile = ["q0","q1"] )
 	n_models   = statsEvent.models.size
 	
@@ -205,7 +205,7 @@ def stats_relative( statsIn , event , ofile , time_event = None , ci = 0.05 , ve
 	Arguments
 	---------
 	stats     : xarray
-		NSSEA.Coffee.stats
+		NSSEA.Climatology.stats
 	event     : NSSEA.Event
 		Event variable
 	ofile     : str

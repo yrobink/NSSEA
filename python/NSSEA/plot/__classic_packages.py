@@ -30,7 +30,7 @@ from NSSEA.plot.__stats_event   import stats_relative
 ###############
 
 
-def plot_classic_packages( coffee , event , suffix , ci = 0.05 , verbose = False ):
+def plot_classic_packages( clim , event , suffix , ci = 0.05 , verbose = False ):
 	"""
 	NSSEA.plot.plot_classic_packages
 	================================
@@ -45,8 +45,8 @@ def plot_classic_packages( coffee , event , suffix , ci = 0.05 , verbose = False
 	
 	Arguments
 	---------
-	coffee    : NSSEA.Coffee
-		A coffee variable
+	clim    : NSSEA.Climatology
+		A clim variable
 	event     : NSSEA.Event
 		Event variable
 	suffix    : str
@@ -56,10 +56,10 @@ def plot_classic_packages( coffee , event , suffix , ci = 0.05 , verbose = False
 	verbose   : bool
 		Print (or not) state of execution
 	"""
-	probabilities(  coffee.stats , event              , ofile = os.path.join( event.dir_name , "Probability"   + suffix + ".pdf"                       ) , ci = ci , verbose = verbose )
-	ns_params(      coffee                            , ofile = os.path.join( event.dir_name , "ns_params"     + suffix + ".pdf"                       ) , ci = ci , verbose = verbose )
-	intensities(    coffee.stats , event              , ofile = os.path.join( event.dir_name , "Intensity"     + suffix + ".pdf"                       ) , ci = ci , verbose = verbose )
-	stats_event(    coffee       , event.time , event , ofile = os.path.join( event.dir_name , "StatsEvent"    + suffix + "_{}.pdf".format(event.time) ) , ci = ci , verbose = verbose )
-	stats_relative( coffee.stats , event              , ofile = os.path.join( event.dir_name , "StatsRelative" + suffix + ".pdf"                       ) , ci = ci , verbose = verbose )
+	probabilities(  clim.stats , event              , ofile = os.path.join( event.dir_name , "Probability"   + suffix + ".pdf"                       ) , ci = ci , verbose = verbose )
+	ns_params(      clim                            , ofile = os.path.join( event.dir_name , "ns_params"     + suffix + ".pdf"                       ) , ci = ci , verbose = verbose )
+	intensities(    clim.stats , event              , ofile = os.path.join( event.dir_name , "Intensity"     + suffix + ".pdf"                       ) , ci = ci , verbose = verbose )
+	stats_event(    clim       , event.time , event , ofile = os.path.join( event.dir_name , "StatsEvent"    + suffix + "_{}.pdf".format(event.time) ) , ci = ci , verbose = verbose )
+	stats_relative( clim.stats , event              , ofile = os.path.join( event.dir_name , "StatsRelative" + suffix + ".pdf"                       ) , ci = ci , verbose = verbose )
 
 

@@ -87,12 +87,12 @@ class Event: ##{{{
 		return "Event    : {},\ntime     : {},\nanom     : {},\nref_anom : {} / {},\nvar      : {},\nside     : {}\n".format(self.name,self.time,self.anom,self.ref_anom.min(),self.ref_anom.max(),self.var,self.side)
 ##}}}
 
-class Coffee: ##{{{
+class Climatology: ##{{{
 	"""
-	NSSEA.Coffee
+	NSSEA.Climatology
 	============
 	
-	Build the coffee variable containing results of execution of NSSEA
+	Build the clim variable containing results of execution of NSSEA
 	
 	Attributes
 	----------
@@ -111,7 +111,7 @@ class Coffee: ##{{{
 	
 	def __init__( self , time , n_sample , models , ns_law , ns_law_args = None ):
 		"""
-		Constructor of the coffee variable
+		Constructor of the clim variable
 		
 		Arguments
 		---------
@@ -144,7 +144,7 @@ class Coffee: ##{{{
 		self.n_mm_params = None
 	
 	def copy(self):
-		c             = Coffee( self.time.copy() , self.n_sample , self.models , self.ns_law , self.ns_law_args )
+		c             = Climatology( self.time.copy() , self.n_sample , self.models , self.ns_law , self.ns_law_args )
 		
 		c.X           = self.X.copy()         if self.X         is not None else None
 		c.ns_params   = self.ns_params.copy() if self.ns_params is not None else None
@@ -195,42 +195,42 @@ class CXParams: ##{{{
 ##}}}
 
 
-def coffee2netcdf( coffee , event , ofile , with_cx = False , with_co = False ):##{{{
+def clim2netcdf( clim , event , ofile , with_cx = False , with_co = False ):##{{{
 	with nc.Dataset( ofile , "w" , format = "NETCDF4" ) as ncFile:
 	
 		## Create dimensions
-		dim_time     = ncFile.createDimension( "time"     , coffee.X.time.size              )
-		dim_sample   = ncFile.createDimension( "sample"   , coffee.X.sample.size            )
-		dim_forcing  = ncFile.createDimension( "forcing"  , coffee.X.forcing.size           )
-		dim_models   = ncFile.createDimension( "models"   , coffee.X.models.size            )
-		dim_ns_param = ncFile.createDimension( "ns_param" , coffee.ns_params.ns_params.size )
-		dim_stat     = ncFile.createDimension( "stat"     , coffee.stats.stats.size         )
+		dim_time     = ncFile.createDimension( "time"     , clim.X.time.size              )
+		dim_sample   = ncFile.createDimension( "sample"   , clim.X.sample.size            )
+		dim_forcing  = ncFile.createDimension( "forcing"  , clim.X.forcing.size           )
+		dim_models   = ncFile.createDimension( "models"   , clim.X.models.size            )
+		dim_ns_param = ncFile.createDimension( "ns_param" , clim.ns_params.ns_params.size )
+		dim_stat     = ncFile.createDimension( "stat"     , clim.stats.stats.size         )
 		
 		## Set dimensions as variables
-		nc_time     = ncFile.createVariable( "time"     , coffee.X.time.dtype    , ("time",)     )
-		nc_sample   = ncFile.createVariable( "sample"   , coffee.X.sample.dtype  , ("sample",)   )
-		nc_forcing  = ncFile.createVariable( "forcing"  , coffee.X.forcing.dtype , ("forcing",)  )
+		nc_time     = ncFile.createVariable( "time"     , clim.X.time.dtype    , ("time",)     )
+		nc_sample   = ncFile.createVariable( "sample"   , clim.X.sample.dtype  , ("sample",)   )
+		nc_forcing  = ncFile.createVariable( "forcing"  , clim.X.forcing.dtype , ("forcing",)  )
 		nc_models   = ncFile.createVariable( "models"   , str                    , ("models",)   )
 		nc_ns_param = ncFile.createVariable( "ns_param" , str                    , ("ns_param",) )
 		nc_stat     = ncFile.createVariable( "stat"     , str                    , ("stat",)     )
 		
 		## Set dimensions values
-		nc_time[:]     = coffee.X.time.values
-		nc_sample[:]   = coffee.X.sample.values
-		nc_forcing[:]  = coffee.X.forcing.values
-		nc_models[:]   = coffee.X.models.values
-		nc_ns_param[:] = coffee.ns_params.ns_params.values
-		nc_stat[:]     = coffee.stats.stats.values
+		nc_time[:]     = clim.X.time.values
+		nc_sample[:]   = clim.X.sample.values
+		nc_forcing[:]  = clim.X.forcing.values
+		nc_models[:]   = clim.X.models.values
+		nc_ns_param[:] = clim.ns_params.ns_params.values
+		nc_stat[:]     = clim.stats.stats.values
 		
 		## Variables
-		nc_X         = ncFile.createVariable( "X"         , coffee.X.dtype         , ("time","sample","forcing","models") )
-		nc_ns_params = ncFile.createVariable( "ns_params" , coffee.ns_params.dtype , ("ns_param","sample","models")       )
-		nc_stats     = ncFile.createVariable( "stats"     , coffee.stats.dtype     , ("time","sample","stat","models")    )
+		nc_X         = ncFile.createVariable( "X"         , clim.X.dtype         , ("time","sample","forcing","models") )
+		nc_ns_params = ncFile.createVariable( "ns_params" , clim.ns_params.dtype , ("ns_param","sample","models")       )
+		nc_stats     = ncFile.createVariable( "stats"     , clim.stats.dtype     , ("time","sample","stat","models")    )
 		
 		## Set variables values
-		nc_X[:]         = coffee.X.values
-		nc_ns_params[:] = coffee.ns_params.values
-		nc_stats[:]     = coffee.stats.values
+		nc_X[:]         = clim.X.values
+		nc_ns_params[:] = clim.ns_params.values
+		nc_stats[:]     = clim.stats.values
 		
 		## Attributes
 		ncFile.event_name = event.name
@@ -244,7 +244,7 @@ def coffee2netcdf( coffee , event , ofile , with_cx = False , with_co = False ):
 		ncFile.co = str(with_co)
 ##}}}
 
-def netcdf2coffee( ifile , ns_law ):##{{{
+def netcdf2clim( ifile , ns_law ):##{{{
 	with nc.Dataset( ifile , "r" ) as ncFile:
 		
 		## Extract dimensions
@@ -256,14 +256,14 @@ def netcdf2coffee( ifile , ns_law ):##{{{
 		stats    = ncFile.variables["stat"][:]
 		
 		## 
-		coffee = Coffee( time , sample.size - 1 , models , ns_law )
-		coffee.n_ns_params = ns_param.size
-		coffee.n_stats     = stats.size
-		coffee.X         = xr.DataArray( ncFile.variables["X"][:]         , coords = [time,sample,forcing,models] , dims = ["time","sample","forcing","models"] )
-		coffee.ns_params = xr.DataArray( ncFile.variables["ns_params"][:] , coords = [ns_param,sample,models]     , dims = ["ns_params","sample","models"]      )
-		coffee.stats     = xr.DataArray( ncFile.variables["stats"][:]     , coords = [time,sample,stats,models]   , dims = ["time","sample","stats","models"]   )
+		clim = Climatology( time , sample.size - 1 , models , ns_law )
+		clim.n_ns_params = ns_param.size
+		clim.n_stats     = stats.size
+		clim.X         = xr.DataArray( ncFile.variables["X"][:]         , coords = [time,sample,forcing,models] , dims = ["time","sample","forcing","models"] )
+		clim.ns_params = xr.DataArray( ncFile.variables["ns_params"][:] , coords = [ns_param,sample,models]     , dims = ["ns_params","sample","models"]      )
+		clim.stats     = xr.DataArray( ncFile.variables["stats"][:]     , coords = [time,sample,stats,models]   , dims = ["time","sample","stats","models"]   )
 	
-	return coffee
+	return clim
 ##}}}
 
 
