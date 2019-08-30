@@ -164,7 +164,7 @@ def fit_gam_with_fix_dof( X , Y , dof ):##{{{
 	return gam_model
 ##}}}
 
-def gam_decomposition( lX , Enat , Sigma = None , time_center = None , dof = 7 , verbose = False ): ##{{{
+def gam_decomposition( lX , Enat , time_center = None , dof = 7 , Sigma = None , verbose = False ): ##{{{
 	"""
 	NSSEA.gam_decomposition
 	=======================
