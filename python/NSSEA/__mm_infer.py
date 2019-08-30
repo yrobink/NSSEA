@@ -164,6 +164,7 @@ def infer_multi_model( coffeeIn , mm_method = "classic" , verbose = False ):
 	coffee.X         = xr.concat( [coffee.X , mm_sample] , "models" )
 	coffee.ns_params = xr.concat( [coffee.ns_params,mm_params] , "models" )
 	coffee.n_models += 1
+	coffee.models.append( "multi" )
 	
 	if verbose: print( "Multi model (Done)" )
 	
