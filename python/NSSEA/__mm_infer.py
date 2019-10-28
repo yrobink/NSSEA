@@ -99,7 +99,7 @@ class MMStats:
 ## Functions ##
 ###############
 
-def infer_multi_model( coffeeIn , mm_method , verbose = False ):
+def infer_multi_model( climIn , mm_method = "classic" , verbose = False ):
 	"""
 	NSSEA.infer_multi_model
 	=======================
@@ -107,8 +107,8 @@ def infer_multi_model( coffeeIn , mm_method , verbose = False ):
 	
 	Arguments
 	---------
-	coffeeIn : NSSEA.Coffee
-		coffee variable
+	climIn : NSSEA.Climatology
+		clim variable
 	mm_method: str
 		Multi model method, currently "classic" (A. Ribes method) or "optimal" (Optimal transport)
 	verbose  : bool
@@ -116,56 +116,57 @@ def infer_multi_model( coffeeIn , mm_method , verbose = False ):
 	
 	Return
 	------
-	coffee: NSSEA.Coffee
-		A COPY of the input coffee, where coffee.mm_params is set, and coffee.X contains multi model sample. The input coffee IS NOT MODIFIED.
+	clim: NSSEA.Climatology
+		A COPY of the input clim, where clim.mm_params is set, and clim.X contains multi model sample. The input clim IS NOT MODIFIED.
 	
 	Remark
 	------
-	coffee.mm_params is a NSSEA.MMStats class
+	clim.mm_params is a NSSEA.MMStats class
 	
 	"""
 	if verbose: print( "Multi model" , end = "\r" if mm_method == "classic" else "\n" )
 	## Parameters
-	coffee      = coffeeIn.copy()
-	n_time      = coffee.n_time
-	n_ns_params = coffee.n_ns_params
-	n_sample    = coffee.n_sample
-	n_models    = coffee.n_models
-	sample      = coffee.X.sample.values.tolist()
+	clim      = climIn.copy()
+	n_time      = clim.n_time
+	n_ns_params = clim.n_ns_params
+	n_sample    = clim.n_sample
+	n_models    = clim.n_models
+	sample      = clim.X.sample.values.tolist()
 	n_mm_params = 2 * n_time + n_ns_params
 	
 	## Big matrix
 	S                        = np.zeros( (n_mm_params,n_sample + 1,n_models) )
-	S[:n_time,:,:]           = coffee.X.loc[:,:,"all",:].values
-	S[n_time:(2*n_time),:,:] = coffee.X.loc[:,:,"nat",:].values
-	S[(2*n_time):,:,:]       = coffee.ns_params.values
+	S[:n_time,:,:]           = clim.X.loc[:,:,"all",:].values
+	S[n_time:(2*n_time),:,:] = clim.X.loc[:,:,"nat",:].values
+	S[(2*n_time):,:,:]       = clim.ns_params.values
 	
 	## Multi model parameters inference
-	coffee.mm_params   = MMStats( S , mm_method , verbose )
-	coffee.n_mm_params = n_mm_params
+	clim.mm_params   = MMStats( S , mm_method , verbose )
+	clim.n_mm_params = n_mm_params
 	
 	## Generate sample
-	mm_sample = xr.DataArray( np.zeros( (n_time,n_sample + 1,3,1) )    , coords = [ coffee.X.time , sample , coffee.X.forcing , ["multi"] ] , dims = ["time","sample","forcing","models"] )
-	mm_params = xr.DataArray( np.zeros( (n_ns_params,n_sample + 1,1) ) , coords = [ coffee.ns_params.ns_params , sample , ["multi"] ]       , dims = ["ns_params","sample","models"] )
+	mm_sample = xr.DataArray( np.zeros( (n_time,n_sample + 1,3,1) )    , coords = [ clim.X.time , sample , clim.X.forcing , ["multi"] ] , dims = ["time","sample","forcing","models"] )
+	mm_params = xr.DataArray( np.zeros( (n_ns_params,n_sample + 1,1) ) , coords = [ clim.ns_params.ns_params , sample , ["multi"] ]       , dims = ["ns_params","sample","models"] )
 	
-	mm_sample.loc[:,"be","all","multi"] = coffee.mm_params.mean[:n_time]
-	mm_sample.loc[:,"be","nat","multi"] = coffee.mm_params.mean[n_time:(2*n_time)]
-	mm_params.loc[:,"be","multi"]       = coffee.mm_params.mean[(2*n_time):]
+	mm_sample.loc[:,"be","all","multi"] = clim.mm_params.mean[:n_time]
+	mm_sample.loc[:,"be","nat","multi"] = clim.mm_params.mean[n_time:(2*n_time)]
+	mm_params.loc[:,"be","multi"]       = clim.mm_params.mean[(2*n_time):]
 	
 	for s in sample[1:]:
-		draw = coffee.mm_params.mean + coffee.mm_params.std @ np.random.normal(size = n_mm_params)
+		draw = clim.mm_params.mean + clim.mm_params.std @ np.random.normal(size = n_mm_params)
 		mm_sample.loc[:,s,"all","multi"] = draw[:n_time]
 		mm_sample.loc[:,s,"nat","multi"] = draw[n_time:(2*n_time)]
 		mm_params.loc[:,s,"multi"]       = draw[(2*n_time):]
 	
 	mm_sample.loc[:,:,"ant","multi"] = mm_sample.loc[:,:,"all","multi"] - mm_sample.loc[:,:,"nat","multi"]
 	
-	## Add multimodel to coffee
-	coffee.X         = xr.concat( [coffee.X , mm_sample] , "models" )
-	coffee.ns_params = xr.concat( [coffee.ns_params,mm_params] , "models" )
-	coffee.n_models += 1
+	## Add multimodel to clim
+	clim.X         = xr.concat( [clim.X , mm_sample] , "models" )
+	clim.ns_params = xr.concat( [clim.ns_params,mm_params] , "models" )
+	clim.n_models += 1
+	clim.models.append( "multi" )
 	
 	if verbose: print( "Multi model (Done)" )
 	
-	return coffee
+	return clim
 

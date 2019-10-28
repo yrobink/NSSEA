@@ -12,12 +12,10 @@ import numpy  as np
 import pandas as pd
 import xarray as xr
 
-try:
-	import matplotlib.pyplot as plt
-except:
-	import matplotlib as mpl
-	mpl.use("Qt5Agg")
-	import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.use("pdf")
+import matplotlib.pyplot as plt
+import matplotlib.backends.backend_pdf as mpdf
 
 import matplotlib.backends.backend_pdf as mpdf
 
@@ -29,7 +27,7 @@ from NSSEA.plot.__linkParams import LinkParams
 ###############
 
 
-def constraints_CX( coffee , coffeeCX , Xo , cx_params , ofile , ci = 0.05 , verbose = False ):
+def constraints_CX( clim , climCX , Xo , cx_params , ofile , ci = 0.05 , verbose = False ):
 	"""
 	NSSEA.plot.constraints_CX
 	=========================
@@ -38,10 +36,10 @@ def constraints_CX( coffee , coffeeCX , Xo , cx_params , ofile , ci = 0.05 , ver
 	
 	Arguments
 	---------
-	coffee    : NSSEA.Coffee
-		coffee variable without constraints
-	coffeeCX  : NSSEA.Coffee
-		coffee variable with constraints
+	clim    : NSSEA.Climatology
+		clim variable without constraints
+	climCX  : NSSEA.Climatology
+		clim variable with constraints
 	cx_params : NSSEA.CXParams
 		Constraints parameters
 	ofile     : str
@@ -54,8 +52,8 @@ def constraints_CX( coffee , coffeeCX , Xo , cx_params , ofile , ci = 0.05 , ver
 	
 	if verbose: print( "Plot constraintsCX" , end = "\r" )
 	
-	X   = coffee.X.loc[:,:,"all","multi"]
-	cX = coffeeCX.X.loc[:,:,"all","multi"]
+	X   = clim.X.loc[:,:,"all","multi"]
+	cX = climCX.X.loc[:,:,"all","multi"]
 	
 	X  = X  - X.loc[cx_params.ref,:].mean( dim = "time" )
 	cX = cX - cX.loc[cx_params.ref,:].mean( dim = "time" )
@@ -76,7 +74,7 @@ def constraints_CX( coffee , coffeeCX , Xo , cx_params , ofile , ci = 0.05 , ver
 	ax.fill_between( X.time  , Xl  , Xu  , color = "red" , alpha = 0.2 )
 	ax.fill_between( cX.time , cXl , cXu , color = "red" , alpha = 0.5 )
 	
-	plt.tight_layout()
+	fig.set_tight_layout(True)
 	plt.savefig( ofile )
 	
 	if verbose: print( "Plot constraints CX (Done)" )

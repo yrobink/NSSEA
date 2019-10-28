@@ -6,7 +6,7 @@
 #############################
 
 
-__version__ = "0.2.4"
+__version__ = "0.2.5"
 
 #############
 ## Imports ##
@@ -18,10 +18,10 @@ from NSSEA.__tools import ProgressBar
 
 ## Variables
 from NSSEA.__variables import Event
-from NSSEA.__variables import Coffee
+from NSSEA.__variables import Climatology
 from NSSEA.__variables import CXParams
-from NSSEA.__variables import coffee2netcdf
-from NSSEA.__variables import netcdf2coffee
+from NSSEA.__variables import clim2netcdf
+from NSSEA.__variables import netcdf2clim
 
 
 ## Covariate split

@@ -12,12 +12,9 @@ import numpy  as np
 import pandas as pd
 import xarray as xr
 
-try:
-	import matplotlib.pyplot as plt
-except:
-	import matplotlib as mpl
-	mpl.use("Qt5Agg")
-	import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.use("pdf")
+import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as mpdf
 
 from NSSEA.plot.__linkParams import LinkParams
@@ -37,7 +34,7 @@ def intensities( stats , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 	Arguments
 	---------
 	stats     : xarray
-		NSSEA.Coffee.stats
+		NSSEA.Climatology.stats
 	event     : NSSEA.Event
 		Event variable
 	ofile     : str
@@ -50,8 +47,8 @@ def intensities( stats , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 	
 	if verbose: print( "Plot intensities" , end = "\r" )
 	
-	statsu = stats[:,1:,3:,:].quantile( ci / 2.      , dim = "sample" )
-	statsl = stats[:,1:,3:,:].quantile( 1. - ci / 2. , dim = "sample" )
+	statsl = stats[:,1:,3:,:].quantile( ci / 2.      , dim = "sample" )
+	statsu = stats[:,1:,3:,:].quantile( 1. - ci / 2. , dim = "sample" )
 	
 	pdf = mpdf.PdfPages( ofile )
 	
@@ -106,7 +103,7 @@ def intensities( stats , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 		ax.set_ylim(ylim)
 		
 		
-		fig.tight_layout()
+		fig.set_tight_layout(True)
 		pdf.savefig( fig )
 		plt.close(fig)
 	

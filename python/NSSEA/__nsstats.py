@@ -19,16 +19,16 @@ from NSSEA.__tools import ProgressBar
 ## Functions ##
 ###############
 
-def extremes_stats( coffee , event , threshold_by_world = False , verbose = False , tol = sys.float_info.epsilon ):##{{{
+def extremes_stats( clim , event , threshold_by_world = False , verbose = False , tol = sys.float_info.epsilon ):##{{{
 	"""
 	NSSEA.extremes_stats
 	====================
-	Compute extremes statistics and add it to a Coffee.
+	Compute extremes statistics and add it to a Climatology.
 	
 	Arguments
 	---------
-	coffee : NSSEA.Coffee
-		A coffee variable
+	clim : NSSEA.Climatology
+		A clim variable
 	event  : NSSEA.Event
 		An event variable
 	threshold_by_world: bool
@@ -40,12 +40,12 @@ def extremes_stats( coffee , event , threshold_by_world = False , verbose = Fals
 	
 	Return
 	------
-	coffee : NSSEA.Coffee
-		A coffee variable with coffee.stats set
+	clim : NSSEA.Climatology
+		A clim variable with clim.stats set
 	
 	Statistics computed
 	-------------------
-	The variable coffee.stats is an xarray with dimensions (n_time,n_sample+1,n_stats,n_models), stats available are:
+	The variable clim.stats is an xarray with dimensions (n_time,n_sample+1,n_stats,n_models), stats available are:
 	
 	pall: Probability of event.anom at time event.time in factual world
 	pnat: Probability of event.anom at time event.time in counter factual world
@@ -56,46 +56,49 @@ def extremes_stats( coffee , event , threshold_by_world = False , verbose = Fals
 	
 	"""
 	## Usefull variables
-	time           = coffee.time
-	n_time         = coffee.n_time
-	models         = coffee.models
-	n_models       = coffee.n_models
-	n_sample       = coffee.n_sample
+	time           = clim.time
+	n_time         = clim.n_time
+	models         = clim.models
+	n_models       = clim.n_models
+	n_sample       = clim.n_sample
 	n_stats        = 6
 	upper_side     = event.side == "high"
-	coffee.n_stats = n_stats
+	clim.n_stats = n_stats
 	event_time     = event.time
 	
 	
 	## Output
-	stats = xr.DataArray( np.zeros( (n_time,n_sample + 1,n_stats,n_models) ) , coords = [coffee.X.time , coffee.X.sample , ["pnat","pall","rr","inat","iall","di"] , coffee.X.models ] , dims = ["time","sample","stats","models"] )
+	stats = xr.DataArray( np.zeros( (n_time,n_sample + 1,n_stats,n_models) ) , coords = [clim.X.time , clim.X.sample , ["pnat","pall","rr","inat","iall","di"] , clim.X.models ] , dims = ["time","sample","stats","models"] )
 	
 	## 
-	law = coffee.ns_law( **coffee.ns_law_args )
+	law = clim.ns_law( **clim.ns_law_args )
 	pb = ProgressBar( "Statistics" , n_models * (n_sample + 1) )
-	for m in coffee.X.models:
-		for s in coffee.X.sample:
+	for m in clim.X.models:
+		for s in clim.X.sample:
 			if verbose: pb.print()
 			
-			law.set_params( coffee.ns_params.loc[:,s,m].values )
+			law.set_params( clim.ns_params.loc[:,s,m].values )
 			
 			## Find threshold
-			law.set_covariable( coffee.X.loc[:,s,"all",m].values , time )
-			threshold = np.zeros(n_time) + np.mean( law.meant(event.ref_anom) ) + event.anom
+			law.set_covariable( clim.X.loc[:,s,"all",m].values , time )
+			if event.def_type == "threshold":
+				threshold = np.zeros(n_time) + np.mean( law.meant(event.ref_anom) ) + event.anom
+			else:
+				threshold = np.zeros(n_time) + event.anom
 			
 			## Find pall
 			stats.loc[:,s,"pall",m] = law.sf( threshold , time ) if upper_side else law.cdf( threshold , time )
 			
 			## Find probability of the event in factual world
 			pf = np.zeros(n_time) + ( law.sf( np.array([threshold[0]]) , np.array([event_time]) ) if upper_side else law.cdf( np.array([threshold[0]]) , np.array([event_time]) ) )
-			pf[ np.logical_not(pf>0) ] = tol
-			pf[ np.logical_not(pf<1) ] = 1. - tol
+#			pf[ np.logical_not(pf>0) ] = tol
+#			pf[ np.logical_not(pf<1) ] = 1. - tol
 			
 			## I1
 			stats.loc[:,s,"iall",m] = law.isf( pf , time ) if upper_side else law.icdf( pf , time )
 			
 			## Find pnat
-			law.set_covariable( coffee.X.loc[:,s,"nat",m].values , time )
+			law.set_covariable( clim.X.loc[:,s,"nat",m].values , time )
 			if threshold_by_world:
 	 			threshold = np.zeros(n_time) + np.mean( law.meant(event.ref_anom) ) + event.anom
 			stats.loc[:,s,"pnat",m] = law.sf( threshold , time ) if upper_side else law.cdf( threshold , time )
@@ -109,16 +112,16 @@ def extremes_stats( coffee , event , threshold_by_world = False , verbose = Fals
 	
 	## RR
 	stats.loc[:,:,"rr",:] = stats.loc[:,:,"pall",:] / stats.loc[:,:,"pnat",:]
-	stats.loc[:,:,"rr",:] = stats.loc[:,:,"rr",:].where( stats.loc[:,:,"rr",:] > 0 , np.inf )
+#	stats.loc[:,:,"rr",:] = stats.loc[:,:,"rr",:].where( stats.loc[:,:,"rr",:] > 0 , np.inf )
 	
 	
 	## deltaI
 	stats.loc[:,:,"di",:] = stats.loc[:,:,"iall",:] - stats.loc[:,:,"inat",:]
 	
-	coffee.stats = stats
+	clim.stats = stats
 	if verbose: pb.end()
 	
-	return coffee
+	return clim
 ##}}}
 
 def RR_correction( S , tol = 1e-10 ):##{{{
@@ -166,13 +169,13 @@ def stats_relative_event( stats , time_event ):##{{{
 	Arguments
 	---------
 	stats     : xarray
-		coffee.stats
+		clim.stats
 	time_event: Time of event
 	
 	Return
 	------
 	satstEvent: xarray
-		Similar to coffee.stats
+		Similar to clim.stats
 	"""
 	statsEvent = xr.zeros_like(stats)
 	statsEvent[:,:,:3,:] = stats[:,:,:3,:] / stats.loc[time_event,:,["pall","pnat","rr"],:]

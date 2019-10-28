@@ -12,12 +12,9 @@ import numpy  as np
 import pandas as pd
 import xarray as xr
 
-try:
-	import matplotlib.pyplot as plt
-except:
-	import matplotlib as mpl
-	mpl.use("Qt5Agg")
-	import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.use("pdf")
+import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as mpdf
 
 from NSSEA.plot.__linkParams import LinkParams
@@ -39,7 +36,7 @@ def decomposition( lX , Xd , X , event , ofile , ci = 0.05 , verbose = False ): 
 	Xd        : pandas.DataFrame
 		Covariates before decomposition
 	X         : xarray
-		Covariates afer decomposition (NSSEA.Coffee.X)
+		Covariates afer decomposition (NSSEA.Climatology.X)
 	event     : NSSEA.Event
 		Event variable
 	ofile     : str
@@ -111,7 +108,7 @@ def decomposition( lX , Xd , X , event , ofile , ci = 0.05 , verbose = False ): 
 		ax.set_xlim(xlim)
 		ax.set_ylim(ylim)
 		
-		fig.tight_layout()
+		fig.set_tight_layout(True)
 		pdf.savefig( fig )
 		plt.close(fig)
 	
