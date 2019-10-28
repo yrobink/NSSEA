@@ -20,7 +20,7 @@ class NSAbstractModel:
 	#################
 	
 	def __init__( self ):
-		pass
+		self._link = {}
 	
 	
 	###############

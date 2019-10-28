@@ -45,13 +45,14 @@ class NSGaussianModel(NSAbstractModel):
 	## Constructor ##
 	#################
 	
-	def __init__( self , link_fct_loc = sdt.IdLinkFct() , link_fct_scale = sdt.ExpLinkFct() , method = "MLE" , verbose = False ): ##{{{
+	def __init__( self , link_loc = sdt.IdLink() , link_scale = sdt.ExpLink() , method = "MLE" , verbose = False ): ##{{{
 		"""
 		Initialization of the NS Gaussian Model
 		"""
 		NSAbstractModel.__init__(self)
-		self._norm = sd.NormalLaw( method = method , link_fct_loc = link_fct_loc , link_fct_scale = link_fct_scale )
+		self._norm = sd.Normal( method = method )
 		self._verbose = verbose
+		self._link = { "loc" : link_loc , "scale" : link_scale }
 		
 		self.mu0     = None
 		self.mu1     = None
@@ -75,7 +76,7 @@ class NSGaussianModel(NSAbstractModel):
 		default: dict
 			Arguments of __init__, elements of "arg" are kept
 		"""
-		default = { "link_fct_loc" : sdt.IdLinkFct() , "link_fct_scale" : sdt.ExpLinkFct() , "method" : "MLE" , "verbose" : False }
+		default = { "link_loc" : sdt.IdLink() , "link_scale" : sdt.ExpLink() , "method" : "MLE" , "verbose" : False }
 		if arg is not None:
 			for key in arg:
 				default[key] = arg[key]
@@ -100,7 +101,7 @@ class NSGaussianModel(NSAbstractModel):
 	##}}}
 	
 	def link_fct_by_params( self ):##{{{
-		return [self._norm._loc.linkFct,self._norm._loc.linkFct,self._norm._scale.linkFct,self._norm._scale.linkFct]
+		return [self._link["loc"],self._link["loc"],self._link["scale"],self._link["scale"]]
 	##}}}
 	
 	
@@ -202,12 +203,12 @@ class NSGaussianModel(NSAbstractModel):
 		-----
 		To use the model, the method set_covariable must be called by user after the fit
 		"""
-		self._norm.fit( Y , loc_cov = X.reshape( (X.size,1) ) , scale_cov = X.reshape( (X.size,1) ) )
+		self._norm.fit( Y , c_loc = X , l_loc = self._link["loc"] , c_scale = X , l_scale = self._link["scale"] )
 		
-		self.mu0    = self._norm._loc.coef_[0]
-		self.mu1    = self._norm._loc.coef_[1]
-		self.scale0 = self._norm._scale.coef_[0]
-		self.scale1 = self._norm._scale.coef_[1]
+		self.mu0    = self._norm.coef_[0]
+		self.mu1    = self._norm.coef_[1]
+		self.scale0 = self._norm.coef_[2]
+		self.scale1 = self._norm.coef_[3]
 	##}}}
 	
 	def set_covariable( self , X , t = None ):##{{{
@@ -223,8 +224,8 @@ class NSGaussianModel(NSAbstractModel):
 		
 		"""
 		t = t if t is not None else np.arange( 0 , X.size )
-		self._mut    = sci.interp1d( t , self._norm._loc.linkFct(  self.mu0    + X.ravel() * self.mu1   ) )
-		self._scalet = sci.interp1d( t , self._norm._scale.linkFct(self.scale0 + X.ravel() * self.scale1) )
+		self._mut    = sci.interp1d( t , self._link["loc"](  self.mu0    + X.ravel() * self.mu1   ) )
+		self._scalet = sci.interp1d( t , self._link["scale"](self.scale0 + X.ravel() * self.scale1) )
 	##}}}
 	
 	def rvs( self , t ):##{{{

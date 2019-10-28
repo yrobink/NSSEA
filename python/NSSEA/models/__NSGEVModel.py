@@ -61,12 +61,13 @@ class NSGEVModel(NSAbstractModel):
 	## Constructor ##
 	#################
 	
-	def __init__( self , tails = "upper" , link_fct_loc = sdt.IdLinkFct() , link_fct_scale = sdt.ExpLinkFct() , link_fct_shape = sdt.LogitLinkFct( -0.5 , 0.5 ) , method = "MLE" , no_test = True , verbose = False ): ##{{{
+	def __init__( self , tails = "upper" , link_loc = sdt.IdLink() , link_scale = sdt.ExpLink() , link_shape = sdt.LogitLink( -0.5 , 0.5 ) , method = "MLE" , no_test = True , verbose = False ): ##{{{
 		"""
 		"""
 		NSAbstractModel.__init__(self)
 		self._tails   = 1 if tails == "upper" else -1
-		self._gev     = sd.GEVLaw( method = method , link_fct_loc = link_fct_loc , link_fct_scale = link_fct_scale , link_fct_shape = link_fct_shape )
+		self._gev     = sd.GEVLaw( method = method )
+		self._link    = { "loc" : link_loc , "scale" : link_scale , "shape" : link_shape }
 		self._no_test = no_test
 		self._verbose = verbose
 		
@@ -100,7 +101,7 @@ class NSGEVModel(NSAbstractModel):
 		default: dict
 			Arguments of __init__, elements of "arg" are kept
 		"""
-		default = { "tails" : "upper" , "link_fct_loc" : sdt.IdLinkFct() , "link_fct_scale" : sdt.ExpLinkFct() , "link_fct_shape" : sdt.LogitLinkFct( -0.5 , 0.5 ) , "method" : "MLE" , "no_test" : True , "verbose" : False }
+		default = { "tails" : "upper" , "link_loc" : sdt.IdLink() , "link_scale" : sdt.ExpLink() , "link_shape" : sdt.LogitLink( -0.5 , 0.5 ) , "method" : "MLE" , "no_test" : True , "verbose" : False }
 		if arg is not None:
 			for key in arg:
 				default[key] = arg[key]
@@ -125,7 +126,7 @@ class NSGEVModel(NSAbstractModel):
 	##}}}
 	
 	def link_fct_by_params( self ):##{{{
-		return [self._gev._loc.linkFct,self._gev._loc.linkFct,self._gev._scale.linkFct,self._gev._scale.linkFct,self._gev._shape.linkFct]
+		return [self._link["loc"],self._link["loc"],self._link["scale"],self._link["scale"],self._link["shape"]]
 	##}}}
 	
 	
@@ -150,14 +151,14 @@ class NSGEVModel(NSAbstractModel):
 		"""
 		
 		## Fit
-		self._gev.fit( self._tails * Y , loc_cov = self._tails * X , scale_cov = self._tails * X )
+		self._gev.fit( self._tails * Y , c_loc = self._tails * X , c_scale = self._tails * X , l_loc = self._link["loc"] , l_scale = self._link["scale"] , l_shape = self._link["shape"] )
 		
 		## Result
-		self._loc0   = self._gev._loc.coef_[0]
-		self._loc1   = self._gev._loc.coef_[1] if self._gev._loc.size == 2 else 0.
-		self._scale0 = self._gev._scale.coef_[0]
-		self._scale1 = self._gev._scale.coef_[1] if self._gev._scale.size == 2 else 0.
-		self._shape  = self._gev._shape.coef_[0]
+		self._loc0   = self._gev.coef_[0]
+		self._loc1   = self._gev.coef_[1]
+		self._scale0 = self._gev.coef_[2]
+		self._scale1 = self._gev.coef_[3]
+		self._shape  = self._gev.coef_[4]
 	##}}}
 	
 	def set_covariable( self , X , t = None ):##{{{
@@ -172,9 +173,9 @@ class NSGEVModel(NSAbstractModel):
 			Time, if None t = np.arange(0,X.size)
 		
 		"""
-		self.loc   = self._gev._loc.linkFct(   self._loc0 + self._tails * self._loc1 * X )
-		self.scale = self._gev._scale.linkFct( self._scale0 + self._tails * self._scale1 * X )
-		self.shape = self._gev._shape.linkFct( np.repeat( self._shape , X.size ) )
+		self.loc   = self._gev._link["loc"](   self._loc0 + self._tails * self._loc1 * X )
+		self.scale = self._gev._link["scale"]( self._scale0 + self._tails * self._scale1 * X )
+		self.shape = self._gev._link["shape"]( np.repeat( self._shape , X.size ) )
 		self._loct   = sci.interp1d( t , self.loc )
 		self._scalet = sci.interp1d( t , self.scale )
 		self._shapet = sci.interp1d( t , self.shape )
