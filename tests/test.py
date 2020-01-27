@@ -212,6 +212,7 @@ if __name__ == "__main__":
 	## Apply constraints
 	##==================
 	climCX   = ns.constraints_CX( climMM , Xo , time_reference = time_reference , verbose = verbose )
+	climCXCB = ns.constraints_bayesian( climCX , Yo , 1000 , 500 , verbose = verbose )
 	climC0   = ns.constraints_C0( climMM , Yo , verbose = verbose )
 	climCXC0 = ns.constraints_C0( climCX , Yo , verbose = verbose )
 	
@@ -220,6 +221,7 @@ if __name__ == "__main__":
 	##==============
 	climMM   = ns.extremes_stats( climMM   , event , verbose = verbose )
 	climCX   = ns.extremes_stats( climCX   , event , verbose = verbose )
+	climCXCB = ns.extremes_stats( climCXCB , event , verbose = verbose )
 	climC0   = ns.extremes_stats( climC0   , event , verbose = verbose )
 	climCXC0 = ns.extremes_stats( climCXC0 , event , verbose = verbose )
 	
@@ -228,6 +230,7 @@ if __name__ == "__main__":
 	##===============
 	ns.to_netcdf( climMM   , event , os.path.join( pathOut , "HW03_Normal_clim.nc"     ) , ""     )
 	ns.to_netcdf( climCX   , event , os.path.join( pathOut , "HW03_Normal_climCX.nc"   ) , "CX"   )
+	ns.to_netcdf( climCXCB , event , os.path.join( pathOut , "HW03_Normal_climCXCB.nc" ) , "CX"   )
 	ns.to_netcdf( climC0   , event , os.path.join( pathOut , "HW03_Normal_climC0.nc"   ) , "C0"   )
 	ns.to_netcdf( climCXC0 , event , os.path.join( pathOut , "HW03_Normal_climCXC0.nc" ) , "CXC0" )
 	
@@ -236,11 +239,11 @@ if __name__ == "__main__":
 	
 	## Write stats in txt file
 	##========================
-	with open( os.path.join( pathOut , "SummaryCXC0.txt" ) , "w" ) as f:
+	with open( os.path.join( pathOut , "SummaryCXCB.txt" ) , "w" ) as f:
 		f.write( str(event) + "\n\n" )
-		f.write( nsp.print_time_stats( climCXC0.stats , 2003 , model = "multi" , digit = 6 , ci = ci , verbose = verbose ) + "\n" )
-		f.write( nsp.print_time_stats( climCXC0.stats , 2040 , model = "multi" , digit = 6 , ci = ci , verbose = verbose ) + "\n" )
-		f.write( nsp.print_relative_time_stats( climCXC0.stats , 2040 , 2003 , model = "multi" , digit = 6 , ci = ci , verbose = verbose ) + "\n" )
+		f.write( nsp.print_time_stats( climCXCB.stats , 2003 , model = "multi" , digit = 6 , ci = ci , verbose = verbose ) + "\n" )
+		f.write( nsp.print_time_stats( climCXCB.stats , 2040 , model = "multi" , digit = 6 , ci = ci , verbose = verbose ) + "\n" )
+		f.write( nsp.print_relative_time_stats( climCXCB.stats , 2040 , 2003 , model = "multi" , digit = 6 , ci = ci , verbose = verbose ) + "\n" )
 	
 	
 	## Plot
@@ -249,9 +252,11 @@ if __name__ == "__main__":
 	nsp.constraints_CX( climMM , climCXC0 , Xo , time_reference , os.path.join( pathOut , "constraintCX.pdf" )  , verbose = verbose )
 	nsp.plot_classic_packages( climMM   , event , path = pathOut , suffix = "MM"   , ci = ci , verbose = verbose )
 	nsp.plot_classic_packages( climCX   , event , path = pathOut , suffix = "CX"   , ci = ci , verbose = verbose )
+	nsp.plot_classic_packages( climCXCB , event , path = pathOut , suffix = "CXCB" , ci = ci , verbose = verbose )
 	nsp.plot_classic_packages( climC0   , event , path = pathOut , suffix = "C0"   , ci = ci , verbose = verbose )
 	nsp.plot_classic_packages( climCXC0 , event , path = pathOut , suffix = "CXC0" , ci = ci , verbose = verbose )
 	nsp.ns_params_comparison( climMM , climCXC0   , ofile = os.path.join( pathOut , "ns_paramsMM_CXC0.pdf") , ci = ci , verbose = verbose )
+	nsp.ns_params_comparison( climMM , climCXCB   , ofile = os.path.join( pathOut , "ns_paramsMM_CXCB.pdf") , ci = ci , verbose = verbose )
 	
 	print("Done")
 
