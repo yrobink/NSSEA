@@ -144,42 +144,6 @@ class Climatology: ##{{{
 		return c
 ##}}}
 
-class CXParams: ##{{{
-	"""
-	NSSEA.CXParams
-	==============
-	
-	Parameters of the CX constraints
-	
-	Attributes
-	----------
-	
-	centering: bool
-		If we need or not to center covariates to observed covariates
-	ref      : array
-		Time period of reference period
-	trust    : bool
-		If we assume that the covariance matrix of observed covariate has the same scale that covariates
-	"""
-	def __init__( self , centering , ref , trust ):
-		"""
-		Constructor
-		
-		Arguments
-		---------
-		
-		centering: bool
-			If we need or not to center covariates to observed covariates
-		ref      : array
-			Time period of reference period
-		trust    : bool
-			If we assume that the covariance matrix of observed covariate has the same scale that covariates
-		"""
-		self.centering = centering
-		self.ref       = ref
-		self.trust     = trust
-##}}}
-
 
 def clim2netcdf( clim , event , ofile , with_cx = False , with_co = False ):##{{{
 	with nc.Dataset( ofile , "w" , format = "NETCDF4" ) as ncFile:
