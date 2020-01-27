@@ -11,7 +11,7 @@
 #############
 
 from NSSEA.models.__NSAbstractModel import NSAbstractModel
-from NSSEA.models.__NSGaussianModel import NSGaussianModel
-from NSSEA.models.__NSGEVModel      import NSGEVModel
 from NSSEA.models.__NSGEVnsshModel  import NSGEVnsshModel
+from NSSEA.models.__Normal import Normal
+from NSSEA.models.__GEV    import GEV
 

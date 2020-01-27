@@ -18,7 +18,7 @@ from NSSEA.models.__NSAbstractModel import NSAbstractModel
 ## Classes ##
 #############
 
-class NSGaussianModel(NSAbstractModel):
+class Normal(NSAbstractModel):
 	"""
 	NSSEA.models.NSGaussianModel
 	============================

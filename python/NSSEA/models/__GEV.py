@@ -22,7 +22,7 @@ import SDFC.tools as sdt
 
 
 
-class NSGEVModel(NSAbstractModel):
+class GEV(NSAbstractModel):
 	"""
 	NSModel.NSGEVModel
 	==================
