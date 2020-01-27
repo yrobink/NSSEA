@@ -160,7 +160,7 @@ class Climatology: ##{{{
 ##}}}
 
 
-def clim2netcdf( clim , event , ofile , with_cx = False , with_co = False ):##{{{
+def to_netcdf( clim , event , ofile , constraints = None ):##{{{
 	with nc.Dataset( ofile , "w" , format = "NETCDF4" ) as ncFile:
 	
 		## Create dimensions
@@ -170,22 +170,25 @@ def clim2netcdf( clim , event , ofile , with_cx = False , with_co = False ):##{{
 		dim_models   = ncFile.createDimension( "models"   , clim.X.models.size            )
 		dim_ns_param = ncFile.createDimension( "ns_param" , clim.ns_params.ns_params.size )
 		dim_stat     = ncFile.createDimension( "stat"     , clim.stats.stats.size         )
+		dim_ref      = ncFile.createDimension( "ref"      , event.reference.size          )
 		
 		## Set dimensions as variables
-		nc_time     = ncFile.createVariable( "time"     , clim.X.time.dtype    , ("time",)     )
-		nc_sample   = ncFile.createVariable( "sample"   , clim.X.sample.dtype  , ("sample",)   )
-		nc_forcing  = ncFile.createVariable( "forcing"  , clim.X.forcing.dtype , ("forcing",)  )
-		nc_models   = ncFile.createVariable( "models"   , str                    , ("models",)   )
-		nc_ns_param = ncFile.createVariable( "ns_param" , str                    , ("ns_param",) )
-		nc_stat     = ncFile.createVariable( "stat"     , str                    , ("stat",)     )
+		nc_time      = ncFile.createVariable( "time"      , clim.X.time.dtype     , ("time",)     )
+		nc_sample    = ncFile.createVariable( "sample"    , str                   , ("sample",)   )
+		nc_forcing   = ncFile.createVariable( "forcing"   , str                   , ("forcing",)  )
+		nc_models    = ncFile.createVariable( "models"    , str                   , ("models",)   )
+		nc_ns_param  = ncFile.createVariable( "ns_param"  , str                   , ("ns_param",) )
+		nc_stat      = ncFile.createVariable( "stat"      , str                   , ("stat",)     )
+		nc_reference = ncFile.createVariable( "reference" , event.reference.dtype , ("ref",)      )
 		
 		## Set dimensions values
-		nc_time[:]     = clim.X.time.values
-		nc_sample[:]   = clim.X.sample.values
-		nc_forcing[:]  = clim.X.forcing.values
-		nc_models[:]   = clim.X.models.values
-		nc_ns_param[:] = clim.ns_params.ns_params.values
-		nc_stat[:]     = clim.stats.stats.values
+		nc_time[:]      = clim.X.time.values
+		nc_sample[:]    = clim.X.sample.values
+		nc_forcing[:]   = clim.X.forcing.values
+		nc_models[:]    = clim.X.models.values
+		nc_ns_param[:]  = clim.ns_params.ns_params.values
+		nc_stat[:]      = clim.stats.stats.values
+		nc_reference[:] = event.reference
 		
 		## Variables
 		nc_X         = ncFile.createVariable( "X"         , clim.X.dtype         , ("time","sample","forcing","models") )
@@ -197,19 +200,25 @@ def clim2netcdf( clim , event , ofile , with_cx = False , with_co = False ):##{{
 		nc_ns_params[:] = clim.ns_params.values
 		nc_stats[:]     = clim.stats.values
 		
-		## Attributes
-		ncFile.event_name = event.name
-		ncFile.event_time = str(event.time)
-		ncFile.event_anom = event.anom
-		ncFile.event_var  = event.var
-		ncFile.event_unit = event.unit
-		ncFile.event_side = event.side
+		## Attributes for event
+		ncFile.event_name     = event.name_event
+		ncFile.event_time     = str(event.time)
+		ncFile.event_anomaly  = event.anomaly
+		ncFile.event_variable = event.name_variable
+		ncFile.event_unit     = event.unit_variable
+		ncFile.event_side     = event.side
+		ncFile.event_type     = event.type_event
 		
-		ncFile.cx = str(with_cx)
-		ncFile.co = str(with_co)
+		## Attributes for constraints
+		constraints = constraints if constraints is not None else "No_constraints"
+		ncFile.constraints = constraints
+		
+		## Attributes for law
+		ncFile.ns_law = str(clim.ns_law)
+		
 ##}}}
 
-def netcdf2clim( ifile , ns_law ):##{{{
+def from_netcdf( ifile , ns_law = None , ns_law_args = None ):##{{{
 	with nc.Dataset( ifile , "r" ) as ncFile:
 		
 		## Extract dimensions
@@ -219,16 +228,21 @@ def netcdf2clim( ifile , ns_law ):##{{{
 		models   = ncFile.variables["models"][:]
 		ns_param = ncFile.variables["ns_param"][:]
 		stats    = ncFile.variables["stat"][:]
+		reference = ncFile.variables["reference"][:]
 		
-		## 
-		clim = Climatology( time , sample.size - 1 , models , ns_law )
+		
+		##  Set climatology
+		clim = Climatology( time , sample.size - 1 , models , ns_law , ns_law_args )
 		clim.n_ns_params = ns_param.size
 		clim.n_stats     = stats.size
 		clim.X         = xr.DataArray( ncFile.variables["X"][:]         , coords = [time,sample,forcing,models] , dims = ["time","sample","forcing","models"] )
 		clim.ns_params = xr.DataArray( ncFile.variables["ns_params"][:] , coords = [ns_param,sample,models]     , dims = ["ns_params","sample","models"]      )
 		clim.stats     = xr.DataArray( ncFile.variables["stats"][:]     , coords = [time,sample,stats,models]   , dims = ["time","sample","stats","models"]   )
+		
+		## Set event
+		event = Event( ncFile.event_name , reference.dtype.type(ncFile.event_time) , clim.X.dtype.type(ncFile.event_anomaly) , reference , ncFile.event_type , ncFile.event_side , ncFile.event_variable , ncFile.event_unit ) 
 	
-	return clim
+	return clim,event
 ##}}}
 
 
