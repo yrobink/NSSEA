@@ -211,6 +211,12 @@ class Normal(NSAbstractModel):
 		self.scale1 = self._norm.coef_[3]
 	##}}}
 	
+	def drawn_bayesian( self , Y , X  , n_mcmc_drawn , prior ):##{{{
+		norm = sd.Normal( method = "bayesian" )
+		norm.fit( Y , c_loc = X , l_loc = self._link["loc"] , c_scale = X , l_scale = self._link["scale"] , n_mcmc_drawn = n_mcmc_drawn , prior = prior )
+		return norm._info.draw
+	##}}}
+	
 	def set_covariable( self , X , t = None ):##{{{
 		"""
 		Set the covariable of the model.
