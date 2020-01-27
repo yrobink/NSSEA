@@ -63,7 +63,7 @@ class NSGEVnsshModel(NSAbstractModel):
 	## Constructor ##
 	#################
 	
-	def __init__( self , tails = "upper" , link_fct_scale = sdt.ExpLink() , link_fct_shape = sdt.LogitLink( -0.5 , 0.5 ) , method = "MLE" , verbose = False ): ##{{{
+	def __init__( self , tails = "upper" , link_scale = sdt.ExpLink() , link_shape = sdt.LogitLink( -0.5 , 0.5 ) , method = "MLE" , verbose = False ): ##{{{
 		"""
 		"""
 		NSAbstractModel.__init__(self)
@@ -104,7 +104,7 @@ class NSGEVnsshModel(NSAbstractModel):
 		default: dict
 			Arguments of __init__, elements of "arg" are kept
 		"""
-		default = { "tails" : "upper" , "link_fct_scale" : sdt.IdLinkFct() , "link_fct_shape" : sdt.IdLinkFct() , "method" : "MLE" , "verbose" : False }
+		default = { "tails" : "upper" , "link_scale" : sdt.IdLink() , "link_shape" : sdt.IdLink() , "method" : "MLE" , "verbose" : False }
 		if arg is not None:
 			for key in arg:
 				default[key] = arg[key]
