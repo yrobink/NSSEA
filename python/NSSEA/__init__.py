@@ -19,8 +19,8 @@ from NSSEA.__tools import ProgressBar
 ## Variables
 from NSSEA.__variables import Event
 from NSSEA.__variables import Climatology
-from NSSEA.__variables import clim2netcdf
-from NSSEA.__variables import netcdf2clim
+from NSSEA.__variables import to_netcdf
+from NSSEA.__variables import from_netcdf
 
 
 ## Covariate split
