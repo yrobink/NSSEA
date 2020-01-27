@@ -19,7 +19,6 @@ from NSSEA.__tools import ProgressBar
 ## Variables
 from NSSEA.__variables import Event
 from NSSEA.__variables import Climatology
-from NSSEA.__variables import CXParams
 from NSSEA.__variables import clim2netcdf
 from NSSEA.__variables import netcdf2clim
 
