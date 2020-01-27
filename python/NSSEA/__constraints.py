@@ -12,18 +12,18 @@
 import numpy as np
 import scipy.linalg as scl
 import scipy.optimize as sco
+import scipy.stats as sc
 import pandas as pd
 import xarray as xr
 
 from NSSEA.__tools import matrix_squareroot
+from NSSEA.__tools import ProgressBar
 
 from NSSEA.models.__Normal import Normal
 from NSSEA.models.__GEV    import GEV
 
-
 from SDFC.tools import IdLink
 from SDFC.tools import ExpLink
-
 
 import SDFC as sd
 
@@ -61,6 +61,10 @@ class GenericConstraint: ##{{{
 ###############
 ## Functions ##
 ###############
+
+## CX constraints
+##===============
+
 
 def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = False , verbose = False ): ##{{{
 	"""
@@ -165,6 +169,9 @@ def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = Fa
 	return clim
 ##}}}
 
+
+## C0 constraints
+##===============
 
 def constraints_C0_Normal( climIn , Yo , verbose = False ): ##{{{
 	if verbose: print( "Constraints C0 (Normal)" , end = "\r" )
@@ -522,5 +529,32 @@ def constraints_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): #
 	return climIn.copy()
 ##}}}
 
+
+## Bayesian constraint
+##====================
+
+def constraints_bayesian( clim , Yo , n_mcmc_drawn = 10000 , delay = 5000 , verbose = False ):##{{{
+	
+	pb = ProgressBar( "Constraints Bayesian" , clim.n_sample + 1 )
+	
+	climCB = clim.copy()
+	
+	## Define prior
+	n_params = clim.ns_law.params_info()["size"]
+	prior_law = sc.multivariate_normal( mean = climCB.mm_params.mean[-n_params:] , cov = climCB.mm_params.cov[-n_params:,-n_params:] , allow_singular = True )
+	
+	for s in clim.X.sample:
+		if verbose: pb.print()
+		X   = clim.X.loc[Yo.index,s,"all","multi"].values.squeeze()
+		law = clim.ns_law(**clim.ns_law_args)
+		draw = law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law )
+		climCB.ns_params.loc[:,s,"multi"] = draw[np.random.randint(delay,n_mcmc_drawn),:]
+	
+	climCB.ns_params.loc[:,"be","multi"] = climCB.ns_params[:,1:,:].loc[:,:,"multi"].median( dim = "sample" )
+	
+	if verbose: pb.end()
+	
+	return climCB
+##}}}
 
 
