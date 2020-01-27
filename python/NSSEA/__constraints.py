@@ -21,8 +21,8 @@ from NSSEA.models.__NSGaussianModel import NSGaussianModel
 from NSSEA.models.__NSGEVModel import NSGEVModel
 
 
-from SDFC.tools import IdLinkFct
-from SDFC.tools import ExpLinkFct
+from SDFC.tools import IdLink
+from SDFC.tools import ExpLink
 
 
 import SDFC as sd
@@ -405,7 +405,7 @@ def constraints_C0_GEV_exp( climIn , Yo , event , verbose = False ): ##{{{
 	Yo_GEV_stats = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs - ns_params.loc["loc0",:,:]) / np.exp( ns_params.loc["scale1",:,:] * Xo_bs ) ## Hypothesis : follow GEV(0,scale0,shape)
 	for s in sample:
 		for m in models:
-			gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_scale = ExpLinkFct() , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
+			gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_scale = ExpLink() , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
 			gev.fit( Yo_GEV_stats.loc[:,s,m].values , floc = 0 )
 			ns_params.loc["scale0",s,m] = gev.coef_[0]
 			ns_params.loc["shape",s,m]  = gev.coef_[1]
@@ -436,7 +436,7 @@ def constraints_C0_GEV_exp_bound_valid( climIn , Yo , event , verbose = False ):
 	ns_params = clim.ns_params
 	
 	
-	gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_scale = ExpLinkFct() , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
+	gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_scale = ExpLink() , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
 	for m in models:
 		X   = clim.X.loc[time_Yo,"be","all",m].values.squeeze()
 		Ybs = Yo.values.squeeze()
@@ -502,17 +502,17 @@ def constraints_C0( climIn , Yo , event , gev_bound_valid = False , verbose = Fa
 	"""
 	
 	if climIn.ns_law == NSGaussianModel:
-		if isinstance(climIn.ns_law_args["link_fct_scale"],IdLinkFct):
+		if isinstance(climIn.ns_law_args["link_fct_scale"],IdLink):
 			return constraints_C0_Gaussian( climIn , Yo , event , verbose )
-		elif isinstance(climIn.ns_law_args["link_fct_scale"],ExpLinkFct):
+		elif isinstance(climIn.ns_law_args["link_fct_scale"],ExpLink):
 			return constraints_C0_Gaussian_exp( climIn , Yo , event , verbose )
 	if climIn.ns_law == NSGEVModel:
-		if isinstance(climIn.ns_law_args["link_fct_scale"],IdLinkFct):
+		if isinstance(climIn.ns_law_args["link_fct_scale"],IdLink):
 			if gev_bound_valid:
 				return constraints_C0_GEV_bound_valid( climIn , Yo , event , verbose )
 			else:
 				return constraints_C0_GEV( climIn , Yo , event , verbose )
-		elif isinstance(climIn.ns_law_args["link_fct_scale"],ExpLinkFct):
+		elif isinstance(climIn.ns_law_args["link_fct_scale"],ExpLink):
 			if gev_bound_valid:
 				return constraints_C0_GEV_exp_bound_valid( climIn , Yo , event , verbose )
 			else:

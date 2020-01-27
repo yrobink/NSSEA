@@ -63,7 +63,7 @@ class NSGEVnsshModel(NSAbstractModel):
 	## Constructor ##
 	#################
 	
-	def __init__( self , tails = "upper" , link_fct_scale = sdt.ExpLinkFct() , link_fct_shape = sdt.LogitLinkFct( -0.5 , 0.5 ) , method = "MLE" , verbose = False ): ##{{{
+	def __init__( self , tails = "upper" , link_fct_scale = sdt.ExpLink() , link_fct_shape = sdt.LogitLink( -0.5 , 0.5 ) , method = "MLE" , verbose = False ): ##{{{
 		"""
 		"""
 		NSAbstractModel.__init__(self)
