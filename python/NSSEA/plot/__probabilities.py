@@ -33,8 +33,8 @@ def probabilities( clim , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 	
 	Arguments
 	---------
-	stats     : xarray
-		NSSEA.Climatology.stats
+	clim      : NSSEA.Climatology
+		Climatology with stats computed
 	event     : NSSEA.Event
 		Event variable
 	ofile     : str
