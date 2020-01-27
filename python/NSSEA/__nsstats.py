@@ -19,7 +19,7 @@ from NSSEA.__tools import ProgressBar
 ## Functions ##
 ###############
 
-def extremes_stats( clim , event , threshold_by_world = False , verbose = False , tol = sys.float_info.epsilon ):##{{{
+def extremes_stats( clim , event , verbose = False , tol = sys.float_info.epsilon ):##{{{
 	"""
 	NSSEA.extremes_stats
 	====================
@@ -31,8 +31,6 @@ def extremes_stats( clim , event , threshold_by_world = False , verbose = False 
 		A clim variable
 	event  : NSSEA.Event
 		An event variable
-	threshold_by_world: bool
-		If False, the treshold is the same for the factual and counter-factual world, otherwise different threshold is used
 	verbose: bool
 		Print state of execution or not
 	tol    : float
@@ -81,34 +79,27 @@ def extremes_stats( clim , event , threshold_by_world = False , verbose = False 
 			
 			## Find threshold
 			law.set_covariable( clim.X.loc[:,s,"all",m].values , time )
-			if event.def_type == "threshold":
-				threshold = np.zeros(n_time) + np.mean( law.meant(event.ref_anom) ) + event.anom
+			if event.type_event == "threshold":
+				threshold = np.zeros(n_time) + np.mean( law.meant(event.reference) ) + event.anomaly
 			else:
-				threshold = np.zeros(n_time) + event.anom
+				threshold = np.zeros(n_time) + event.anomaly
 			
 			## Find pall
 			stats.loc[:,s,"pall",m] = law.sf( threshold , time ) if upper_side else law.cdf( threshold , time )
 			
 			## Find probability of the event in factual world
-			pf = np.zeros(n_time) + ( law.sf( np.array([threshold[0]]) , np.array([event_time]) ) if upper_side else law.cdf( np.array([threshold[0]]) , np.array([event_time]) ) )
-#			pf[ np.logical_not(pf>0) ] = tol
-#			pf[ np.logical_not(pf<1) ] = 1. - tol
+			pf = np.zeros(n_time) + ( law.sf( np.array([threshold[0]]) , np.array([event.time]) ) if upper_side else law.cdf( np.array([threshold[0]]) , np.array([event.time]) ) )
 			
 			## I1
 			stats.loc[:,s,"iall",m] = law.isf( pf , time ) if upper_side else law.icdf( pf , time )
 			
 			## Find pnat
 			law.set_covariable( clim.X.loc[:,s,"nat",m].values , time )
-			if threshold_by_world:
-	 			threshold = np.zeros(n_time) + np.mean( law.meant(event.ref_anom) ) + event.anom
 			stats.loc[:,s,"pnat",m] = law.sf( threshold , time ) if upper_side else law.cdf( threshold , time )
 			
 			## I0
 			stats.loc[:,s,"inat",m] = law.isf( pf , time ) if upper_side else law.icdf( pf , time )
-			
 	
-#	stats.loc[:,:,"pall",:] = stats.loc[:,:,"pall",:].where( stats.loc[:,:,"pall",:] > tol , tol )
-#	stats.loc[:,:,"pnat",:] = stats.loc[:,:,"pnat",:].where( stats.loc[:,:,"pnat",:] > tol , tol )
 	
 	## RR
 	stats.loc[:,:,"rr",:] = stats.loc[:,:,"pall",:] / stats.loc[:,:,"pnat",:]
