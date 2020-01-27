@@ -41,4 +41,4 @@ from NSSEA.__nsstats  import stats_relative_event
 ## Constraints
 from NSSEA.__constraints import constraints_CX
 from NSSEA.__constraints import constraints_C0
-
+from NSSEA.__constraints import constraints_bayesian
