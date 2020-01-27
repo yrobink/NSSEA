@@ -156,6 +156,9 @@ def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = Fa
 		clim.X.loc[:,:,:,m] = cx_sample.values
 	
 	clim.X.loc[:,:,"ant",:] = clim.X.loc[:,:,"all",:] - clim.X.loc[:,:,"nat",:]
+	clim.mm_params.mean = gc.mean
+	clim.mm_params.cov  = gc.cov
+	clim.mm_params.std  = gc.std
 	
 	if verbose: print( "Constraints CX (Done)" )
 	
