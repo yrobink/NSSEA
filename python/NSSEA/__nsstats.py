@@ -115,7 +115,7 @@ def extremes_stats( clim , event , verbose = False , tol = sys.float_info.epsilo
 	return clim
 ##}}}
 
-def RR_correction( S , tol = 1e-10 ):##{{{
+def PR_correction( S , tol = 1e-10 ):##{{{
 	
 	## 
 	idx_all = S.loc[:,:,"pF",:] < tol

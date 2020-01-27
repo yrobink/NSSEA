@@ -35,7 +35,7 @@ from NSSEA.__covariates import gam_decomposition
 from NSSEA.__nsfit    import nslaw_fit
 from NSSEA.__mm_infer import infer_multi_model
 from NSSEA.__nsstats  import extremes_stats
-from NSSEA.__nsstats  import RR_correction
+#from NSSEA.__nsstats  import RR_correction
 from NSSEA.__nsstats  import stats_relative_event
 
 ## Constraints
