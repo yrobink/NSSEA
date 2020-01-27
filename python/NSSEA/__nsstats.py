@@ -45,12 +45,12 @@ def extremes_stats( clim , event , verbose = False , tol = sys.float_info.epsilo
 	-------------------
 	The variable clim.stats is an xarray with dimensions (n_time,n_sample+1,n_stats,n_models), stats available are:
 	
-	pall: Probability of event.anom at time event.time in factual world
-	pnat: Probability of event.anom at time event.time in counter factual world
-	rr  : Risk ratio (pall / pnat)
-	iall: Event with same probability than the probability of event.anom at each time in factual world
-	inat: Event with same probability than the probability of event.anom at each time in counter factual world
-	di  : iall - inat
+	pF: Probability of event.anom at time event.time in factual world
+	pC: Probability of event.anom at time event.time in counter factual world
+	PR: Probability ratio (pF / pC)
+	IF: Event with same probability than the probability of event.anom at each time in factual world
+	IC: Event with same probability than the probability of event.anom at each time in counter factual world
+	dI: IF - IC
 	
 	"""
 	## Usefull variables
@@ -66,7 +66,7 @@ def extremes_stats( clim , event , verbose = False , tol = sys.float_info.epsilo
 	
 	
 	## Output
-	stats = xr.DataArray( np.zeros( (n_time,n_sample + 1,n_stats,n_models) ) , coords = [clim.X.time , clim.X.sample , ["pnat","pall","rr","inat","iall","di"] , clim.X.models ] , dims = ["time","sample","stats","models"] )
+	stats = xr.DataArray( np.zeros( (n_time,n_sample + 1,n_stats,n_models) ) , coords = [clim.X.time , clim.X.sample , ["pC","pF","PR","IC","IF","dI"] , clim.X.models ] , dims = ["time","sample","stats","models"] )
 	
 	## 
 	law = clim.ns_law( **clim.ns_law_args )
@@ -84,30 +84,30 @@ def extremes_stats( clim , event , verbose = False , tol = sys.float_info.epsilo
 			else:
 				threshold = np.zeros(n_time) + event.anomaly
 			
-			## Find pall
-			stats.loc[:,s,"pall",m] = law.sf( threshold , time ) if upper_side else law.cdf( threshold , time )
+			## Find pF
+			stats.loc[:,s,"pF",m] = law.sf( threshold , time ) if upper_side else law.cdf( threshold , time )
 			
 			## Find probability of the event in factual world
 			pf = np.zeros(n_time) + ( law.sf( np.array([threshold[0]]) , np.array([event.time]) ) if upper_side else law.cdf( np.array([threshold[0]]) , np.array([event.time]) ) )
 			
 			## I1
-			stats.loc[:,s,"iall",m] = law.isf( pf , time ) if upper_side else law.icdf( pf , time )
+			stats.loc[:,s,"IF",m] = law.isf( pf , time ) if upper_side else law.icdf( pf , time )
 			
-			## Find pnat
+			## Find pC
 			law.set_covariable( clim.X.loc[:,s,"nat",m].values , time )
-			stats.loc[:,s,"pnat",m] = law.sf( threshold , time ) if upper_side else law.cdf( threshold , time )
+			stats.loc[:,s,"pC",m] = law.sf( threshold , time ) if upper_side else law.cdf( threshold , time )
 			
 			## I0
-			stats.loc[:,s,"inat",m] = law.isf( pf , time ) if upper_side else law.icdf( pf , time )
+			stats.loc[:,s,"IC",m] = law.isf( pf , time ) if upper_side else law.icdf( pf , time )
 	
 	
 	## RR
-	stats.loc[:,:,"rr",:] = stats.loc[:,:,"pall",:] / stats.loc[:,:,"pnat",:]
-#	stats.loc[:,:,"rr",:] = stats.loc[:,:,"rr",:].where( stats.loc[:,:,"rr",:] > 0 , np.inf )
+	stats.loc[:,:,"PR",:] = stats.loc[:,:,"pF",:] / stats.loc[:,:,"pC",:]
+#	stats.loc[:,:,"PR",:] = stats.loc[:,:,"PR",:].where( stats.loc[:,:,"PR",:] > 0 , np.inf )
 	
 	
 	## deltaI
-	stats.loc[:,:,"di",:] = stats.loc[:,:,"iall",:] - stats.loc[:,:,"inat",:]
+	stats.loc[:,:,"dI",:] = stats.loc[:,:,"IF",:] - stats.loc[:,:,"IC",:]
 	
 	clim.stats = stats
 	if verbose: pb.end()
@@ -118,35 +118,35 @@ def extremes_stats( clim , event , verbose = False , tol = sys.float_info.epsilo
 def RR_correction( S , tol = 1e-10 ):##{{{
 	
 	## 
-	idx_all = S.loc[:,:,"pall",:] < tol
-	idx_nat = S.loc[:,:,"pnat",:] < tol
+	idx_all = S.loc[:,:,"pF",:] < tol
+	idx_nat = S.loc[:,:,"pC",:] < tol
 	cidx_all = np.logical_not(idx_all)
 	cidx_nat = np.logical_not(idx_nat)
 	
-	S.loc[:,:,"pall",:] = S.loc[:,:,"pall",:].where( cidx_all , np.nan )
-	S.loc[:,:,"pnat",:] = S.loc[:,:,"pnat",:].where( cidx_nat , np.nan )
+	S.loc[:,:,"pF",:] = S.loc[:,:,"pF",:].where( cidx_all , np.nan )
+	S.loc[:,:,"pC",:] = S.loc[:,:,"pC",:].where( cidx_nat , np.nan )
 	
 	## Remove all problematic values from RR
 	idx = np.logical_and( cidx_all , cidx_nat )
-	S.loc[:,:,"rr",:]   = S.loc[:,:,"rr",:].where( idx , np.nan )
+	S.loc[:,:,"PR",:]   = S.loc[:,:,"PR",:].where( idx , np.nan )
 	
-	## pall > 0, pnat > 0, Don't touch!!!
+	## pF > 0, pC > 0, Don't touch!!!
 	
-	## pall > 0, pnat = 0
+	## pF > 0, pC = 0
 	idx = np.logical_not( np.logical_and( cidx_all , idx_nat ) )
-	S.loc[:,:,"rr",:]   = S.loc[:,:,"rr",:].where( idx , np.Inf )
+	S.loc[:,:,"PR",:]   = S.loc[:,:,"PR",:].where( idx , np.Inf )
 	
-	## pall = 0, pnat > 0
+	## pF = 0, pC > 0
 	idx = np.logical_not( np.logical_and( idx_all , cidx_nat ) )
-	S.loc[:,:,"rr",:]   = S.loc[:,:,"rr",:].where( idx , 0. )
+	S.loc[:,:,"PR",:]   = S.loc[:,:,"PR",:].where( idx , 0. )
 	
-	## pall = 0, pnat = 0, here we replace by 1
+	## pF = 0, pC = 0, here we replace by 1
 	idx = np.logical_not( np.logical_and( idx_all , idx_nat ) )
-	S.loc[:,:,"rr",:] = S.loc[:,:,"rr",:].where( idx , 1 )
+	S.loc[:,:,"PR",:] = S.loc[:,:,"PR",:].where( idx , 1 )
 	
 	## 
-	S.loc[:,:,"pall",:] = S.loc[:,:,"pall",:].where( cidx_all , 0 )
-	S.loc[:,:,"pnat",:] = S.loc[:,:,"pnat",:].where( cidx_nat , 0 )
+	S.loc[:,:,"pF",:] = S.loc[:,:,"pF",:].where( cidx_all , 0 )
+	S.loc[:,:,"pC",:] = S.loc[:,:,"pC",:].where( cidx_nat , 0 )
 	
 	return S
 ##}}}
@@ -169,8 +169,8 @@ def stats_relative_event( stats , time_event ):##{{{
 		Similar to clim.stats
 	"""
 	statsEvent = xr.zeros_like(stats)
-	statsEvent[:,:,:3,:] = stats[:,:,:3,:] / stats.loc[time_event,:,["pall","pnat","rr"],:]
-	statsEvent[:,:,3:,:] = stats[:,:,3:,:] - stats.loc[time_event,:,["iall","inat","di"],:]
+	statsEvent[:,:,:3,:] = stats[:,:,:3,:] / stats.loc[time_event,:,["pF","pC","PR"],:]
+	statsEvent[:,:,3:,:] = stats[:,:,3:,:] - stats.loc[time_event,:,["IF","IC","dI"],:]
 	return statsEvent
 ##}}}
 
