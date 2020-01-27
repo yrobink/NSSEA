@@ -26,8 +26,8 @@ from NSSEA.__variables import netcdf2clim
 
 ## Covariate split
 from NSSEA.__covariates import EBM
-from NSSEA.__covariates import XSplitted
 from NSSEA.__covariates import gam_decomposition
+#from NSSEA.__covariates import XSplitted
 #from NSSEA.__covariates import gam_decomposition_old
 #from NSSEA.__covariates import gam_decomposition_old_old
 #from NSSEA.__covariates import gam_decomposition_old_old_old

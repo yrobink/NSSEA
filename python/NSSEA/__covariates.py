@@ -75,7 +75,7 @@ class EBM: ##{{{
 		out = ebm[:,sample]
 		if fix_first is not None:
 			out[:,0] = ebm[:,fix_first]
-		return out
+		return pd.DataFrame( out , index = t )
 	
 	def predict( self , t , I ):
 		"""
@@ -123,16 +123,6 @@ class EBM: ##{{{
 		return np.delete( res , 0 , 0 )
 ##}}}
 
-class XSplitted: ##{{{
-	def __init__( self , X , X_event , X_center ):
-		self.X        = X
-		self.X_event  = X_event
-		self.X_center = X_center
-	
-	def has_center(self):
-		return self.X_center is not None
-##}}}
-
 
 ###############
 ## Functions ##
@@ -164,7 +154,7 @@ def fit_gam_with_fix_dof( X , Y , dof ):##{{{
 	return gam_model
 ##}}}
 
-def gam_decomposition( lX , Enat , time_center = None , dof = 7 , Sigma = None , verbose = False ): ##{{{
+def gam_decomposition( lX , Xnat , dof = 7 , verbose = False ): ##{{{
 	"""
 	NSSEA.gam_decomposition
 	=======================
@@ -175,7 +165,7 @@ def gam_decomposition( lX , Enat , time_center = None , dof = 7 , Sigma = None ,
 	"""
 	models   = [ lx.columns[0] for lx in lX]
 	n_models = len(models)
-	n_sample = Enat.shape[1] - 1
+	n_sample = Xnat.shape[1] - 1
 	time     = np.unique( lX[0].index )
 	n_time   = time.size
 	time_l   = np.repeat( time[0] , n_time )
@@ -192,12 +182,12 @@ def gam_decomposition( lX , Enat , time_center = None , dof = 7 , Sigma = None ,
 	pb = ProgressBar( "GAM decomposition" , n_models * n_sample )
 	for i in range(n_models):
 		
-		Xl    = Enat.values[:,0]
+		Xl    = Xnat.values[:,0]
 		x_all = np.stack( (time  ,Xl) , -1 )
 		x_nat = np.stack( (time_l,Xl) , -1 )
 		
 		## GAM decomposition
-		gam_model = fit_gam_with_fix_dof( np.stack( (lX[i].index,Enat.loc[lX[i].index,0].values) , -1 ) , lX[i].values , dof )
+		gam_model = fit_gam_with_fix_dof( np.stack( (lX[i].index,Xnat.loc[lX[i].index,0].values) , -1 ) , lX[i].values , dof )
 		
 		## prediction
 		X.values[:,0,0,i] = gam_model.predict( x_all )
@@ -209,7 +199,7 @@ def gam_decomposition( lX , Enat , time_center = None , dof = 7 , Sigma = None ,
 		for j in range(n_sample):
 			if verbose: pb.print()
 			
-			Xl    = Enat.values[:,j+1]
+			Xl    = Xnat.values[:,j+1]
 			x_all = np.stack( (time  ,Xl) , -1 )
 			x_nat = np.stack( (time_l,Xl) , -1 )
 			
@@ -223,13 +213,32 @@ def gam_decomposition( lX , Enat , time_center = None , dof = 7 , Sigma = None ,
 	
 	X.loc[:,:,"ant",:] = X.loc[:,:,"all",:] - X.loc[:,:,"nat",:]
 	
-	if time_center is not None:
-		X_event = X.loc[time_center,:,"all",:]
-		X_center = X - X_event
-	
 	if verbose: pb.end()
 	
-	return XSplitted( X , X_event , X_center )
+	return X
+	
+#	if time_center is not None:
+#		X_event = X.loc[time_center,:,"all",:]
+#		X_center = X - X_event
+#	
+#	
+#	return XSplitted( X , X_event , X_center )
+##}}}
+
+
+
+#########
+## Old ##
+#########
+
+class XSplitted: ##{{{
+	def __init__( self , X , X_event , X_center ):
+		self.X        = X
+		self.X_event  = X_event
+		self.X_center = X_center
+	
+	def has_center(self):
+		return self.X_center is not None
 ##}}}
 
 def gam_decomposition_classic( lX , Enat , Sigma = None , time_center = None , n_splines = None , gam_lam = None , verbose = False ): ##{{{
@@ -305,8 +314,6 @@ def gam_decomposition_classic( lX , Enat , Sigma = None , time_center = None , n
 	
 	return XSplitted( X , X_event , X_center )
 ##}}}
-
-
 
 def gam_decomposition_old_old_old( Xd , Enat , Sigma = None , time_center = None , gam_dof = 7 , verbose = False ): ##{{{
 	"""
