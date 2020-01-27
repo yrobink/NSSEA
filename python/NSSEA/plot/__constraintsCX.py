@@ -26,8 +26,7 @@ from NSSEA.plot.__linkParams import LinkParams
 ## Functions ##
 ###############
 
-
-def constraints_CX( clim , climCX , Xo , cx_params , ofile , ci = 0.05 , verbose = False ):
+def constraints_CX( clim , climCX , Xo , time_reference , ofile , ci = 0.05 , verbose = False ):
 	"""
 	NSSEA.plot.constraints_CX
 	=========================
@@ -55,9 +54,9 @@ def constraints_CX( clim , climCX , Xo , cx_params , ofile , ci = 0.05 , verbose
 	X   = clim.X.loc[:,:,"all","multi"]
 	cX = climCX.X.loc[:,:,"all","multi"]
 	
-	X  = X  - X.loc[cx_params.ref,:].mean( dim = "time" )
-	cX = cX - cX.loc[cx_params.ref,:].mean( dim = "time" )
-	Xo = Xo - Xo.loc[cx_params.ref].mean()
+	X  = X  -  X.loc[time_reference,:].mean( dim = "time" )
+	cX = cX - cX.loc[time_reference,:].mean( dim = "time" )
+	Xo = Xo - Xo.loc[time_reference].mean()
 	
 	Xl  = X[:,1:].quantile(  ci / 2.      , dim = "sample" )
 	Xu  = X[:,1:].quantile(  1. - ci / 2. , dim = "sample" )
@@ -78,4 +77,3 @@ def constraints_CX( clim , climCX , Xo , cx_params , ofile , ci = 0.05 , verbose
 	plt.savefig( ofile )
 	
 	if verbose: print( "Plot constraints CX (Done)" )
-
