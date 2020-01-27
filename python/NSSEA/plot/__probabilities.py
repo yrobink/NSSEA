@@ -24,12 +24,12 @@ from NSSEA.plot.__linkParams import LinkParams
 ## Functions ##
 ###############
 
-def probabilities( stats , event , ofile , ci = 0.05 , verbose = False ): ##{{{
+def probabilities( clim , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 	"""
 	NSSEA.plot.probabilities
 	========================
 	
-	Plot probabilities (pall,pnat,rr) along time
+	Plot probabilities (pF,pC,PR) along time
 	
 	Arguments
 	---------
@@ -47,6 +47,7 @@ def probabilities( stats , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 	
 	if verbose: print( "Plot probabilities" , end = "\r" )
 	
+	stats = clim.stats
 	statsl = stats[:,1:,:3,:].quantile( ci / 2.      , dim = "sample" )
 	statsu = stats[:,1:,:3,:].quantile( 1. - ci / 2. , dim = "sample" )
 	
@@ -60,14 +61,14 @@ def probabilities( stats , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 		fig = plt.figure( figsize = ( fs * ncol , 0.4 * fs * nrow ) )
 		
 		ax = fig.add_subplot( nrow , ncol , 1 )
-		ax.plot( stats.time , lp.fp(stats.loc[:,"be","pall",m]) , color = "red" , linestyle = "-" , marker = "" )
-		ax.fill_between( stats.time , lp.fp(statsl.loc[:,"pall",m]) , lp.fp(statsu.loc[:,"pall",m]) , color = "red" , alpha = 0.5 )
+		ax.plot( stats.time , lp.fp(stats.loc[:,"be","pF",m]) , color = "red" , linestyle = "-" , marker = "" )
+		ax.fill_between( stats.time , lp.fp(statsl.loc[:,"pF",m]) , lp.fp(statsu.loc[:,"pF",m]) , color = "red" , alpha = 0.5 )
 		ax.set_ylim( (lp.p.values.min(),lp.p.values.max()) )
 		ax.set_yticks( lp.p.values )
 		ax.set_yticklabels( lp.p.names )
 		ax.set_title( "{}".format( str(m.values).replace("_"," ") ) )
 		ax.set_xticks([])
-		ax.set_ylabel( r"$p_1(t)$" )
+		ax.set_ylabel( r"$p_\mathrm{F}(t)$" )
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()
 		ax.plot( [event.time,event.time] , ylim          , linestyle = "--" , marker = "" , color = "black" )
@@ -76,13 +77,13 @@ def probabilities( stats , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 		
 		
 		ax = fig.add_subplot( nrow , ncol , 2 )
-		ax.plot( stats.time , lp.fp(stats.loc[:,"be","pnat",m]) , color = "red" , linestyle = "-" , marker = "" )
-		ax.fill_between( stats.time , lp.fp(statsl.loc[:,"pnat",m]) , lp.fp(statsu.loc[:,"pnat",m]) , color = "red" , alpha = 0.5 )
+		ax.plot( stats.time , lp.fp(stats.loc[:,"be","pC",m]) , color = "red" , linestyle = "-" , marker = "" )
+		ax.fill_between( stats.time , lp.fp(statsl.loc[:,"pC",m]) , lp.fp(statsu.loc[:,"pC",m]) , color = "red" , alpha = 0.5 )
 		ax.set_ylim( (lp.p.values.min(),lp.p.values.max()) )
 		ax.set_yticks( lp.p.values )
 		ax.set_yticklabels( lp.p.names )
 		ax.set_xticks([])
-		ax.set_ylabel( r"$p_0(t)$" )
+		ax.set_ylabel( r"$p_\mathrm{C}(t)$" )
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()
 		ax.plot( [event.time,event.time] , ylim          , linestyle = "--" , marker = "" , color = "black" )
@@ -91,13 +92,13 @@ def probabilities( stats , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 		
 		
 		ax = fig.add_subplot( nrow , ncol , 3 )
-		ax.plot( stats.time , lp.frr(stats.loc[:,"be","rr",m]) , color = "red" , linestyle = "-" , marker = "" )
-		ax.fill_between( stats.time , lp.frr(statsl.loc[:,"rr",m]) , lp.frr(statsu.loc[:,"rr",m]) , color = "red" , alpha = 0.5 )
+		ax.plot( stats.time , lp.frr(stats.loc[:,"be","PR",m]) , color = "red" , linestyle = "-" , marker = "" )
+		ax.fill_between( stats.time , lp.frr(statsl.loc[:,"PR",m]) , lp.frr(statsu.loc[:,"PR",m]) , color = "red" , alpha = 0.5 )
 		ax.set_ylim( (lp.rr.values.min(),lp.rr.values.max()) )
 		ax.set_yticks( lp.rr.values )
 		ax.set_yticklabels( lp.rr.names )
 		ax.set_xlabel( r"$\mathrm{Time}$" )
-		ax.set_ylabel( r"$\mathrm{RR}(t)$" )
+		ax.set_ylabel( r"$\mathrm{PR}(t)$" )
 		ax2 = fig.add_subplot( nrow , ncol , 3 , sharex = ax , frameon = False )
 		ax2.yaxis.tick_right()
 		ax2.set_yticks( lp.rr.values )
