@@ -62,7 +62,7 @@ class GenericConstraint: ##{{{
 ## Functions ##
 ###############
 
-def constraints_CX( climIn , Xo , cx_params , Sigma = None , verbose = False ): ##{{{
+def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = False , verbose = False ): ##{{{
 	"""
 	NSSEA.constraintsCX
 	===================
@@ -74,17 +74,17 @@ def constraints_CX( climIn , Xo , cx_params , Sigma = None , verbose = False ): 
 		clim variable
 	Xo       : pandas.DataFrame
 		Covariate observed
-	cx_params: NSSEA.CXParams
-		Parameters
-	Sigma    : Matrix
-		Auto covariance matrix. If None, identity is used
+	time_reference: array
+		Reference time period of Xo
+	assume_good_scale : boolean
+		If we assume than observations and multi-model have the same scale
 	verbose  : bool
 		Print (or not) state of execution
 	
 	Returns
 	-------
 	clim : NSSEA.Climatology
-		A COPY of climIn constrained by Xo. coffeIn is NOT MODIFIED.
+		A COPY of climIn constrained by Xo. climIn is NOT MODIFIED.
 	"""
 	
 	if verbose: print( "Constraints CX" , end = "\r" )
@@ -99,16 +99,14 @@ def constraints_CX( climIn , Xo , cx_params , Sigma = None , verbose = False ): 
 	n_ns_params = clim.n_ns_params
 	n_sample    = clim.n_sample
 	sample      = clim.X.sample
-	Sigma       = Sigma if Sigma is not None else np.identity(n_time)
-	Sigma       = xr.DataArray( Sigma , coords = [time,time] , dims = ["time1","time2"] )
 	
 	## Projection matrix H
 	cx = xr.DataArray( np.zeros( (n_time,n_time) )       , coords = [time,time]       , dims = ["time1","time2"] )
 	cy = xr.DataArray( np.zeros( (n_time_Xo,n_time_Xo) ) , coords = [time_Xo,time_Xo] , dims = ["time1","time2"] )
-	if not cx_params.trust:
-		cx.loc[:,cx_params.ref] = 1. / cx_params.ref.size
-	if not cx_params.trust:
-		cy.loc[:,cx_params.ref] = 1. / cx_params.ref.size
+	if not assume_good_scale:
+		cx.loc[:,time_reference] = 1. / time_reference.size
+	if not assume_good_scale:
+		cy.loc[:,time_reference] = 1. / time_reference.size
 	
 	centerX  = np.identity(n_time)    - cx.values
 	centerY  = np.identity(n_time_Xo) - cy.values
@@ -121,10 +119,10 @@ def constraints_CX( climIn , Xo , cx_params , Sigma = None , verbose = False ): 
 	X  = clim.mm_params.mean
 	SX = clim.mm_params.cov
 	Y  = np.ravel(centerY @ Xo)
-	SY = centerY @ Sigma.loc[time_Xo,time_Xo].values @ centerY.T
+	SY = centerY @ centerY.T
 	
 	## Rescale SY
-	if not cx_params.trust:
+	if not assume_good_scale:
 		res = Y - H @ X
 		K   = H @ SX @ H.T
 		
