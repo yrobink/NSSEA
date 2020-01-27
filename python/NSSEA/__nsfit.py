@@ -46,8 +46,6 @@ def nslaw_fit( lY , clim , verbose = False ):
 	ns_law      = clim.ns_law
 	ns_law_args = clim.ns_law_args
 	
-#	n_ns_params        = 4
-#	ns_params_names    = [ "loc0" , "loc1" , "scale0" , "scale1" ]
 	ns_params_info     = ns_law.params_info(ns_law_args)
 	n_ns_params        = ns_params_info["size"]
 	ns_params_names    = ns_params_info["names"]
@@ -68,8 +66,8 @@ def nslaw_fit( lY , clim , verbose = False ):
 		for j in range(n_sample):
 			if verbose: pb.print()
 			
-			test = False
-			while not test:
+			fit_is_valid = False
+			while not fit_is_valid:
 			
 				idx = np.random.choice( tY.size , tY.size , replace = True )
 				
@@ -78,7 +76,7 @@ def nslaw_fit( lY , clim , verbose = False ):
 				Xs = clim.X.loc[tYs,sample[j+1],"all",models[i]].values
 				law = ns_law(**ns_law_args)
 				law.fit(Ys,Xs)
-				test = law.check( Y.values.squeeze() , X.values.squeeze() , np.arange( 0 , tY.size , 1 ) )
+				fit_is_valid = law.check( Y.values.squeeze() , X.values.squeeze() , np.arange( 0 , tY.size , 1 ) )
 			clim.ns_params.loc[:,sample[j+1],models[i]] = law.get_params()
 	
 	if verbose: pb.end()
