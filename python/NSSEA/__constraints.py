@@ -17,8 +17,8 @@ import xarray as xr
 
 from NSSEA.__tools import matrix_squareroot
 
-from NSSEA.models.__NSGaussianModel import NSGaussianModel
-from NSSEA.models.__NSGEVModel import NSGEVModel
+from NSSEA.models.__Normal import Normal
+from NSSEA.models.__GEV    import GEV
 
 
 from SDFC.tools import IdLink
@@ -163,8 +163,8 @@ def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = Fa
 ##}}}
 
 
-def constraints_C0_Gaussian( climIn , Yo , event , verbose = False ): ##{{{
-	if verbose: print( "Constraints C0 (Gaussian)" , end = "\r" )
+def constraints_C0_Normal( climIn , Yo , verbose = False ): ##{{{
+	if verbose: print( "Constraints C0 (Normal)" , end = "\r" )
 	
 	clim  = climIn.copy()
 	n_models  = clim.X.models.size
@@ -208,13 +208,13 @@ def constraints_C0_Gaussian( climIn , Yo , event , verbose = False ): ##{{{
 	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] * climIn.ns_params.loc["scale0",:,:]
 	clim.ns_params = ns_params
 	
-	if verbose: print( "Constraints C0 (Gaussian, Done)" )
+	if verbose: print( "Constraints C0 (Normal, Done)" )
 	
 	return clim
 ##}}}
 
-def constraints_C0_Gaussian_exp( climIn , Yo , event , verbose = False ): ##{{{
-	if verbose: print( "Constraints C0 (GaussianExp)" , end = "\r" )
+def constraints_C0_Normal_exp( climIn , Yo , verbose = False ): ##{{{
+	if verbose: print( "Constraints C0 (NormalExp)" , end = "\r" )
 	
 	clim  = climIn.copy()
 	n_models  = clim.X.models.size
@@ -256,12 +256,13 @@ def constraints_C0_Gaussian_exp( climIn , Yo , event , verbose = False ): ##{{{
 	## Save
 	clim.ns_params = ns_params
 	
-	if verbose: print( "Constraints C0 (GaussianExp, Done)" )
+	if verbose: print( "Constraints C0 (NormalExp, Done)" )
 	
 	return clim
 ##}}}
 
-def constraints_C0_GEV( climIn , Yo , event , verbose = False ): ##{{{
+
+def constraints_C0_GEV( climIn , Yo , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEV)" , end = "\r" )
 	
@@ -311,7 +312,7 @@ def constraints_C0_GEV( climIn , Yo , event , verbose = False ): ##{{{
 	return clim
 ##}}}
 
-def constraints_C0_GEV_bound_valid( climIn , Yo , event , verbose = False ): ##{{{
+def constraints_C0_GEV_bound_valid( climIn , Yo , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEV)" , end = "\r" )
 	
@@ -369,7 +370,7 @@ def constraints_C0_GEV_bound_valid( climIn , Yo , event , verbose = False ): ##{
 	return clim
 ##}}}
 
-def constraints_C0_GEV_exp( climIn , Yo , event , verbose = False ): ##{{{
+def constraints_C0_GEV_exp( climIn , Yo , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEVExp)" , end = "\r" )
 	
@@ -417,7 +418,7 @@ def constraints_C0_GEV_exp( climIn , Yo , event , verbose = False ): ##{{{
 	return clim
 ##}}}
 
-def constraints_C0_GEV_exp_bound_valid( climIn , Yo , event , verbose = False ): ##{{{
+def constraints_C0_GEV_exp_bound_valid( climIn , Yo , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEVExp)" , end = "\r" )
 	
@@ -474,7 +475,8 @@ def constraints_C0_GEV_exp_bound_valid( climIn , Yo , event , verbose = False ):
 	return clim
 ##}}}
 
-def constraints_C0( climIn , Yo , event , gev_bound_valid = False , verbose = False ): ##{{{
+
+def constraints_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): ##{{{
 	"""
 	NSSEA.constraintsC0
 	===================
@@ -486,8 +488,6 @@ def constraints_C0( climIn , Yo , event , gev_bound_valid = False , verbose = Fa
 		clim variable
 	Yo       : pandas.DataFrame
 		Observations
-	event    : NSSEA.Event
-		Event
 	gev_bound_valid : bool
 		For GEVLaw, use only bootstrap where observations are between the bound of the GEV.
 	verbose  : bool
@@ -499,22 +499,22 @@ def constraints_C0( climIn , Yo , event , gev_bound_valid = False , verbose = Fa
 		A COPY of climIn constrained by Yo. climIn is NOT MODIFIED.
 	"""
 	
-	if climIn.ns_law == NSGaussianModel:
-		if isinstance(climIn.ns_law_args["link_fct_scale"],IdLink):
-			return constraints_C0_Gaussian( climIn , Yo , event , verbose )
-		elif isinstance(climIn.ns_law_args["link_fct_scale"],ExpLink):
-			return constraints_C0_Gaussian_exp( climIn , Yo , event , verbose )
-	if climIn.ns_law == NSGEVModel:
-		if isinstance(climIn.ns_law_args["link_fct_scale"],IdLink):
+	if climIn.ns_law == Normal:
+		if isinstance(climIn.ns_law_args["link_scale"],IdLink):
+			return constraints_C0_Normal( climIn , Yo , verbose )
+		elif isinstance(climIn.ns_law_args["link_scale"],ExpLink):
+			return constraints_C0_Normal_exp( climIn , Yo , verbose )
+	if climIn.ns_law == GEV:
+		if isinstance(climIn.ns_law_args["link_scale"],IdLink):
 			if gev_bound_valid:
-				return constraints_C0_GEV_bound_valid( climIn , Yo , event , verbose )
+				return constraints_C0_GEV_bound_valid( climIn , Yo , verbose )
 			else:
-				return constraints_C0_GEV( climIn , Yo , event , verbose )
-		elif isinstance(climIn.ns_law_args["link_fct_scale"],ExpLink):
+				return constraints_C0_GEV( climIn , Yo , verbose )
+		elif isinstance(climIn.ns_law_args["link_scale"],ExpLink):
 			if gev_bound_valid:
-				return constraints_C0_GEV_exp_bound_valid( climIn , Yo , event , verbose )
+				return constraints_C0_GEV_exp_bound_valid( climIn , Yo , verbose )
 			else:
-				return constraints_C0_GEV_exp( climIn , Yo , event , verbose )
+				return constraints_C0_GEV_exp( climIn , Yo , verbose )
 	
 	return climIn.copy()
 ##}}}
