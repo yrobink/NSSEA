@@ -129,6 +129,21 @@ class Climatology: ##{{{
 		self.mm_params   = None
 		self.n_mm_params = None
 	
+	def keep_models( self , models ):
+		models = models if type(models) is list else [models]
+		if not np.all( [m in self.models for m in models] ):
+			return
+		self.models = models
+		self.n_models = len(self.models)
+		if self.X         is not None: self.X         = self.X.loc[:,:,:,models]
+		if self.ns_params is not None: self.ns_params = self.ns_params.loc[:,:,models]
+		if self.stats     is not None: self.stats     = self.stats.loc[:,:,:,models]
+	
+	def remove_models( self , models ):
+		models_keep = [ m for m in self.models if m not in models ]
+		self.keep_models(models_keep)
+	
+	
 	def copy(self):
 		c             = Climatology( self.time.copy() , self.n_sample , self.models , self.ns_law , self.ns_law_args )
 		
