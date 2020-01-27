@@ -26,7 +26,7 @@ from NSSEA.__nsstats         import stats_relative_event
 ###############
 
 
-def stats_event( clim , event_time , event , ofile , ci = 0.05 , verbose = False ):##{{{
+def stats_event( clim , event , ofile , time = None , ci = 0.05 , verbose = False ):##{{{
 	"""
 	NSSEA.plot.stats_event
 	======================
@@ -37,10 +37,12 @@ def stats_event( clim , event_time , event , ofile , ci = 0.05 , verbose = False
 	---------
 	clim    : NSSEA.Climatology
 		A clim variable
-	event_time: time
-		time to plot
+	event     : NSSEA.Event
+		Event variable
 	ofile     : str
 		output file
+	time: time
+		time to plot
 	ci        : float
 		Size of confidence interval, default is 0.05 (95% confidence)
 	verbose   : bool
@@ -49,18 +51,20 @@ def stats_event( clim , event_time , event , ofile , ci = 0.05 , verbose = False
 	
 	if verbose: print( "Plot stats event" , end = "\r" )
 	
+	if time is None:
+		time = event.time
 	## Extract parameters
-	statsEvent = clim.stats.loc[event_time,:,:,:]
+	statsEvent = clim.stats.loc[time,:,:,:]
 	Sq = statsEvent[1:,:,:].quantile( [ci/2,1-ci/2] , dim = "sample" ).assign_coords( quantile = ["q0","q1"] )
 	n_models   = statsEvent.models.size
 	
 	
 	## Scale
-	rr_min = float(min(Sq.loc[:,"rr",:].min() , statsEvent.loc["be","rr",:].min()))
-	rr_max = float(max(Sq.loc[:,"rr",:].max() , statsEvent.loc["be","rr",:].max()))
-	p_min = float(min(Sq.loc[:,["pnat","pall"],:].min() , statsEvent.loc["be",["pnat","pall"],:].min()))
-	p_max = float(max(Sq.loc[:,["pnat","pall"],:].max() , statsEvent.loc["be",["pnat","pall"],:].max()))
-	lp = LinkParams( rr_min = rr_min , rr_max = rr_max , p_min = p_min , p_max = p_max )
+	PR_min = float(min(Sq.loc[:,"PR",:].min() , statsEvent.loc["be","PR",:].min()))
+	PR_max = float(max(Sq.loc[:,"PR",:].max() , statsEvent.loc["be","PR",:].max()))
+	p_min = float(min(Sq.loc[:,["pC","pF"],:].min() , statsEvent.loc["be",["pC","pF"],:].min()))
+	p_max = float(max(Sq.loc[:,["pC","pF"],:].max() , statsEvent.loc["be",["pC","pF"],:].max()))
+	lp = LinkParams( rr_min = PR_min , rr_max = PR_max , p_min = p_min , p_max = p_max )
 	
 	
 	## Figure + matplotlib parameters
@@ -75,8 +79,8 @@ def stats_event( clim , event_time , event , ofile , ci = 0.05 , verbose = False
 	## Probabilities plot
 	ax = fig.add_subplot(nrow,ncol,1)
 	for i,m in enumerate(statsEvent.models):
-		ax.fill_between( lp.fp( Sq.loc[:,"pall",m] ) , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "red" )
-		ax.vlines( lp.fp(statsEvent.loc["be","pall",m]) , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "black" )
+		ax.fill_between( lp.fp( Sq.loc[:,"pF",m] ) , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "red" )
+		ax.vlines( lp.fp(statsEvent.loc["be","pF",m]) , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "black" )
 	for x in lp.p.values:
 		ax.vlines( x , 0 , n_models + 1 , color = "grey" , linestyle = "--" , alpha = 0.3 )
 	ax.set_yticks( range(n_models,0,-1) )
@@ -84,12 +88,12 @@ def stats_event( clim , event_time , event , ofile , ci = 0.05 , verbose = False
 	ax.set_ylim( (1-1,n_models + 1) )
 	ax.set_xticks( lp.p.values )
 	ax.set_xticklabels( lp.p.names , fontsize = fontsize )
-	ax.set_xlabel( r"$p_1$" + "({})".format(event_time) , fontsize = fontsize )
+	ax.set_xlabel( r"$p_\mathrm{F}$" + "({})".format(time) , fontsize = fontsize )
 	
 	ax = fig.add_subplot(nrow,ncol,2)
 	for i,m in enumerate(statsEvent.models):
-		ax.fill_between( lp.fp( Sq.loc[:,"pnat",m] ) , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "red" )
-		ax.vlines( lp.fp(statsEvent.loc["be","pnat",m]) , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "black" )
+		ax.fill_between( lp.fp( Sq.loc[:,"pC",m] ) , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "red" )
+		ax.vlines( lp.fp(statsEvent.loc["be","pC",m]) , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "black" )
 	for x in lp.p.values:
 		ax.vlines( x , 0 , n_models + 1 , color = "grey" , linestyle = "--" , alpha = 0.3 )
 	ax.set_yticks( range(n_models,0,-1) )
@@ -98,12 +102,12 @@ def stats_event( clim , event_time , event , ofile , ci = 0.05 , verbose = False
 	ax.set_ylim( (1-1,n_models + 1) )
 	ax.set_xticks( lp.p.values )
 	ax.set_xticklabels( lp.p.names , fontsize = fontsize )
-	ax.set_xlabel( r"$p_0$" + "({})".format(event_time) , fontsize = fontsize )
+	ax.set_xlabel( r"$p_\mathrm{C}$" + "({})".format(time) , fontsize = fontsize )
 	
 	ax = fig.add_subplot(nrow,ncol,3)
 	for i,m in enumerate(statsEvent.models):
-		ax.fill_between( lp.frr( Sq.loc[:,"rr",m] ) , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "red" )
-		ax.vlines( lp.frr(statsEvent.loc["be","rr",m]) , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "black" )
+		ax.fill_between( lp.frr( Sq.loc[:,"PR",m] ) , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "red" )
+		ax.vlines( lp.frr(statsEvent.loc["be","PR",m]) , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "black" )
 #		ax.boxplot( lp.frr(statsEvent.loc[:,"rr",m]) , positions = [n_models - i] , vert = False , whis = whis , patch_artist = True , boxprops = boxprops , medianprops = medianprops  , widths = widths )
 	for x in lp.rr.values:
 		ax.vlines( x , 0 , n_models + 1 , color = "grey" , linestyle = "--" , alpha = 0.3 )
@@ -113,7 +117,7 @@ def stats_event( clim , event_time , event , ofile , ci = 0.05 , verbose = False
 	ax.set_ylim( (1-1,n_models + 1) )
 	ax.set_xticks( lp.rr.values )
 	ax.set_xticklabels( lp.rr.names , fontsize = fontsize )
-	ax.set_xlabel( r"$\mathrm{RR}$" + "({})".format(event_time) , fontsize = fontsize )
+	ax.set_xlabel( r"$\mathrm{PR}$" + "({})".format(time) , fontsize = fontsize )
 	
 	
 	## Limits of intensities
@@ -147,8 +151,8 @@ def stats_event( clim , event_time , event , ofile , ci = 0.05 , verbose = False
 	## Intensities plot
 	ax = fig.add_subplot(nrow,ncol,4)
 	for i,m in enumerate(statsEvent.models):
-		ax.fill_between( Sq.loc[:,"iall",m] , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "red" )
-		ax.vlines( statsEvent.loc["be","iall",m] , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "black" )
+		ax.fill_between( Sq.loc[:,"IF",m] , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "red" )
+		ax.vlines( statsEvent.loc["be","IF",m] , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "black" )
 	for x in xvalI:
 		ax.vlines( x , 0 , n_models + 1 , color = "grey" , linestyle = "--" , alpha = 0.3 )
 	ax.set_yticks( range(n_models,0,-1) )
@@ -156,13 +160,13 @@ def stats_event( clim , event_time , event , ofile , ci = 0.05 , verbose = False
 	ax.set_ylim( (1-1,n_models + 1) )
 	ax.set_xticks( xvalI )
 	ax.set_xticklabels( xvalI , fontsize = fontsize )
-	ax.set_xlabel( r"$\mathrm{i}_1$" + "({})".format(event_time) + " ({})".format(event.unit) , fontsize = fontsize )
+	ax.set_xlabel( r"$\mathbf{I}_\mathrm{F}$" + "({})".format(time) + " ({})".format(event.unit_variable) , fontsize = fontsize )
 	ax.set_xlim( (xminI,xmaxI) )
 
 	ax = fig.add_subplot(nrow,ncol,5)
 	for i,m in enumerate(statsEvent.models):
-		ax.fill_between( Sq.loc[:,"inat",m] , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "red" )
-		ax.vlines( statsEvent.loc["be","inat",m] , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "black" )
+		ax.fill_between( Sq.loc[:,"IC",m] , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "red" )
+		ax.vlines( statsEvent.loc["be","IC",m] , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "black" )
 	for x in xvalI:
 		ax.vlines( x , 0 , n_models + 1 , color = "grey" , linestyle = "--" , alpha = 0.3 )
 	ax.set_yticks( range(n_models,0,-1) )
@@ -170,13 +174,13 @@ def stats_event( clim , event_time , event , ofile , ci = 0.05 , verbose = False
 	ax.set_ylim( (1-1,n_models + 1) )
 	ax.set_xticks( xvalI )
 	ax.set_xticklabels( xvalI , fontsize = fontsize )
-	ax.set_xlabel( r"$\mathrm{i}_0$" + "({})".format(event_time) + " ({})".format(event.unit) , fontsize = fontsize )
+	ax.set_xlabel( r"$\mathbf{I}_\mathrm{C}$" + "({})".format(time) + " ({})".format(event.unit_variable) , fontsize = fontsize )
 	ax.set_xlim( (xminI,xmaxI) )
 	
 	ax = fig.add_subplot(nrow,ncol,6)
 	for i,m in enumerate(statsEvent.models):
-		ax.fill_between( Sq.loc[:,"di",m] , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "red" )
-		ax.vlines( statsEvent.loc["be","di",m] , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "black" )
+		ax.fill_between( Sq.loc[:,"dI",m] , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "red" )
+		ax.vlines( statsEvent.loc["be","dI",m] , n_models - i - 1 / 3, n_models - i + 1 / 3 , color = "black" )
 	for x in dxvalI:
 		ax.vlines( x , 0 , n_models + 1 , color = "grey" , linestyle = "--" , alpha = 0.3 )
 	ax.set_yticks( range(n_models,0,-1) )
@@ -184,7 +188,7 @@ def stats_event( clim , event_time , event , ofile , ci = 0.05 , verbose = False
 	ax.set_ylim( (1-1,n_models + 1) )
 	ax.set_xticks( dxvalI )
 	ax.set_xticklabels( dxvalI , fontsize = fontsize )
-	ax.set_xlabel( r"$\delta\mathrm{i}$" + "({})".format(event_time) + " ({})".format(event.unit) , fontsize = fontsize )
+	ax.set_xlabel( r"$\Delta\mathbf{I}$" + "({})".format(time) + " ({})".format(event.unit_variable) , fontsize = fontsize )
 	ax.set_xlim( (xmindI,xmaxdI) )
 	
 	
@@ -195,21 +199,23 @@ def stats_event( clim , event_time , event , ofile , ci = 0.05 , verbose = False
 	if verbose: print( "Plot stats event (Done)" )
 ##}}}
 
-def stats_relative( statsIn , event , ofile , time_event = None , ci = 0.05 , verbose = False ):##{{{
+def stats_relative( clim , event , ofile , time = None , ci = 0.05 , verbose = False ):##{{{
 	"""
 	NSSEA.plot.stats_relative
 	=========================
 	
-	Plot probabilities rr/rr[time_event] and di - di[time_event] along time
+	Plot probabilities PR/PR[time_event] and di - di[time_event] along time
 	
 	Arguments
 	---------
-	stats     : xarray
-		NSSEA.Climatology.stats
+	clim    : NSSEA.Climatology
+		A clim variable
 	event     : NSSEA.Event
 		Event variable
 	ofile     : str
 		output file
+	time: time
+		time to plot
 	ci        : float
 		Size of confidence interval, default is 0.05 (95% confidence)
 	verbose   : bool
@@ -218,16 +224,17 @@ def stats_relative( statsIn , event , ofile , time_event = None , ci = 0.05 , ve
 	
 	if verbose: print( "Plot stats_relative" , end = "\r" )
 	
+	statsIn = clim.stats
 	## Compute stats events
-	if time_event is None:
-		time_event = event.time
-	stats = stats_relative_event( statsIn , time_event )
+	if time is None:
+		time = event.time
+	stats = stats_relative_event( statsIn , time )
 	statsu = stats[:,1:,:,:].quantile( ci / 2.      , dim = "sample" )
 	statsl = stats[:,1:,:,:].quantile( 1. - ci / 2. , dim = "sample" )
 	
-	ymindI = min( stats.loc[:,:,"di",:].min()   , statsu.loc[:,"di",:].min()  , statsl.loc[:,"di",:].min()  )
-	ymaxdI = max( stats.loc[:,:,"di",:].max()   , statsu.loc[:,"di",:].max()  , statsl.loc[:,"di",:].max()  )
-	ylabel = "\mathrm{(" + event.unit + ")}"
+	ymindI = min( stats.loc[:,:,"dI",:].min()   , statsu.loc[:,"dI",:].min()  , statsl.loc[:,"dI",:].min()  )
+	ymaxdI = max( stats.loc[:,:,"dI",:].max()   , statsu.loc[:,"dI",:].max()  , statsl.loc[:,"dI",:].max()  )
+	ylabel = "\mathrm{(" + event.unit_variable + ")}"
 	
 	lp = LinkParams()
 	
@@ -240,8 +247,8 @@ def stats_relative( statsIn , event , ofile , time_event = None , ci = 0.05 , ve
 		
 		## Probabilities
 		ax = fig.add_subplot( nrow , ncol , 1 )
-		ax.plot( stats.time , lp.frr(stats.loc[:,"be","rr",m]) , color = "red" , linestyle = "-" , marker = "" )
-		ax.fill_between( stats.time , lp.frr(statsl.loc[:,"rr",m]) , lp.frr(statsu.loc[:,"rr",m]) , color = "red" , alpha = 0.5 )
+		ax.plot( stats.time , lp.frr(stats.loc[:,"be","PR",m]) , color = "red" , linestyle = "-" , marker = "" )
+		ax.fill_between( stats.time , lp.frr(statsl.loc[:,"PR",m]) , lp.frr(statsu.loc[:,"PR",m]) , color = "red" , alpha = 0.5 )
 		ax.set_ylim( (lp.rr.values.min(),lp.rr.values.max()) )
 		ax.set_yticks( lp.rr.values )
 		ax.set_yticklabels( lp.rr.names )
@@ -257,21 +264,21 @@ def stats_relative( statsIn , event , ofile , time_event = None , ci = 0.05 , ve
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()
 		ax.plot( xlim                    , lp.frr([1,1]) , linestyle = "-"  , marker = "" , color = "black" )
-		ax.plot( [time_event,time_event] , ylim          , linestyle = "--" , marker = "" , color = "black" )
+		ax.plot( [time,time] , ylim          , linestyle = "--" , marker = "" , color = "black" )
 		ax.set_xlim(xlim)
 		ax.set_ylim(ylim)
 		
 		
 		## Intensities
 		ax = fig.add_subplot( nrow , ncol , 2 )
-		ax.plot( stats.time , stats.loc[:,"be","di",m] , color = "red" , linestyle = "-" , marker = "" )
-		ax.fill_between( stats.time , statsl.loc[:,"di",m] , statsu.loc[:,"di",m] , color = "red" , alpha = 0.5 )
+		ax.plot( stats.time , stats.loc[:,"be","dI",m] , color = "red" , linestyle = "-" , marker = "" )
+		ax.fill_between( stats.time , statsl.loc[:,"dI",m] , statsu.loc[:,"dI",m] , color = "red" , alpha = 0.5 )
 		ax.set_ylim( (ymindI,ymaxdI) )
 		ax.set_xlabel( "Time" )
 		ax.set_ylabel( r"${}$".format( "\delta\mathbf{i}(t)\ " + ylabel ) )
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()
-		ax.plot( [time_event,time_event] , ylim  , linestyle = "--" , marker = "" , color = "black" )
+		ax.plot( [time,time] , ylim  , linestyle = "--" , marker = "" , color = "black" )
 		ax.plot( xlim                    , [0,0] , linestyle = "-"  , marker = "" , color = "black" )
 		ax.set_xlim(xlim)
 		ax.set_ylim(ylim)
