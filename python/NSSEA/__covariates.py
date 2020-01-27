@@ -24,12 +24,12 @@ from NSSEA.__tools import matrix_squareroot
 ## Classes ##
 #############
 
-class EBMModel: ##{{{
+class EBM: ##{{{
 	"""
-	NSSEA.EBMModel
-	==============
+	NSSEA.EBM
+	=========
 	
-	An EBMModel to approximate natural forcing, 13 differents parameters are possible.
+	An EBM model to approximate natural forcing, 13 differents parameters are possible.
 	Note that the param "0" is the mean of output of other samples
 	
 	"""
