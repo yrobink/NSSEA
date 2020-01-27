@@ -24,67 +24,53 @@ class Event: ##{{{
 	===========
 	
 	Event variable containing information about event considered
-	
-	Attributes
-	----------
-	
-	name     : str
-		Name of event
-	dir_name : str
-		Directory of output
-	time     : time_index
-		Time of event
-	anom     : double
-		Anomaly of event
-	ref_anom : array
-		Time period to considered as reference for anomaly
-	var      : str
-		Name of variable
-	unit     : str
-		Unit of variable
-	side     : str
-		"upper" or "lower" extremes event
-	def_type : str
-		If is is anomaly bellow a threshold ("threshold") or a hard value ("hard_value")
 	"""
 	
-	def __init__( self , name , dir_name , time , anom , ref_anom , var , unit , side , def_type = "threshold" ):
+	def __init__( self , name_event , time , anomaly , reference , type_event = "threshold" , side = "upper" , name_variable = "variable" , unit_variable = "U" ):
 		"""
 		Constructor of Event
 		
 		Arguments
 		---------
 		
-		name     : str
+		name_event    : str
 			Name of event
-		dir_name : str
-			Directory of output
-		time     : time_index
-			Time of event
-		anom     : double
+		time          : time_index
+			Time when event occured
+		anomaly       : double
 			Anomaly of event
-		ref_anom : array
+		reference     : array
 			Time period to considered as reference for anomaly
-		var      : str
-			Name of variable
-		side     : str
+		type_event    : "threshold" or "hard"
+			If we compute probabilities as a threshold beyond mean, or anomaly is used as a hard value.
+		side          : str
 			"upper" or "lower" extremes event
+		name_variable : str
+			Name of variable (temperature, precipitation, etc)
+		unit_variable : str
+			Unit of the variable
 		"""
-		self.name     = name
-		self.dir_name = dir_name
-		self.def_type = def_type
-		self.time     = time
-		self.anom     = anom
-		self.ref_anom = ref_anom
-		self.var      = var
-		self.unit     = unit
-		self.side     = side
+		self.name_event    = name_event
+		self.time          = time
+		self.anomaly       = anomaly
+		self.reference     = reference
+		self.type_event    = type_event if type_event in ["threshold","hard"] else "threshold"
+		self.side          = side if side in ["upper","lower"] else "upper"
+		self.name_variable = name_variable
+		self.unit_variable = unit_variable
 	
 	def __repr__(self):
 		return self.__str__()
 	
 	def __str__(self):
-		return "Event    : {},\ntime     : {},\nanom     : {},\nref_anom : {} / {},\nvar      : {},\nside     : {}\n".format(self.name,self.time,self.anom,self.ref_anom.min(),self.ref_anom.max(),self.var,self.side)
+		out = ""
+		out += "Event     : {},\n".format(self.name_event)
+		out += "variable  : {} ({}),\n".format(self.name_variable,self.unit_variable)
+		out += "time      : {},\n".format(self.time)
+		out += "anomaly   : {},\n".format(self.anomaly)
+		out += "reference : {}-{},\n".format(self.reference.min(),self.reference.max())
+		out += "side      : {}\n".format(self.side)
+		return out
 ##}}}
 
 class Climatology: ##{{{
