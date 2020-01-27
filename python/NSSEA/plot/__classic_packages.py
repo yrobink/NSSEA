@@ -30,7 +30,7 @@ from NSSEA.plot.__stats_event   import stats_relative
 ###############
 
 
-def plot_classic_packages( clim , event , suffix , ci = 0.05 , verbose = False ):
+def plot_classic_packages( clim , event , path , suffix = "" , ci = 0.05 , verbose = False ):
 	"""
 	NSSEA.plot.plot_classic_packages
 	================================
@@ -56,10 +56,17 @@ def plot_classic_packages( clim , event , suffix , ci = 0.05 , verbose = False )
 	verbose   : bool
 		Print (or not) state of execution
 	"""
-	probabilities(  clim.stats , event              , ofile = os.path.join( event.dir_name , "Probability"   + suffix + ".pdf"                       ) , ci = ci , verbose = verbose )
-	ns_params(      clim                            , ofile = os.path.join( event.dir_name , "ns_params"     + suffix + ".pdf"                       ) , ci = ci , verbose = verbose )
-	intensities(    clim.stats , event              , ofile = os.path.join( event.dir_name , "Intensity"     + suffix + ".pdf"                       ) , ci = ci , verbose = verbose )
-	stats_event(    clim       , event.time , event , ofile = os.path.join( event.dir_name , "StatsEvent"    + suffix + "_{}.pdf".format(event.time) ) , ci = ci , verbose = verbose )
-	stats_relative( clim.stats , event              , ofile = os.path.join( event.dir_name , "StatsRelative" + suffix + ".pdf"                       ) , ci = ci , verbose = verbose )
-
+	
+	if verbose: print( "Plot classic_packages ({}): 0/5".format(suffix) , end = "\r" )
+	probabilities(  clim , event , ofile = os.path.join( path , "Probabilities" + suffix + ".pdf"                       ) , ci = ci , verbose = False )
+	if verbose: print( "Plot classic_packages ({}): 1/5".format(suffix) , end = "\r" )
+	intensities(    clim , event , ofile = os.path.join( path , "Intensities"   + suffix + ".pdf"                       ) , ci = ci , verbose = False )
+	if verbose: print( "Plot classic_packages ({}): 2/5".format(suffix) , end = "\r" )
+	stats_event(    clim , event , ofile = os.path.join( path , "StatsEvent"    + suffix + "_{}.pdf".format(event.time) ) , ci = ci , verbose = False )
+	if verbose: print( "Plot classic_packages ({}): 3/5".format(suffix) , end = "\r" )
+	stats_relative( clim , event , ofile = os.path.join( path , "StatsRelative" + suffix + "_{}.pdf".format(event.time) ) , ci = ci , verbose = False )
+	if verbose: print( "Plot classic_packages ({}): 4/5".format(suffix) , end = "\r" )
+	ns_params(      clim ,         ofile = os.path.join( path , "ns_params"     + suffix + ".pdf"                       ) , ci = ci , verbose = False )
+	if verbose: print( "Plot classic_packages ({}): 5/5".format(suffix) , end = "\n" )
+	
 
