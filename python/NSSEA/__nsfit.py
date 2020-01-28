@@ -51,7 +51,6 @@ def nslaw_fit( lY , clim , verbose = False ):
 	ns_params_names    = ns_params_info["names"]
 	
 	clim.ns_params   = xr.DataArray( np.zeros( (n_ns_params,n_sample + 1,n_models) ) , coords = [ ns_params_names , sample , models ] , dims = ["ns_params","sample","models"] )
-	clim.n_ns_params = n_ns_params
 	
 	pb = ProgressBar( "NS fit" , n_models * n_sample )
 	for i in range(n_models):

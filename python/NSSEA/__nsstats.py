@@ -61,7 +61,6 @@ def extremes_stats( clim , event , verbose = False , tol = sys.float_info.epsilo
 	n_sample       = clim.n_sample
 	n_stats        = 6
 	upper_side     = event.side == "upper"
-	clim.n_stats = n_stats
 	event_time     = event.time
 	
 	

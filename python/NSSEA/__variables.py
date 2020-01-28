@@ -95,7 +95,7 @@ class Climatology: ##{{{
 		Arguments pass to NSModel
 	"""
 	
-	def __init__( self , time , n_sample , models , ns_law , ns_law_args = None ):
+	def __init__( self , time , models , ns_law , ns_law_args = None ):##{{{
 		"""
 		Constructor of the clim variable
 		
@@ -113,50 +113,68 @@ class Climatology: ##{{{
 		"""
 		self.X           = None
 		self.time        = time
-		self.n_time      = len(time)
-		self.n_sample    = n_sample
 		self.models      = models
-		self.n_models    = len(models)
 		
 		self.ns_law      = ns_law
 		self.ns_law_args = ns_law.default_arg(ns_law_args)
 		self.ns_params   = None
-		self.n_ns_params = None
 		
 		self.stats       = None
-		self.n_stats     = None
 		
 		self.mm_params   = None
-		self.n_mm_params = None
+	##}}}
 	
-	def keep_models( self , models ):
+	## Properties {{{
+	
+	@property
+	def n_time(self):
+		return self.time.size
+	
+	@property
+	def n_models(self):
+		return len(self.models)
+	
+	@property
+	def n_sample(self):
+		return None if self.X is None else self.X.shape[1] - 1
+	
+	@property
+	def n_ns_params(self):
+		return None if self.ns_params is None else self.ns_params.shape[0]
+	
+	@property
+	def n_stats(self):
+		return None if self.stats is None else self.stats.shape[2]
+	
+	@property
+	def n_mm_params(self):
+		return None if self.mm_params is None else self.mm_params.mean.size
+	##}}}
+	
+	def keep_models( self , models ):##{{{
 		models = models if type(models) is list else [models]
 		if not np.all( [m in self.models for m in models] ):
 			return
 		self.models = models
-		self.n_models = len(self.models)
 		if self.X         is not None: self.X         = self.X.loc[:,:,:,models]
 		if self.ns_params is not None: self.ns_params = self.ns_params.loc[:,:,models]
 		if self.stats     is not None: self.stats     = self.stats.loc[:,:,:,models]
+	##}}}
 	
-	def remove_models( self , models ):
+	def remove_models( self , models ):##{{{
 		models_keep = [ m for m in self.models if m not in models ]
 		self.keep_models(models_keep)
+	##}}}
 	
-	
-	def copy(self):
-		c             = Climatology( self.time.copy() , self.n_sample , self.models , self.ns_law , self.ns_law_args )
+	def copy(self):##{{{
+		c           = Climatology( self.time.copy() , self.models , self.ns_law , self.ns_law_args )
+		c.X         = self.X.copy()         if self.X         is not None else None
+		c.ns_params = self.ns_params.copy() if self.ns_params is not None else None
+		c.mm_params = self.mm_params.copy() if self.mm_params is not None else None
+		c.stats     = self.stats.copy()     if self.stats     is not None else None
 		
-		c.X           = self.X.copy()         if self.X         is not None else None
-		c.ns_params   = self.ns_params.copy() if self.ns_params is not None else None
-		c.mm_params   = self.mm_params.copy() if self.mm_params is not None else None
-		c.stats       = self.stats.copy()     if self.stats     is not None else None
-		
-		c.n_models    = self.n_models
-		c.n_ns_params = self.n_ns_params
-		c.n_mm_params = self.n_mm_params
-		c.n_stats     = self.n_stats
 		return c
+	##}}}
 ##}}}
 
 
@@ -233,8 +251,6 @@ def from_netcdf( ifile , ns_law = None , ns_law_args = None ):##{{{
 		
 		##  Set climatology
 		clim = Climatology( time , sample.size - 1 , models , ns_law , ns_law_args )
-		clim.n_ns_params = ns_param.size
-		clim.n_stats     = stats.size
 		clim.X         = xr.DataArray( ncFile.variables["X"][:]         , coords = [time,sample,forcing,models] , dims = ["time","sample","forcing","models"] )
 		clim.ns_params = xr.DataArray( ncFile.variables["ns_params"][:] , coords = [ns_param,sample,models]     , dims = ["ns_params","sample","models"]      )
 		clim.stats     = xr.DataArray( ncFile.variables["stats"][:]     , coords = [time,sample,stats,models]   , dims = ["time","sample","stats","models"]   )

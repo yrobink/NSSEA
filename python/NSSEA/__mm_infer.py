@@ -142,7 +142,6 @@ def infer_multi_model( climIn , mm_method = "classic" , verbose = False ):
 	
 	## Multi model parameters inference
 	clim.mm_params   = MMStats( S , mm_method , verbose )
-	clim.n_mm_params = n_mm_params
 	
 	## Generate sample
 	mm_sample = xr.DataArray( np.zeros( (n_time,n_sample + 1,3,1) )    , coords = [ clim.X.time , sample , clim.X.forcing , ["multi"] ] , dims = ["time","sample","forcing","models"] )
@@ -163,7 +162,6 @@ def infer_multi_model( climIn , mm_method = "classic" , verbose = False ):
 	## Add multimodel to clim
 	clim.X         = xr.concat( [clim.X , mm_sample] , "models" )
 	clim.ns_params = xr.concat( [clim.ns_params,mm_params] , "models" )
-	clim.n_models += 1
 	clim.models.append( "multi" )
 	
 	if verbose: print( "Multi model (Done)" )

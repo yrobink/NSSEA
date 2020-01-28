@@ -283,7 +283,7 @@ def constraints_C0_GEV( climIn , Yo , verbose = False ): ##{{{
 	time      = clim.time
 	time_Yo   = Yo.index
 	n_time_Yo = Yo.size
-	sample = clim.X.sample
+	sample    = clim.X.sample
 	
 	# New NS_param
 	ns_params = clim.ns_params
@@ -533,22 +533,23 @@ def constraints_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): #
 ## Bayesian constraint
 ##====================
 
-def constraints_bayesian( clim , Yo , n_mcmc_drawn = 10000 , delay = 5000 , verbose = False ):##{{{
+def constraints_bayesian( clim , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10000 , verbose = False ):##{{{
 	
 	pb = ProgressBar( "Constraints Bayesian" , clim.n_sample + 1 )
 	
 	climCB = clim.copy()
 	
 	## Define prior
-	n_params = clim.ns_law.params_info()["size"]
+	n_params  = clim.ns_law.params_info()["size"]
 	prior_law = sc.multivariate_normal( mean = climCB.mm_params.mean[-n_params:] , cov = climCB.mm_params.cov[-n_params:,-n_params:] , allow_singular = True )
 	
 	for s in clim.X.sample:
 		if verbose: pb.print()
 		X   = clim.X.loc[Yo.index,s,"all","multi"].values.squeeze()
 		law = clim.ns_law(**clim.ns_law_args)
+		n_mcmc_drawn = np.random.randint( n_mcmc_drawn_min , n_mcmc_drawn_max )
 		draw = law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law )
-		climCB.ns_params.loc[:,s,"multi"] = draw[np.random.randint(delay,n_mcmc_drawn),:]
+		climCB.ns_params.loc[:,s,"multi"] = draw[-1,:]
 	
 	climCB.ns_params.loc[:,"be","multi"] = climCB.ns_params[:,1:,:].loc[:,:,"multi"].median( dim = "sample" )
 	
