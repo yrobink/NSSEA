@@ -13,7 +13,7 @@ import numpy   as np
 import xarray  as xr
 import netCDF4 as nc
 
-from .__mm_infer import MultiModelParams
+from .__multi_model import MultiModelParams
 
 
 #############
