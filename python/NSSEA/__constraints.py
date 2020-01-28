@@ -20,8 +20,8 @@ from .__tools import matrix_squareroot
 from .__tools import ProgressBar
 
 from .models.__Normal import Normal
-from .models.__GEV    import GEV
-from .models.__new_impl    import N_Normal
+#from .models.__GEV    import GEV
+#from .models.__new_impl    import N_Normal
 
 from SDFC.tools import IdLink
 from SDFC.tools import ExpLink
@@ -494,24 +494,24 @@ def constraints_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): #
 		A COPY of climIn constrained by Yo. climIn is NOT MODIFIED.
 	"""
 	
-	if climIn.ns_law == Normal:
-		if isinstance(climIn.ns_law_args["link_scale"],IdLink):
-			return constraints_C0_Normal( climIn , Yo , verbose )
-		elif isinstance(climIn.ns_law_args["link_scale"],ExpLink):
-			return constraints_C0_Normal_exp( climIn , Yo , verbose )
-	if climIn.ns_law == GEV:
-		if isinstance(climIn.ns_law_args["link_scale"],IdLink):
-			if gev_bound_valid:
-				return constraints_C0_GEV_bound_valid( climIn , Yo , verbose )
-			else:
-				return constraints_C0_GEV( climIn , Yo , verbose )
-		elif isinstance(climIn.ns_law_args["link_scale"],ExpLink):
-			if gev_bound_valid:
-				return constraints_C0_GEV_exp_bound_valid( climIn , Yo , verbose )
-			else:
-				return constraints_C0_GEV_exp( climIn , Yo , verbose )
+#	if climIn.ns_law == Normal:
+#		if isinstance(climIn.ns_law_args["link_scale"],IdLink):
+#			return constraints_C0_Normal( climIn , Yo , verbose )
+#		elif isinstance(climIn.ns_law_args["link_scale"],ExpLink):
+#			return constraints_C0_Normal_exp( climIn , Yo , verbose )
+#	if climIn.ns_law == GEV:
+#		if isinstance(climIn.ns_law_args["link_scale"],IdLink):
+#			if gev_bound_valid:
+#				return constraints_C0_GEV_bound_valid( climIn , Yo , verbose )
+#			else:
+#				return constraints_C0_GEV( climIn , Yo , verbose )
+#		elif isinstance(climIn.ns_law_args["link_scale"],ExpLink):
+#			if gev_bound_valid:
+#				return constraints_C0_GEV_exp_bound_valid( climIn , Yo , verbose )
+#			else:
+#				return constraints_C0_GEV_exp( climIn , Yo , verbose )
 	
-	if isinstance(climIn.ns_law,N_Normal):
+	if isinstance(climIn.ns_law,Normal):
 		if isinstance(climIn.ns_law.lparams["scale"].link,IdLink):
 			return constraints_C0_Normal( climIn , Yo , verbose )
 		if isinstance(climIn.ns_law.lparams["scale"].link,ExpLink):
