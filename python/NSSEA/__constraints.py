@@ -21,6 +21,7 @@ from .__tools import ProgressBar
 
 from .models.__Normal import Normal
 from .models.__GEV    import GEV
+from .models.__new_impl    import N_Normal
 
 from SDFC.tools import IdLink
 from SDFC.tools import ExpLink
@@ -510,6 +511,12 @@ def constraints_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): #
 			else:
 				return constraints_C0_GEV_exp( climIn , Yo , verbose )
 	
+	if isinstance(climIn.ns_law,N_Normal):
+		if isinstance(climIn.ns_law.lparams["scale"].link,IdLink):
+			return constraints_C0_Normal( climIn , Yo , verbose )
+		if isinstance(climIn.ns_law.lparams["scale"].link,ExpLink):
+			return constraints_C0_Normal_exp( climIn , Yo , verbose )
+	
 	return climIn.copy()
 ##}}}
 
@@ -524,15 +531,14 @@ def constraints_bayesian( clim , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max
 	climCB = clim.copy()
 	
 	## Define prior
-	n_params  = clim.ns_law.params_info()["size"]
+	n_params  = clim.ns_law.n_ns_params
 	prior_law = sc.multivariate_normal( mean = climCB.mm_params.mean[-n_params:] , cov = climCB.mm_params.cov[-n_params:,-n_params:] , allow_singular = True )
 	
 	for s in clim.X.sample:
 		if verbose: pb.print()
 		X   = clim.X.loc[Yo.index,s,"all","multi"].values.squeeze()
-		law = clim.ns_law(**clim.ns_law_args)
 		n_mcmc_drawn = np.random.randint( n_mcmc_drawn_min , n_mcmc_drawn_max )
-		draw = law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law )
+		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law )
 		climCB.ns_params.loc[:,s,"multi"] = draw[-1,:]
 	
 	climCB.ns_params.loc[:,"be","multi"] = climCB.ns_params[:,1:,:].loc[:,:,"multi"].median( dim = "sample" )

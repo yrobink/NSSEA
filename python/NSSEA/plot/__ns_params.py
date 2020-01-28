@@ -35,10 +35,11 @@ def	ns_params( clim , ofile , ci = 0.05 , verbose = False ):##{{{
 	ns_q = ns_q.assign_coords( quantile = ["l","u"] )
 	
 	
-	ns_law = clim.ns_law
-	ns_law_args = clim.ns_law_args
-	law = ns_law(**ns_law_args)
-	lf = law.link_fct_by_params()
+	law = clim.ns_law
+	lf = []
+	for p in law.lparams:
+		for _ in range(law.lparams[p].n_params):
+			lf.append(law.lparams[p].link)
 	
 	pdf = mpdf.PdfPages( ofile )
 	for m in ns_params.models:
@@ -59,7 +60,7 @@ def	ns_params( clim , ofile , ci = 0.05 , verbose = False ):##{{{
 		ax.set_title( "{}".format( str(m.values).replace("_"," ") ) )
 		ax.set_xlim( (-0.5,n_ns_params-0.5) )
 		ax.set_xticks( range(n_ns_params) )
-		ax.set_xticklabels( ns_params.ns_params.values.tolist() )
+		ax.set_xticklabels( law.get_params_names(True) )
 		ax.set_xlabel( "Parameters" )
 		ax.set_ylabel( "Anomalies parameters" )
 		
@@ -86,16 +87,17 @@ def	ns_params_comparison( clim , clim2 , ofile , ci = 0.05 , verbose = False ):#
 	ns_q2 = ns_q2.assign_coords( quantile = ["l","u"] )
 	
 	
-	ns_law = clim.ns_law
-	ns_law_args = clim.ns_law_args
-	law = ns_law(**ns_law_args)
-	lf = law.link_fct_by_params()
+	law = clim.ns_law
+	law2 = clim2.ns_law
+	lf = []
+	for p in law.lparams:
+		for _ in range(law.lparams[p].n_params):
+			lf.append(law.lparams[p].link)
 	
-	ns_law2 = clim2.ns_law
-	ns_law_args2 = clim2.ns_law_args
-	law2 = ns_law2(**ns_law_args2)
-	lf2 = law2.link_fct_by_params()
-	
+	lf2 = []
+	for p in law2.lparams:
+		for _ in range(law2.lparams[p].n_params):
+			lf2.append(law2.lparams[p].link)
 	
 	pdf = mpdf.PdfPages( ofile )
 	for m in ns_params.models:
@@ -121,7 +123,7 @@ def	ns_params_comparison( clim , clim2 , ofile , ci = 0.05 , verbose = False ):#
 		ax.set_title( "{}".format( str(m.values).replace("_"," ") ) )
 		ax.set_xlim( (-0.5,n_ns_params-0.5) )
 		ax.set_xticks( range(n_ns_params) )
-		ax.set_xticklabels( ns_params.ns_params.values.tolist() )
+		ax.set_xticklabels( law.get_params_names(True) )
 		
 		ax.set_xlabel( "Parameters" )
 		ax.set_ylabel( "Anomalies parameters" )

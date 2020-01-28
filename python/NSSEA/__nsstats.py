@@ -68,7 +68,7 @@ def extremes_stats( clim , event , verbose = False , tol = sys.float_info.epsilo
 	stats = xr.DataArray( np.zeros( (n_time,n_sample + 1,n_stats,n_models) ) , coords = [clim.X.time , clim.X.sample , ["pC","pF","PR","IC","IF","dI"] , clim.X.models ] , dims = ["time","sample","stats","models"] )
 	
 	## 
-	law = clim.ns_law( **clim.ns_law_args )
+	law = clim.ns_law
 	pb = ProgressBar( "Statistics" , n_models * (n_sample + 1) )
 	for m in clim.X.models:
 		for s in clim.X.sample:

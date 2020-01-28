@@ -97,7 +97,7 @@ class Climatology: ##{{{
 		Arguments pass to NSModel
 	"""
 	
-	def __init__( self , time , models , ns_law , ns_law_args = None ):##{{{
+	def __init__( self , time , models , ns_law ):##{{{
 		"""
 		Constructor of the clim variable
 		
@@ -118,7 +118,6 @@ class Climatology: ##{{{
 		self.models      = models
 		
 		self.ns_law      = ns_law
-		self.ns_law_args = ns_law.default_arg(ns_law_args)
 		self.ns_params   = None
 		self.stats       = None
 		self.mm_params   = MultiModelParams()
@@ -167,7 +166,7 @@ class Climatology: ##{{{
 	##}}}
 	
 	def copy(self):##{{{
-		c           = Climatology( self.time.copy() , self.models , self.ns_law , self.ns_law_args )
+		c           = Climatology( self.time.copy() , self.models , self.ns_law )
 		c.X         = self.X.copy()         if self.X         is not None else None
 		c.ns_params = self.ns_params.copy() if self.ns_params is not None else None
 		c.mm_params = self.mm_params.copy() if self.mm_params is not None else None
