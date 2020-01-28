@@ -64,7 +64,7 @@ class NSAbstractModel:##{{{
 		pass
 ##}}}
 
-class Normal(NSAbstractModel):##{{{
+class Normal_Old(NSAbstractModel):##{{{
 	"""
 	NSSEA.models.NSGaussianModel
 	============================
@@ -375,7 +375,7 @@ class Normal(NSAbstractModel):##{{{
 	
 ##}}}
 
-class GEV(NSAbstractModel):##{{{
+class GEV_Old(NSAbstractModel):##{{{
 	"""
 	NSModel.NSGEVModel
 	==================
@@ -791,7 +791,7 @@ class GEV(NSAbstractModel):##{{{
 	##}}}
 ##}}}
 
-class NSGEVnsshModel(NSAbstractModel):##{{{
+class NSGEVnsshModel_Old(NSAbstractModel):##{{{
 	"""
 	NSModel.NSGEVnsshModel
 	======================
