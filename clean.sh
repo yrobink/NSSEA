@@ -9,6 +9,7 @@ rm -rf python/tmp
 rm -rf python/var
 
 rm -rf tests/output/Normal/*
+rm -rf tests/output/GEV/*
 
 
 ## Delete R temporary files
