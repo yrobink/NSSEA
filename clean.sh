@@ -8,6 +8,8 @@ rm -rf python/dist
 rm -rf python/tmp
 rm -rf python/var
 
+rm -rf tests/output/Normal/*
+
 
 ## Delete R temporary files
 rm -f R/NSSEA/NAMESPACE
