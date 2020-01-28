@@ -189,6 +189,8 @@ def to_netcdf( clim , event , ofile , constraints = None ):##{{{
 		dim_ns_param = ncFile.createDimension( "ns_param" , clim.ns_params.ns_params.size )
 		dim_stat     = ncFile.createDimension( "stat"     , clim.stats.stats.size         )
 		dim_ref      = ncFile.createDimension( "ref"      , event.reference.size          )
+		dim_multimod = ncFile.createDimension( "mm_size"  , clim.n_mm_params              )
+		
 		
 		## Set dimensions as variables
 		nc_time      = ncFile.createVariable( "time"      , clim.X.time.dtype     , ("time",)     )
@@ -198,6 +200,7 @@ def to_netcdf( clim , event , ofile , constraints = None ):##{{{
 		nc_ns_param  = ncFile.createVariable( "ns_param"  , str                   , ("ns_param",) )
 		nc_stat      = ncFile.createVariable( "stat"      , str                   , ("stat",)     )
 		nc_reference = ncFile.createVariable( "reference" , event.reference.dtype , ("ref",)      )
+		
 		
 		## Set dimensions values
 		nc_time[:]      = clim.X.time.values
@@ -209,14 +212,18 @@ def to_netcdf( clim , event , ofile , constraints = None ):##{{{
 		nc_reference[:] = event.reference
 		
 		## Variables
-		nc_X         = ncFile.createVariable( "X"         , clim.X.dtype         , ("time","sample","forcing","models") )
-		nc_ns_params = ncFile.createVariable( "ns_params" , clim.ns_params.dtype , ("ns_param","sample","models")       )
-		nc_stats     = ncFile.createVariable( "stats"     , clim.stats.dtype     , ("time","sample","stat","models")    )
+		nc_X         = ncFile.createVariable( "X"         , clim.X.dtype              , ("time","sample","forcing","models") )
+		nc_ns_params = ncFile.createVariable( "ns_params" , clim.ns_params.dtype      , ("ns_param","sample","models")       )
+		nc_stats     = ncFile.createVariable( "stats"     , clim.stats.dtype          , ("time","sample","stat","models")    )
+		nc_mm_mean   = ncFile.createVariable( "mm_mean"   , clim.mm_params.mean.dtype , ("mm_size")                          )
+		nc_mm_cov    = ncFile.createVariable( "mm_cov"    , clim.mm_params.cov.dtype  , ("mm_size","mm_size")                )
 		
 		## Set variables values
 		nc_X[:]         = clim.X.values
 		nc_ns_params[:] = clim.ns_params.values
 		nc_stats[:]     = clim.stats.values
+		nc_mm_mean[:]   = clim.mm_params.mean
+		nc_mm_cov[:]    = clim.mm_params.cov
 		
 		## Attributes for event
 		ncFile.event_name     = event.name_event
@@ -240,20 +247,22 @@ def from_netcdf( ifile , ns_law = None , ns_law_args = None ):##{{{
 	with nc.Dataset( ifile , "r" ) as ncFile:
 		
 		## Extract dimensions
-		time     = ncFile.variables["time"][:]
-		sample   = ncFile.variables["sample"][:]
-		forcing  = ncFile.variables["forcing"][:]
-		models   = ncFile.variables["models"][:]
-		ns_param = ncFile.variables["ns_param"][:]
-		stats    = ncFile.variables["stat"][:]
-		reference = ncFile.variables["reference"][:]
+		time      = np.ma.getdata( ncFile.variables["time"][:] )
+		sample    = ncFile.variables["sample"][:]
+		forcing   = ncFile.variables["forcing"][:]
+		models    = ncFile.variables["models"][:]
+		ns_param  = ncFile.variables["ns_param"][:]
+		stats     = ncFile.variables["stat"][:]
+		reference = np.ma.getdata( ncFile.variables["reference"][:] )
 		
 		
 		##  Set climatology
-		clim = Climatology( time , sample.size - 1 , models , ns_law , ns_law_args )
-		clim.X         = xr.DataArray( ncFile.variables["X"][:]         , coords = [time,sample,forcing,models] , dims = ["time","sample","forcing","models"] )
-		clim.ns_params = xr.DataArray( ncFile.variables["ns_params"][:] , coords = [ns_param,sample,models]     , dims = ["ns_params","sample","models"]      )
-		clim.stats     = xr.DataArray( ncFile.variables["stats"][:]     , coords = [time,sample,stats,models]   , dims = ["time","sample","stats","models"]   )
+		clim = Climatology( time , models , ns_law , ns_law_args )
+		clim.X         = xr.DataArray( np.ma.getdata( ncFile.variables["X"][:]         ) , coords = [time,sample,forcing,models] , dims = ["time","sample","forcing","models"] )
+		clim.ns_params = xr.DataArray( np.ma.getdata( ncFile.variables["ns_params"][:] ) , coords = [ns_param,sample,models]     , dims = ["ns_params","sample","models"]      )
+		clim.stats     = xr.DataArray( np.ma.getdata( ncFile.variables["stats"][:]     ) , coords = [time,sample,stats,models]   , dims = ["time","sample","stats","models"]   )
+		clim.mm_params.mean = np.ma.getdata( ncFile.variables["mm_mean"][:] )
+		clim.mm_params.cov  = np.ma.getdata( ncFile.variables["mm_cov"][:]  )
 		
 		## Set event
 		event = Event( ncFile.event_name , reference.dtype.type(ncFile.event_time) , clim.X.dtype.type(ncFile.event_anomaly) , reference , ncFile.event_type , ncFile.event_side , ncFile.event_variable , ncFile.event_unit ) 
