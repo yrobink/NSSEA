@@ -149,11 +149,10 @@ if __name__ == "__main__":
 	##=======================
 	time_period    = np.arange( 1850 , 2101 , 1 , dtype = np.int )
 	time_reference = np.arange( 1961 , 1991 , 1 , dtype = np.int )
-	
+	n_mcmc_drawn_min = 250 if is_test else 2500
+	n_mcmc_drawn_max = 500 if is_test else 5000
 	n_sample    = 1000 if not is_test else 10
-	ns_law      = nsm.Normal
-	ns_law_args = { "link_scale" : sdt.ExpLink() }
-#	ns_law_args = { "link_scale" : sdt.IdLink() }
+	ns_law      = nsm.Normal( l_scale = sdt.ExpLink() )
 	event       = ns.Event( "HW03" , 2003 , None , time_reference , name_variable = "T" , unit_variable = "K" )
 	verbose     = True
 	ci          = 0.05
@@ -185,7 +184,7 @@ if __name__ == "__main__":
 	
 	## Define clim variable from input
 	##================================
-	clim = ns.Climatology( time_period , models , ns_law , ns_law_args )
+	clim = ns.Climatology( time_period , models , ns_law )#, ns_law_args )
 	
 	
 	## Decomposition of covariates
@@ -212,7 +211,7 @@ if __name__ == "__main__":
 	## Apply constraints
 	##==================
 	climCX   = ns.constraints_CX( climMM , Xo , time_reference = time_reference , verbose = verbose )
-	climCXCB = ns.constraints_bayesian( climCX , Yo , 250 , 500 , verbose = verbose )
+	climCXCB = ns.constraints_bayesian( climCX , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , verbose = verbose )
 	climC0   = ns.constraints_C0( climMM , Yo , verbose = verbose )
 	climCXC0 = ns.constraints_C0( climCX , Yo , verbose = verbose )
 	
@@ -234,20 +233,10 @@ if __name__ == "__main__":
 	ns.to_netcdf( climC0   , event , os.path.join( pathOut , "HW03_Normal_climC0.nc"   ) , "C0"   )
 	ns.to_netcdf( climCXC0 , event , os.path.join( pathOut , "HW03_Normal_climCXC0.nc" ) , "CXC0" )
 	
-#	climCXC0,event = ns.netcdf2clim( os.path.join( pathOut , "HW03_Normal_climCXC0.nc" ) , ns_law , ns_law_args )
-	
-	
-	## Write stats in txt file
-	##========================
-	with open( os.path.join( pathOut , "SummaryCXCB.txt" ) , "w" ) as f:
-		f.write( str(event) + "\n\n" )
-		f.write( nsp.print_time_stats( climCXCB.stats , 2003 , model = "multi" , digit = 6 , ci = ci , verbose = verbose ) + "\n" )
-		f.write( nsp.print_time_stats( climCXCB.stats , 2040 , model = "multi" , digit = 6 , ci = ci , verbose = verbose ) + "\n" )
-		f.write( nsp.print_relative_time_stats( climCXCB.stats , 2040 , 2003 , model = "multi" , digit = 6 , ci = ci , verbose = verbose ) + "\n" )
-	
 	
 	## Plot
 	##=====
+	nsp.write_package_tabular( climCXCB , event , os.path.join( pathOut , "SummaryCXCB.txt" ) , verbose = verbose )
 	nsp.decomposition( lX , clim.X , event                      , os.path.join( pathOut , "decomposition.pdf" ) , verbose = verbose )
 	nsp.constraints_CX( climMM , climCXC0 , Xo , time_reference , os.path.join( pathOut , "constraintCX.pdf" )  , verbose = verbose )
 	nsp.plot_classic_packages( climMM   , event , path = pathOut , suffix = "MM"   , ci = ci , verbose = verbose )
