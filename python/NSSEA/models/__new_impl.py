@@ -17,8 +17,9 @@ import SDFC.tools        as sdt
 #############
 
 
-class Params:
-	def __init__( self , name , is_cst , link , name_tex = None ):
+class Params:##{{{
+	
+	def __init__( self , name , is_cst , link , name_tex = None ):##{{{
 		self.name     = name
 		self.link     = link if link is not None else sdt.IdLink()
 		self.is_cst   = is_cst
@@ -28,15 +29,20 @@ class Params:
 		self.name_tex = name_tex
 		if name_tex is None:
 			self.name_tex = "\mathrm{" + self.name + "}"
+	##}}}
 	
-	def __call__( self , t ):
+	def __call__( self , t ):##{{{
 		return self._paramst(t)
+	##}}}
 	
-	def set_covariable( self , X , t ):
+	def set_covariable( self , X , t ):##{{{
 		if self.is_cst:
 			self._paramst = lambda x : self.link(self.coef_) + np.zeros_like(x)
 		else:
 			self._paramst = sci.interp1d( t , self.link(  self.coef_[0] + X.ravel() * self.coef_[1] ) )
+	##}}}
+##}}}
+
 
 ########################################################################################
 ########################################################################################
@@ -80,6 +86,10 @@ class AbstractModel:
 		sdlaw = self.sdlaw( method = "bayesian" )
 		sdlaw.fit( Y , n_mcmc_drawn = n_mcmc_drawn , prior = prior , **sdkwargs )
 		return sdlaw._info.draw
+	##}}}
+	
+	def check( self , Y , X , t = None ):##{{{
+		return True
 	##}}}
 	
 	
