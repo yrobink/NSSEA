@@ -16,11 +16,11 @@ import scipy.stats as sc
 import pandas as pd
 import xarray as xr
 
-from NSSEA.__tools import matrix_squareroot
-from NSSEA.__tools import ProgressBar
+from .__tools import matrix_squareroot
+from .__tools import ProgressBar
 
-from NSSEA.models.__Normal import Normal
-from NSSEA.models.__GEV    import GEV
+from .models.__Normal import Normal
+from .models.__GEV    import GEV
 
 from SDFC.tools import IdLink
 from SDFC.tools import ExpLink
@@ -31,32 +31,6 @@ import SDFC as sd
 #############
 ## Classes ##
 #############
-
-class GenericConstraint: ##{{{
-	"""
-	NSSEA.GenericConstraint
-	=======================
-	
-	Attributes
-	----------
-	mean   : array
-		CX mean
-	cov    : array
-		CX covariance matrix
-	std    : array
-		Square root of CX covariance matrix
-	
-	"""
-	def __init__( self , x , SX , y , SY , H ):
-		"""
-		Do not use, call NSSEA.constraints_CX
-		"""
-		Sinv      = np.linalg.pinv( H @ SX @ H.T + SY )
-		K	      = SX @ H.T @ Sinv
-		self.mean = x + K @ ( y - H @ x )
-		self.cov  = SX - SX @ H.T @ Sinv @ H @ SX
-		self.std  = matrix_squareroot(self.cov)
-##}}}
 
 ###############
 ## Functions ##
@@ -94,6 +68,7 @@ def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = Fa
 	if verbose: print( "Constraints CX" , end = "\r" )
 	
 	## Parameters
+	##===========
 	clim = climIn.copy()
 	time        = clim.time
 	time_Xo     = Xo.index
@@ -105,6 +80,7 @@ def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = Fa
 	sample      = clim.X.sample
 	
 	## Projection matrix H
+	##====================
 	cx = xr.DataArray( np.zeros( (n_time,n_time) )       , coords = [time,time]       , dims = ["time1","time2"] )
 	cy = xr.DataArray( np.zeros( (n_time_Xo,n_time_Xo) ) , coords = [time_Xo,time_Xo] , dims = ["time1","time2"] )
 	if not assume_good_scale:
@@ -120,12 +96,14 @@ def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = Fa
 	
 	
 	# Other inputs : x, SX, y, SY
+	##===========================
 	X  = clim.mm_params.mean
 	SX = clim.mm_params.cov
 	Y  = np.ravel(centerY @ Xo)
 	SY = centerY @ centerY.T
 	
 	## Rescale SY
+	##===========
 	if not assume_good_scale:
 		res = Y - H @ X
 		K   = H @ SX @ H.T
@@ -144,15 +122,24 @@ def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = Fa
 		lbda = sco.brentq( fct_to_root , a = a , b = b )
 		SY = lbda * SY
 	
-	## Constraints and sample
-	gc = GenericConstraint( X , SX , Y , SY , H )
+	## Apply constraints
+	##==================
+	
+	Sinv = np.linalg.pinv( H @ SX @ H.T + SY )
+	K	 = SX @ H.T @ Sinv
+	clim.mm_params.mean = X + K @ ( Y - H @ X )
+	clim.mm_params.cov  = SX - SX @ H.T @ Sinv @ H @ SX
+	
+	
+	## Sample from it
+	##===============
 	cx_sample = xr.DataArray( np.zeros( (n_time,n_sample + 1,3) ) , coords = [ clim.X.time , sample , clim.X.forcing ] , dims = ["time","sample","forcing"] )
 	
-	cx_sample.loc[:,"be","all"] = gc.mean[:n_time]
-	cx_sample.loc[:,"be","nat"] = gc.mean[n_time:(2*n_time)]
+	cx_sample.loc[:,"be","all"] = clim.mm_params.mean[:n_time]
+	cx_sample.loc[:,"be","nat"] = clim.mm_params.mean[n_time:(2*n_time)]
 	
 	for s in sample[1:]:
-		draw = gc.mean + gc.std @ np.random.normal(size = n_mm_params)
+		draw = clim.mm_params.rvs()
 		cx_sample.loc[:,s,"all"] = draw[:n_time]
 		cx_sample.loc[:,s,"nat"] = draw[n_time:(2*n_time)]
 	
@@ -160,9 +147,6 @@ def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = Fa
 		clim.X.loc[:,:,:,m] = cx_sample.values
 	
 	clim.X.loc[:,:,"ant",:] = clim.X.loc[:,:,"all",:] - clim.X.loc[:,:,"nat",:]
-	clim.mm_params.mean = gc.mean
-	clim.mm_params.cov  = gc.cov
-	clim.mm_params.std  = gc.std
 	
 	if verbose: print( "Constraints CX (Done)" )
 	

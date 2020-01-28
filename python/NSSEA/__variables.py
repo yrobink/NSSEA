@@ -13,6 +13,8 @@ import numpy   as np
 import xarray  as xr
 import netCDF4 as nc
 
+from .__mm_infer import MultiModelParams
+
 
 #############
 ## Classes ##
@@ -118,10 +120,8 @@ class Climatology: ##{{{
 		self.ns_law      = ns_law
 		self.ns_law_args = ns_law.default_arg(ns_law_args)
 		self.ns_params   = None
-		
 		self.stats       = None
-		
-		self.mm_params   = None
+		self.mm_params   = MultiModelParams()
 	##}}}
 	
 	## Properties {{{
@@ -148,7 +148,7 @@ class Climatology: ##{{{
 	
 	@property
 	def n_mm_params(self):
-		return None if self.mm_params is None else self.mm_params.mean.size
+		return self.mm_params.n_mm_params
 	##}}}
 	
 	def keep_models( self , models ):##{{{
