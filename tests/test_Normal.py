@@ -185,7 +185,7 @@ if __name__ == "__main__":
 	
 	## Define clim variable from input
 	##================================
-	clim = ns.Climatology( time_period , n_sample , models , ns_law , ns_law_args )
+	clim = ns.Climatology( time_period , models , ns_law , ns_law_args )
 	
 	
 	## Decomposition of covariates
@@ -212,7 +212,7 @@ if __name__ == "__main__":
 	## Apply constraints
 	##==================
 	climCX   = ns.constraints_CX( climMM , Xo , time_reference = time_reference , verbose = verbose )
-	climCXCB = ns.constraints_bayesian( climCX , Yo , 1000 , 500 , verbose = verbose )
+	climCXCB = ns.constraints_bayesian( climCX , Yo , 250 , 500 , verbose = verbose )
 	climC0   = ns.constraints_C0( climMM , Yo , verbose = verbose )
 	climCXC0 = ns.constraints_C0( climCX , Yo , verbose = verbose )
 	
