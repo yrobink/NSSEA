@@ -4,11 +4,19 @@
 ## Libraries ##
 ###############
 
+import numpy             as np
+import scipy.stats       as sc
+import scipy.interpolate as sci
+import scipy.special     as scs
+import SDFC              as sd
+import SDFC.tools        as sdt
+
+
 #############
 ## Classes ##
 #############
 
-class NSAbstractModel:
+class NSAbstractModel:##{{{
 	"""
 	NSSEA.models.NSAbstractModel
 	============================
@@ -54,4 +62,1106 @@ class NSAbstractModel:
 	
 	def isf( self , q , t ):
 		pass
+##}}}
+
+class Normal(NSAbstractModel):##{{{
+	"""
+	NSSEA.models.NSGaussianModel
+	============================
+	Non stationary Gaussian model. At each time, the law is a Gaussian law.
+	We assume the mean (mu) and the scale (scale) can be written:
+	mu(t) = mu0 + mu1 * X
+	scale(t) = scale0 + scale1 * X
+	Where X is a co-variable given in the fit function.
+	
+	
+	Attributes
+	----------
+	mu0    : float
+		First parameter of the mean of the NS Gaussian law
+	mu1    : float
+		Second parameter of the mean of the NS Gaussian law
+	scale0 : float
+		First parameter of the standard deviation of the NS Gaussian law
+	scale1 : float
+		Second parameter of the standard deviation of the NS Gaussian law
+	"""
+	
+	#################
+	## Constructor ##
+	#################
+	
+	def __init__( self , link_loc = sdt.IdLink() , link_scale = sdt.ExpLink() , method = "MLE" , verbose = False ): ##{{{
+		"""
+		Initialization of the NS Gaussian Model
+		"""
+		NSAbstractModel.__init__(self)
+		self._norm = sd.Normal( method = method )
+		self._verbose = verbose
+		self._link = { "loc" : link_loc , "scale" : link_scale }
+		
+		self.mu0     = None
+		self.mu1     = None
+		self.scale0  = None
+		self.scale1  = None
+		self._mut    = None
+		self._scalet = None
+	##}}}
+	
+	def default_arg( arg = None ):##{{{
+		"""
+		Dictionary of arguments of __init__
+		
+		Parameters
+		----------
+		arg : None or dict
+			dictionary of arguments already fixed
+		
+		Returns
+		-------
+		default: dict
+			Arguments of __init__, elements of "arg" are kept
+		"""
+		default = { "link_loc" : sdt.IdLink() , "link_scale" : sdt.ExpLink() , "method" : "MLE" , "verbose" : False }
+		if arg is not None:
+			for key in arg:
+				default[key] = arg[key]
+		return default
+	##}}}
+	
+	def params_info( arg = None ):##{{{
+		"""
+		Dictionary containing size of ns params and character names
+		
+		Parameters
+		----------
+		arg : None or dict
+			dictionary of arguments already fixed
+		
+		Returns
+		-------
+		default: dict
+			The key "size" contains the size, the key "names" contains a list of names
+		"""
+		return { "size" : 4 , "names" : ["loc0","loc1","scale0","scale1"] }
+	##}}}
+	
+	def link_fct_by_params( self ):##{{{
+		return [self._link["loc"],self._link["loc"],self._link["scale"],self._link["scale"]]
+	##}}}
+	
+	
+	###############
+	## Accessors ##
+	###############
+	
+	def meant( self , t ): ##{{{
+		"""
+		Mean of the Gaussian Model at time t
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		mu : np.array
+			Mean at time t
+		"""
+		return self._mut(t)
+	##}}}
+	
+	def mediant( self , t ):##{{{
+		return self.meant(t)
+	##}}}
+	
+	def mut( self , t ): ##{{{
+		"""
+		Loc parameters of the Gaussian Model at time t
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		mu : np.array
+			Mean at time t
+		"""
+		return self._mut(t)
+	##}}}
+	
+	def scalet( self , t ):##{{{
+		"""
+		Standard deviation of the Gaussian Model at time t
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		scale : np.array
+			Standard deviation at time t
+		"""
+		return self._scalet(t)
+	##}}}
+	
+	def get_params( self ):##{{{
+		"""
+		Return a vector of the coefficients fitted, i.e.:
+		np.array( [mu0,mu1,scale0,scale1] )
+		"""
+		return np.array( [self.mu0,self.mu1,self.scale0,self.scale1] )
+	##}}}
+	
+	def set_params( self , coef_ ): ##{{{
+		self.mu0    = coef_[0]
+		self.mu1    = coef_[1]
+		self.scale0 = coef_[2]
+		self.scale1 = coef_[3]
+	#}}}
+	
+	def check( self , Y , X , t = None ):##{{{
+		return True
+	##}}}
+	
+	
+	#############
+	## Methods ##
+	#############
+	
+	def fit( self , Y , X ):##{{{
+		"""
+		Fit of the NS Gaussian law from a dataset Y and a covariable X discribing non-stationarity of Y
+		
+		Parameters
+		----------
+		Y : np.array
+			Dataset to fit
+		X : np.array
+			Covariable
+		
+		Notes
+		-----
+		To use the model, the method set_covariable must be called by user after the fit
+		"""
+		self._norm.fit( Y , c_loc = X , l_loc = self._link["loc"] , c_scale = X , l_scale = self._link["scale"] )
+		
+		self.mu0    = self._norm.coef_[0]
+		self.mu1    = self._norm.coef_[1]
+		self.scale0 = self._norm.coef_[2]
+		self.scale1 = self._norm.coef_[3]
+	##}}}
+	
+	def drawn_bayesian( self , Y , X  , n_mcmc_drawn , prior ):##{{{
+		norm = sd.Normal( method = "bayesian" )
+		norm.fit( Y , c_loc = X , l_loc = self._link["loc"] , c_scale = X , l_scale = self._link["scale"] , n_mcmc_drawn = n_mcmc_drawn , prior = prior )
+		return norm._info.draw
+	##}}}
+	
+	def set_covariable( self , X , t = None ):##{{{
+		"""
+		Set the covariable of the model.
+		
+		Parameters
+		----------
+		X : np.array
+			Covariable
+		t : None or np.array
+			Time, if None t = np.arange(0,X.size)
+		
+		"""
+		t = t if t is not None else np.arange( 0 , X.size )
+		self._mut    = sci.interp1d( t , self._link["loc"](  self.mu0    + X.ravel() * self.mu1   ) )
+		self._scalet = sci.interp1d( t , self._link["scale"](self.scale0 + X.ravel() * self.scale1) )
+	##}}}
+	
+	def rvs( self , t ):##{{{
+		"""
+		Random value generator
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		Y : np.array
+			A time series following the NS law
+		"""
+		return sc.norm.rvs( size = t.size , loc = self.mut(t) , scale = self.scalet(t) )
+	##}}}
+	
+	def cdf( self , Y , t ):##{{{
+		"""
+		Cumulative Distribution Function (inverse of quantile function)
+		
+		Parameters
+		----------
+		Y : np.array
+			Value to estimate the CDF
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		q : np.array
+			CDF value
+		"""
+		return sc.norm.cdf( Y , loc = self.mut(t) , scale = self.scalet(t) )
+	##}}}
+	
+	def icdf( self , q , t ):##{{{
+		"""
+		inverse of Cumulative Distribution Function 
+		
+		Parameters
+		----------
+		q : np.array
+			Values to estimate the quantile
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		Y : np.array
+			Quantile
+		"""
+		return sc.norm.ppf( q , loc = self.mut(t) , scale = self.scalet(t) )
+	##}}}
+	
+	def sf( self , Y , t ):##{{{
+		"""
+		Survival Function (1-CDF)
+		
+		Parameters
+		----------
+		Y : np.array
+			Value to estimate the survival function
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		q : np.array
+			survival value
+		"""
+		return sc.norm.sf( Y , loc = self.mut(t) , scale = self.scalet(t) )
+	##}}}
+	
+	def isf( self , q , t ):##{{{
+		"""
+		inverse of Survival Function
+		
+		Parameters
+		----------
+		q : np.array
+			Values to estimate the quantile
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		Y : np.array
+			values
+		"""
+		return sc.norm.isf( q , loc = self.mut(t) , scale = self.scalet(t) )
+	##}}}
+	
+##}}}
+
+class GEV(NSAbstractModel):##{{{
+	"""
+	NSModel.NSGEVModel
+	==================
+	Non stationary Generalized Extreme value model. At each time, the law is a Generalized Extreme value law.
+	We assume the location (loc), the scale (scale) and the shape (shape) can be written:
+	loc(t) = loc0 + loc1 * X
+	scale(t) = scale0 + scale1 * X
+	shape(t) = constant
+	Where X is a co-variable given to the fit function.
+	
+	
+	Attributes
+	----------
+	loc        : np.array
+		Loc at each time
+	scale      :
+		Scale at each time
+	shape      :
+		Shape at each time
+	
+	Masked (but maybe usefull) attributes
+	-------------------------------------
+	_loc0   : float
+		First parameter of loc
+	_loc1   : float
+		Second parameter of loc
+	_scale0 : float
+		First parameter of the scale
+	_scale1 : float
+		Second parameter of the scale
+	_shape  : float
+		Value of shape estimated
+	"""
+	
+	#################
+	## Constructor ##
+	#################
+	
+	def __init__( self , tails = "upper" , link_loc = sdt.IdLink() , link_scale = sdt.ExpLink() , link_shape = sdt.LogitLink( -0.5 , 0.5 ) , method = "MLE" , no_test = True , verbose = False ): ##{{{
+		"""
+		"""
+		NSAbstractModel.__init__(self)
+		self._tails   = 1 if tails == "upper" else -1
+		self._gev     = sd.GEVLaw( method = method )
+		self._link    = { "loc" : link_loc , "scale" : link_scale , "shape" : link_shape }
+		self._no_test = no_test
+		self._verbose = verbose
+		
+		self._loc0    = None
+		self._loc1    = None
+		self._scale0  = None
+		self._scale1  = None
+		self._shape   = None
+		
+		self.loc      = None
+		self.scale    = None
+		self.shape    = None
+		
+		self._loct    = None
+		self._scalet  = None
+		self._shapet  = None
+		
+	##}}}
+	
+	def default_arg( arg = None ):##{{{
+		"""
+		Dictionary of arguments of __init__
+		
+		Parameters
+		----------
+		arg : None or dict
+			dictionary of arguments already fixed
+		
+		Returns
+		-------
+		default: dict
+			Arguments of __init__, elements of "arg" are kept
+		"""
+		default = { "tails" : "upper" , "link_loc" : sdt.IdLink() , "link_scale" : sdt.ExpLink() , "link_shape" : sdt.LogitLink( -0.5 , 0.5 ) , "method" : "MLE" , "no_test" : True , "verbose" : False }
+		if arg is not None:
+			for key in arg:
+				default[key] = arg[key]
+		return default
+	##}}}
+	
+	def params_info( arg = None ):##{{{
+		"""
+		Dictionary containing size of ns params and character names
+		
+		Parameters
+		----------
+		arg : None or dict
+			dictionary of arguments already fixed
+		
+		Returns
+		-------
+		default: dict
+			The key "size" contains the size, the key "names" contains a list of names
+		"""
+		return { "size" : 5 , "names" : ["loc0","loc1","scale0","scale1","shape"] }
+	##}}}
+	
+	def link_fct_by_params( self ):##{{{
+		return [self._link["loc"],self._link["loc"],self._link["scale"],self._link["scale"],self._link["shape"]]
+	##}}}
+	
+	
+	#########
+	## Fit ##
+	#########
+	
+	def fit( self , Y , X ):##{{{
+		"""
+		Fit of the NS Generalized extreme value law from a dataset Y and a covariable X discribing non-stationarity of Y
+		
+		Parameters
+		----------
+		Y : np.array
+			Dataset to fit
+		X : np.array
+			Covariable
+		
+		Notes
+		-----
+		To use the model, the method set_covariable must be called by user after the fit
+		"""
+		
+		## Fit
+		self._gev.fit( self._tails * Y , c_loc = self._tails * X , c_scale = self._tails * X , l_loc = self._link["loc"] , l_scale = self._link["scale"] , l_shape = self._link["shape"] )
+		
+		## Result
+		self._loc0   = self._gev.coef_[0]
+		self._loc1   = self._gev.coef_[1]
+		self._scale0 = self._gev.coef_[2]
+		self._scale1 = self._gev.coef_[3]
+		self._shape  = self._gev.coef_[4]
+	##}}}
+	
+	def set_covariable( self , X , t = None ):##{{{
+		"""
+		Set the covariable of the model.
+		
+		Parameters
+		----------
+		X : np.array
+			Covariable
+		t : None or np.array
+			Time, if None t = np.arange(0,X.size)
+		
+		"""
+		self.loc   = self._gev._link["loc"](   self._loc0 + self._tails * self._loc1 * X )
+		self.scale = self._gev._link["scale"]( self._scale0 + self._tails * self._scale1 * X )
+		self.shape = self._gev._link["shape"]( np.repeat( self._shape , X.size ) )
+		self._loct   = sci.interp1d( t , self.loc )
+		self._scalet = sci.interp1d( t , self.scale )
+		self._shapet = sci.interp1d( t , self.shape )
+	##}}}
+	
+	def get_params( self ):##{{{
+		"""
+		Return a vector of the coefficients fitted
+		"""
+		coef_ = np.array( [self._loc0,self._loc1,self._scale0,self._scale1,self._shape] )
+		return coef_
+	##}}}
+	
+	def set_params( self , coef_ ): ##{{{
+		self._loc0    = coef_[0]
+		self._loc1    = coef_[1]
+		self._scale0  = coef_[2]
+		self._scale1  = coef_[3]
+		self._shape   = coef_[4]
+	#}}}
+	
+	def check( self , Y , X , t = None ):##{{{
+		if self._no_test : return True
+		self.set_covariable( X , t )
+		return np.all( np.logical_and( Y < self.upper_boundt(t) , Y > self.lower_boundt(t) ) )
+#		return True
+	##}}}
+	
+	
+	###############
+	## Accessors ##
+	###############
+	
+	def meant( self , t ):##{{{
+		cst = ( scs.gamma( 1 - self.shape[0] ) - 1 ) / self.shape[0] if np.abs( self.shape[0] ) > 1e-8 else np.euler_gamma
+		return self._loct(t) + self._scalet(t) * cst
+	##}}}
+	
+	def mediant( self , t ):##{{{
+		return self._loct(t) + self._scalet(t) * ( np.pow( np.log(2) , - self._shapet(t) ) - 1. ) / self._shapet(t)
+	##}}}
+	
+	def loct( self , t ): ##{{{
+		"""
+		Location of the GEV Model at time t
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		loc : np.array
+			loc at time t
+		"""
+		return self._loct(t)
+	##}}}
+	
+	def scalet( self , t ):##{{{
+		"""
+		Scale of the GEV Model at time t
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		scale : np.array
+			scale at time t
+		"""
+		return self._scalet(t)
+	##}}}
+	
+	def shapet( self , t ):##{{{
+		"""
+		Shape of the GEV Model at time t
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		shape : np.array
+			shape at time t
+		"""
+		return self._shapet(t)
+	##}}}
+	
+	def upper_boundt( self , t ):##{{{
+		"""
+		Upper bound of GEV model (can be infinite)
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		bound : np.array
+			bound at time t
+		"""
+		loc   = self.loct(t)
+		scale = self.scalet(t)
+		shape = self.shapet(t)
+		bound = loc - scale / shape
+		idx   = np.logical_not( shape < 0 )
+		bound[idx] = np.inf
+		return bound
+	##}}}
+	
+	def lower_boundt( self , t ):##{{{
+		"""
+		Lower bound of GEV model (can be -infinite)
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		bound : np.array
+			bound at time t
+		"""
+		loc   = self.loct(t)
+		scale = self.scalet(t)
+		shape = self.shapet(t)
+		bound = loc - scale / shape
+		idx   = shape < 0
+		bound[idx] = - np.inf
+		return bound
+	##}}}
+	
+	
+	#############
+	## Methods ##
+	#############
+	
+	def rvs( self , t ):##{{{
+		"""
+		Random value generator
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		Y : np.array
+			A time series following the NS law
+		"""
+		return self._tails * sc.genextreme.rvs( size = t.size , loc = self._loct(t) , scale = self._scalet(t) , c = - self._shapet(t) )
+	##}}}
+	
+	def cdf( self , Y , t ):##{{{
+		"""
+		Cumulative Distribution Function (inverse of quantile function)
+		
+		Parameters
+		----------
+		Y : np.array
+			Value to estimate the CDF
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		q : np.array
+			CDF value
+		"""
+		return self._cdf( Y , t )  if self._tails > 0 else self._sf( Y , t )
+	##}}}
+	
+	def icdf( self , q , t ):##{{{
+		"""
+		inverse of Cumulative Distribution Function 
+		
+		Parameters
+		----------
+		q : np.array
+			Values to estimate the quantile
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		Y : np.array
+			Quantile
+		"""
+		return self._icdf( q , t ) if self._tails > 0 else self._isf( q , t )
+	##}}}
+	
+	def sf( self , Y , t ):##{{{
+		"""
+		Survival Function (1-CDF)
+		
+		Parameters
+		----------
+		Y : np.array
+			Value to estimate the survival function
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		q : np.array
+			survival value
+		"""
+		return self._sf( Y , t )   if self._tails > 0 else self._cdf( Y , t )
+	##}}}
+	
+	def isf( self , q , t ):##{{{
+		"""
+		inverse of Survival Function
+		
+		Parameters
+		----------
+		q : np.array
+			Values to estimate the quantile
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		Y : np.array
+			values
+		"""
+		return self._isf( q , t )  if self._tails > 0 else self._icdf( q , t )
+	##}}}
+	
+	
+	############################################################
+	## Masked methods                                         ##
+	## Here the methods are available only if tail == "upper" ##
+	## self.cdf (etc) switch between self._cdf and            ##
+	## self._sf if tail == "lower"                            ##
+	############################################################
+	
+	def _cdf( self , Y , t ):##{{{
+		return sc.genextreme.cdf( self._tails * Y , loc = self._loct(t) , scale = self._scalet(t) , c = - self._shapet(t) )
+	##}}}
+	
+	def _icdf( self , q , t ):##{{{
+		return self._tails * sc.genextreme.ppf( q , loc = self._loct(t) , scale = self._scalet(t) , c = - self._shapet(t) )
+	##}}}
+	
+	def _sf( self , Y , t ):##{{{
+		return sc.genextreme.sf( self._tails * Y , loc = self._loct(t) , scale = self._scalet(t) , c = - self._shapet(t) )
+	##}}}
+	
+	def _isf( self , q , t ):##{{{
+		return self._tails * sc.genextreme.isf( q , loc = self._loct(t) , scale = self._scalet(t) , c = - self._shapet(t) )
+	##}}}
+##}}}
+
+class NSGEVnsshModel(NSAbstractModel):##{{{
+	"""
+	NSModel.NSGEVnsshModel
+	======================
+	Non stationary Generalized Extreme value model. At each time, the law is a Generalized Extreme value law.
+	We assume the location (loc), the scale (scale) and the shape (shape) can be written:
+	loc(t) = loc0 + loc1 * X
+	scale(t) = scale0 + scale1 * X
+	shape(t) = shape0 + shape1 * X
+	Where X is a co-variable given in the fit function.
+	
+	
+	Attributes
+	----------
+	loc        : np.array
+		Location at each time given in set_covariable, fitted with a quantile regression
+	scale      :
+		Scale at each time given in set_covariable
+	shape      :
+		Shape at each time given in set_covariable
+	
+	Masked (but maybe usefull) attributes
+	-------------------------------------
+	_loc0   : float
+		First parameter of the scale
+	_loc1   : float
+		First parameter of the scale
+	_scale0 : float
+		First parameter of the scale
+	_scale1 : float
+		Second parameter of the scale
+	_shape0 : float
+		Value of shape estimated
+	_shape1 : float
+		Value of shape estimated
+	"""
+	
+	#################
+	## Constructor ##
+	#################
+	
+	def __init__( self , tails = "upper" , link_scale = sdt.ExpLink() , link_shape = sdt.LogitLink( -0.5 , 0.5 ) , method = "MLE" , verbose = False ): ##{{{
+		"""
+		"""
+		NSAbstractModel.__init__(self)
+		self._tails   = 1 if tails == "upper" else -1
+		self._lf_sc   = link_fct_scale
+		self._lf_sh   = link_fct_shape
+		self._verbose = verbose
+		self._method  = method
+		
+		self._loc0    = None
+		self._loc1    = None
+		self._scale0  = None
+		self._scale1  = None
+		self._shape0  = None
+		self._shape1  = None
+		
+		self.loc      = None
+		self.scale    = None
+		self.shape    = None
+		
+		self._loct    = None
+		self._scalet  = None
+		self._shapet  = None
+		
+	##}}}
+	
+	def default_arg( arg = None ):##{{{
+		"""
+		Dictionary of arguments of __init__
+		
+		Parameters
+		----------
+		arg : None or dict
+			dictionary of arguments already fixed
+		
+		Returns
+		-------
+		default: dict
+			Arguments of __init__, elements of "arg" are kept
+		"""
+		default = { "tails" : "upper" , "link_scale" : sdt.IdLink() , "link_shape" : sdt.IdLink() , "method" : "MLE" , "verbose" : False }
+		if arg is not None:
+			for key in arg:
+				default[key] = arg[key]
+		return default
+	##}}}
+	
+	def params_info( arg = None ):##{{{
+		"""
+		Dictionary containing size of ns params and character names
+		
+		Parameters
+		----------
+		arg : None or dict
+			dictionary of arguments already fixed
+		
+		Returns
+		-------
+		default: dict
+			The key "size" contains the size, the key "names" contains a list of names
+		"""
+		return { "size" : 6 , "names" : ["loc0","loc1","scale0","scale1","shape0","shape1"] }
+	##}}}
+	
+	def link_fct_by_params( self ):##{{{
+		return [sdt.IdLinkFct(),sdt.IdLinkFct(),self._lf_sc,self._lf_sc,self._lf_sh,self._lf_sh]
+	##}}}
+	
+	
+	#########
+	## Fit ##
+	#########
+	
+	def fit( self , Y , X ):##{{{
+		"""
+		Fit of the NS Generalized extreme value law from a dataset Y and a covariable X discribing non-stationarity of Y
+		
+		Parameters
+		----------
+		Y : np.array
+			Dataset to fit
+		X : np.array
+			Covariable
+		
+		Notes
+		-----
+		To use the model, the method set_covariable must be called by user after the fit
+		"""
+		
+		## Fit
+		gev = sd.GEVLaw( method = self._method , link_fct_scale = self._lf_sc , link_fct_shape = self._lf_sh )
+		gev.fit( self._tails * Y , loc_cov = self._tails * X , scale_cov = self._tails * X , shape_cov = self._tails * X )
+		
+		## Result
+		self._loc0   = gev._loc.coef_[0]
+		self._loc1   = gev._loc.coef_[1] if gev._loc.size == 2 else 0.
+		self._scale0 = gev._scale.coef_[0]
+		self._scale1 = gev._scale.coef_[1] if gev._scale.size == 2 else 0.
+		self._shape0 = gev._shape.coef_[0]
+		self._shape1 = gev._shape.coef_[1] if gev._shape.size == 2 else 0.
+	##}}}
+	
+	def set_covariable( self , X , t = None ):##{{{
+		"""
+		Set the covariable of the model.
+		
+		Parameters
+		----------
+		X : np.array
+			Covariable
+		t : None or np.array
+			Time, if None t = np.arange(0,X.size)
+		
+		"""
+		self.loc   = self._loc0 + self._tails * self._loc1 * X
+		self.scale = self._lf_sc( self._scale0 + self._tails * self._scale1 * X )
+		self.shape = self._lf_sh( self._shape0 + self._tails * self._shape1 * X )
+		self._loct   = sci.interp1d( t , self.loc )
+		self._scalet = sci.interp1d( t , self.scale )
+		self._shapet = sci.interp1d( t , self.shape )
+	##}}}
+	
+	def get_params( self ):##{{{
+		"""
+		Return a vector of the coefficients fitted
+		"""
+		coef_ = np.array( [self._loc0,self._loc1,self._scale0,self._scale1,self._shape0,self._shape1] )
+		return coef_
+	##}}}
+	
+	def set_params( self , coef_ ): ##{{{
+		self._loc0    = coef_[0]
+		self._loc1    = coef_[1]
+		self._scale0  = coef_[2]
+		self._scale1  = coef_[3]
+		self._shape0  = coef_[4]
+		self._shape1  = coef_[5]
+	#}}}
+	
+	
+	###############
+	## Accessors ##
+	###############
+	
+	def meant( self , t ):##{{{
+		cst = ( scs.gamma( 1 - self._shapet(t) ) - 1 ) / self._shapet(t)
+		cst[ np.logical_not( np.abs(self._shapet(t)) > 1e-8 ) ] = np.euler_gamma
+		return self._loct(t) + self._scalet(t) * cst
+	##}}}
+	
+	def mediant( self , t ):##{{{
+		return self._loct(t) + self._scalet(t) * ( np.pow( np.log(2) , - self._shapet(t) ) - 1. ) / self._shapet(t)
+	##}}}
+	
+	def loct( self , t ): ##{{{
+		"""
+		Location of the Generalized Pareto Model at time t
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		loc : np.array
+			loc at time t
+		"""
+		return self._loct(t)
+	##}}}
+	
+	def scalet( self , t ):##{{{
+		"""
+		Scale of the Generalized Pareto Model at time t
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		scale : np.array
+			scale at time t
+		"""
+		return self._scalet(t)
+	##}}}
+	
+	def shapet( self , t ):##{{{
+		"""
+		Shape of the Generalized Pareto Model at time t
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		shape : np.array
+			shape at time t
+		"""
+		return self._shapet(t)
+	##}}}
+	
+	
+	#############
+	## Methods ##
+	#############
+	
+	def rvs( self , t ):##{{{
+		"""
+		Random value generator
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		Y : np.array
+			A time series following the NS law
+		"""
+		return self._tails * sc.genextreme.rvs( size = t.size , loc = self._loct(t) , scale = self._scalet(t) , c = - self._shapet(t) )
+	##}}}
+	
+	def cdf( self , Y , t ):##{{{
+		"""
+		Cumulative Distribution Function (inverse of quantile function)
+		
+		Parameters
+		----------
+		Y : np.array
+			Value to estimate the CDF
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		q : np.array
+			CDF value
+		"""
+		return self._cdf( Y , t )  if self._tails > 0 else self._sf( Y , t )
+	##}}}
+	
+	def icdf( self , q , t ):##{{{
+		"""
+		inverse of Cumulative Distribution Function 
+		
+		Parameters
+		----------
+		q : np.array
+			Values to estimate the quantile
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		Y : np.array
+			Quantile
+		"""
+		return self._icdf( q , t ) if self._tails > 0 else self._isf( q , t )
+	##}}}
+	
+	def sf( self , Y , t ):##{{{
+		"""
+		Survival Function (1-CDF)
+		
+		Parameters
+		----------
+		Y : np.array
+			Value to estimate the survival function
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		q : np.array
+			survival value
+		"""
+		return self._sf( Y , t )   if self._tails > 0 else self._cdf( Y , t )
+	##}}}
+	
+	def isf( self , q , t ):##{{{
+		"""
+		inverse of Survival Function
+		
+		Parameters
+		----------
+		q : np.array
+			Values to estimate the quantile
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		Y : np.array
+			values
+		"""
+		return self._isf( q , t )  if self._tails > 0 else self._icdf( q , t )
+	##}}}
+	
+	
+	############################################################
+	## Masked methods                                         ##
+	## Here the methods are available only if tail == "upper" ##
+	## self.cdf (etc) switch between self._cdf and            ##
+	## self._sf if tail == "lower"                            ##
+	############################################################
+	
+	def _cdf( self , Y , t ):##{{{
+		return sc.genextreme.cdf( self._tails * Y , loc = self._loct(t) , scale = self._scalet(t) , c = - self._shapet(t) )
+	##}}}
+	
+	def _icdf( self , q , t ):##{{{
+		return self._tails * sc.genextreme.ppf( q , loc = self._loct(t) , scale = self._scalet(t) , c = - self._shapet(t) )
+	##}}}
+	
+	def _sf( self , Y , t ):##{{{
+		return sc.genextreme.sf( self._tails * Y , loc = self._loct(t) , scale = self._scalet(t) , c = - self._shapet(t) )
+	##}}}
+	
+	def _isf( self , q , t ):##{{{
+		return self._tails * sc.genextreme.isf( q , loc = self._loct(t) , scale = self._scalet(t) , c = - self._shapet(t) )
+	##}}}
+
+##}}}
+
+
+
 
