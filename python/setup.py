@@ -22,7 +22,7 @@ list_packages = [
 
 setup(
 	name = "NSSEA" ,
-	version = "0.3.0a1" ,
+	version = "0.3.0a2" ,
 	description = "",
 	author = "Yoann Robin" ,
 	author_email = "yoann.robin.k@gmail.com" ,
