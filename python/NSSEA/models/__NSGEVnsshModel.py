@@ -10,7 +10,7 @@ import scipy.interpolate as sci
 import scipy.special     as scs
 import SDFC              as sd
 
-from NSSEA.models.__NSAbstractModel import NSAbstractModel
+from .__NSAbstractModel import NSAbstractModel
 
 import SDFC as sd
 import SDFC.tools as sdt

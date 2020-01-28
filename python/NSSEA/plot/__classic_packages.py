@@ -17,12 +17,12 @@ mpl.use("pdf")
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as mpdf
 
-from NSSEA.plot.__linkParams    import LinkParams
-from NSSEA.plot.__probabilities import probabilities
-from NSSEA.plot.__ns_params     import ns_params
-from NSSEA.plot.__intensities   import intensities
-from NSSEA.plot.__stats_event   import stats_event
-from NSSEA.plot.__stats_event   import stats_relative
+from .__linkParams    import LinkParams
+from .__probabilities import probabilities
+from .__ns_params     import ns_params
+from .__intensities   import intensities
+from .__stats_event   import stats_event
+from .__stats_event   import stats_relative
 
 
 ###############

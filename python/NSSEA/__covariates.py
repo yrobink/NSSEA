@@ -15,9 +15,9 @@ import xarray as xr
 import netCDF4 as nc4
 import pygam as pg
 
-from NSSEA.__tools import ProgressBar
-from NSSEA.__tools import matrix_positive_part
-from NSSEA.__tools import matrix_squareroot
+from .__tools import ProgressBar
+from .__tools import matrix_positive_part
+from .__tools import matrix_squareroot
 
 
 #############

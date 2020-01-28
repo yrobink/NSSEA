@@ -11,9 +11,9 @@
 import numpy        as np
 import xarray       as xr
 
-from NSSEA.__tools import matrix_positive_part
-from NSSEA.__tools import matrix_squareroot
-from NSSEA.__tools import barycenter_covariance
+from .__tools import matrix_positive_part
+from .__tools import matrix_squareroot
+from .__tools import barycenter_covariance
 
 
 #############

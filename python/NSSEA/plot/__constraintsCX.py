@@ -17,9 +17,7 @@ mpl.use("pdf")
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as mpdf
 
-import matplotlib.backends.backend_pdf as mpdf
-
-from NSSEA.plot.__linkParams import LinkParams
+from .__linkParams import LinkParams
 
 
 ###############

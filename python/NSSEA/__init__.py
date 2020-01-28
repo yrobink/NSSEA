@@ -13,33 +13,33 @@ __version__ = "0.3.0a1"
 #############
 
 ## Tools
-from NSSEA.__tools import ProgressBar
+from .__tools import ProgressBar
 
 
 ## Variables
-from NSSEA.__variables import Event
-from NSSEA.__variables import Climatology
-from NSSEA.__variables import to_netcdf
-from NSSEA.__variables import from_netcdf
+from .__variables import Event
+from .__variables import Climatology
+from .__variables import to_netcdf
+from .__variables import from_netcdf
 
 
 ## Covariate split
-from NSSEA.__covariates import EBM
-from NSSEA.__covariates import gam_decomposition
+from .__covariates import EBM
+from .__covariates import gam_decomposition
 #from NSSEA.__covariates import XSplitted
 #from NSSEA.__covariates import gam_decomposition_old
 #from NSSEA.__covariates import gam_decomposition_old_old
 #from NSSEA.__covariates import gam_decomposition_old_old_old
 
 ## Stats
-from NSSEA.__nsfit    import nslaw_fit
-from NSSEA.__multi_model import infer_multi_model
-from NSSEA.__multi_model import MultiModelParams
-from NSSEA.__nsstats  import extremes_stats
+from .__nsfit       import nslaw_fit
+from .__multi_model import infer_multi_model
+from .__multi_model import MultiModelParams
+from .__nsstats     import extremes_stats
+from .__nsstats     import stats_relative_event
 #from NSSEA.__nsstats  import RR_correction
-from NSSEA.__nsstats  import stats_relative_event
 
 ## Constraints
-from NSSEA.__constraints import constraints_CX
-from NSSEA.__constraints import constraints_C0
-from NSSEA.__constraints import constraints_bayesian
+from .__constraints import constraints_CX
+from .__constraints import constraints_C0
+from .__constraints import constraints_bayesian

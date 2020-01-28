@@ -11,7 +11,7 @@ import scipy.interpolate as sci
 import SDFC              as sd
 import SDFC.tools        as sdt
 
-from NSSEA.models.__NSAbstractModel import NSAbstractModel
+from .__NSAbstractModel import NSAbstractModel
 
 
 #############

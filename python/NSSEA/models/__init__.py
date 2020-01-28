@@ -10,8 +10,8 @@
 ## Imports ##
 #############
 
-from NSSEA.models.__NSAbstractModel import NSAbstractModel
-from NSSEA.models.__NSGEVnsshModel  import NSGEVnsshModel
-from NSSEA.models.__Normal import Normal
-from NSSEA.models.__GEV    import GEV
+from .__NSAbstractModel import NSAbstractModel
+from .__NSGEVnsshModel  import NSGEVnsshModel
+from .__Normal import Normal
+from .__GEV    import GEV
 

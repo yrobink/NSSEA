@@ -12,7 +12,7 @@ import sys
 import numpy as np
 import xarray as xr
 
-from NSSEA.__tools import ProgressBar
+from .__tools import ProgressBar
 
 
 ###############

@@ -9,16 +9,15 @@
 ## Imports ##
 #############
 
-from NSSEA.plot.__linkParams       import LinkParams
-from NSSEA.plot.__decomposition    import decomposition
-from NSSEA.plot.__probabilities    import probabilities
-from NSSEA.plot.__intensities      import intensities
-from NSSEA.plot.__stats_event      import stats_event
-from NSSEA.plot.__stats_event      import stats_relative
-from NSSEA.plot.__constraintsCX    import constraints_CX
-from NSSEA.plot.__ns_params        import ns_params
-from NSSEA.plot.__ns_params        import ns_params_comparison
-from NSSEA.plot.__classic_packages import plot_classic_packages
-
-from NSSEA.plot.__print_stats   import print_time_stats
-from NSSEA.plot.__print_stats   import print_relative_time_stats
+from .__linkParams       import LinkParams
+from .__decomposition    import decomposition
+from .__probabilities    import probabilities
+from .__intensities      import intensities
+from .__stats_event      import stats_event
+from .__stats_event      import stats_relative
+from .__constraintsCX    import constraints_CX
+from .__ns_params        import ns_params
+from .__ns_params        import ns_params_comparison
+from .__classic_packages import plot_classic_packages
+from .__print_stats      import print_time_stats
+from .__print_stats      import print_relative_time_stats
