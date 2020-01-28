@@ -15,3 +15,5 @@ from .__NSGEVnsshModel  import NSGEVnsshModel
 from .__Normal import Normal
 from .__GEV    import GEV
 
+from .__new_impl import N_Normal
+
