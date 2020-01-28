@@ -19,7 +19,7 @@ import texttable as tt
 ## Functions ##
 ###############
 
-def print_time_stats( S , time , model = "multi" , digit = 3 , ci = 0.05 , verbose = False ):##{{{
+def print_time_stats( clim , time , model = "multi" , digit = 3 , ci = 0.05 , verbose = False ):##{{{
 	"""
 	NSSEA.plot.print_time_stats
 	===========================
@@ -47,6 +47,7 @@ def print_time_stats( S , time , model = "multi" , digit = 3 , ci = 0.05 , verbo
 	"""
 	if verbose: print( "Print time stats" , end = "\r" )
 	try:
+		S = clim.stats
 		S = S.loc[time,:,:,model].copy()
 	except:
 		return ""
@@ -69,7 +70,7 @@ def print_time_stats( S , time , model = "multi" , digit = 3 , ci = 0.05 , verbo
 	return tab.draw() + "\n"
 ##}}}
 
-def print_relative_time_stats( S , time , time_rel , model = "multi" , digit = 3 , ci = 0.05 , verbose = False ):##{{{
+def print_relative_time_stats( clim , time , time_rel , model = "multi" , digit = 3 , ci = 0.05 , verbose = False ):##{{{
 	"""
 	NSSEA.plot.print_relative_time_stats
 	====================================
@@ -99,6 +100,7 @@ def print_relative_time_stats( S , time , time_rel , model = "multi" , digit = 3
 	"""
 	if verbose: print( "Print relative time stats" , end = "\r" )
 	try:
+		S = clim.stats
 		Sr = S.loc[time,:,:,model].copy()
 		d  = ["pC","pF","PR"]
 		i  = ["IC","IF","dI"]
@@ -107,6 +109,7 @@ def print_relative_time_stats( S , time , time_rel , model = "multi" , digit = 3
 		S = Sr
 	except:
 		return ""
+	
 	
 	q0 = ci /2
 	qm = 0.5
@@ -127,5 +130,18 @@ def print_relative_time_stats( S , time , time_rel , model = "multi" , digit = 3
 	if verbose: print( "Print relative time stats (Done)" )
 	return tab.draw() + "\n"
 ##}}}
+
+def write_package_tabular( clim , event , ofile , model = "multi" , time_future = 2040 , digit = 3 , ci = 0.05 , verbose = False ):##{{{
+	if verbose: print( "Write package tabular" , end = "\r" )
+	
+	with open( ofile , "w" ) as f:
+		f.write( str(event) + "\n\n" )
+		f.write( print_time_stats( clim , event.time  , model = model , digit = digit , ci = ci , verbose = False ) + "\n" )
+		f.write( print_time_stats( clim , time_future , model = model , digit = digit , ci = ci , verbose = False ) + "\n" )
+		f.write( print_relative_time_stats( clim , time_future , event.time , model = model , digit = digit , ci = ci , verbose = False ) + "\n" )
+	
+	if verbose: print( "Write package tabular (Done)" , end = "\n" )
+##}}}
+
 
 

@@ -21,3 +21,4 @@ from .__ns_params        import ns_params_comparison
 from .__classic_packages import plot_classic_packages
 from .__print_stats      import print_time_stats
 from .__print_stats      import print_relative_time_stats
+from .__print_stats      import write_package_tabular
