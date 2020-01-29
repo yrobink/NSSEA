@@ -55,6 +55,8 @@ class AbstractModel:
 			self.n_ns_params += 1 if self.lparams[p].is_cst else 2
 	##}}}
 	
+	def to_netcdf( self ):
+		ncargs = {}
 	
 	## Fit methods
 	##============
