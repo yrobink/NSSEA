@@ -242,7 +242,7 @@ def to_netcdf( clim , event , ofile , constraints = None ):##{{{
 		
 ##}}}
 
-def from_netcdf( ifile , ns_law = None , ns_law_args = None ):##{{{
+def from_netcdf( ifile , ns_law ):##{{{
 	with nc.Dataset( ifile , "r" ) as ncFile:
 		
 		## Extract dimensions
@@ -256,7 +256,7 @@ def from_netcdf( ifile , ns_law = None , ns_law_args = None ):##{{{
 		
 		
 		##  Set climatology
-		clim = Climatology( time , models , ns_law , ns_law_args )
+		clim = Climatology( time , models , ns_law )
 		clim.X         = xr.DataArray( np.ma.getdata( ncFile.variables["X"][:]         ) , coords = [time,sample,forcing,models] , dims = ["time","sample","forcing","models"] )
 		clim.ns_params = xr.DataArray( np.ma.getdata( ncFile.variables["ns_params"][:] ) , coords = [ns_param,sample,models]     , dims = ["ns_params","sample","models"]      )
 		clim.stats     = xr.DataArray( np.ma.getdata( ncFile.variables["stats"][:]     ) , coords = [time,sample,stats,models]   , dims = ["time","sample","stats","models"]   )
