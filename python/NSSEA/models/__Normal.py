@@ -20,9 +20,11 @@ from .__AbstractModel import AbstractModel
 
 class Normal(AbstractModel):
 	def __init__( self , loc_cst = False , scale_cst = False , **kwargs ):
+		l_scale = kwargs.get("l_scale")
+		if l_scale is None: l_scale = sdt.ExpLink()
 		lparams = []
-		lparams.append( { "name" : "loc"   , "is_cst" :   loc_cst , "link" : kwargs.get("l_loc")   , "name_tex" : "\mu"    } )
-		lparams.append( { "name" : "scale" , "is_cst" : scale_cst , "link" : kwargs.get("l_scale") , "name_tex" : "\sigma" } )
+		lparams.append( { "name" : "loc"   , "is_cst" :   loc_cst , "link" : kwargs.get("l_loc") , "name_tex" : r"\mu"    } )
+		lparams.append( { "name" : "scale" , "is_cst" : scale_cst , "link" : l_scale             , "name_tex" : r"\sigma" } )
 		AbstractModel.__init__( self , sc.norm , sd.Normal , lparams , **kwargs )
 	
 	def loct( self , t ):

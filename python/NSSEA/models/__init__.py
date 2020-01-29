@@ -12,6 +12,6 @@
 
 from .__AbstractModel import AbstractModel
 from .__Normal        import Normal
-#from .__GEV    import GEV
+from .__GEV           import GEV
 
 
