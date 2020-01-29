@@ -291,10 +291,10 @@ def constraints_C0_GEV( climIn , Yo , verbose = False ): ##{{{
 	Yo_GEV_stats = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs - ns_params.loc["loc0",:,:]) / ( 1 + ns_params.loc["scale1",:,:] * Xo_bs ) ## Hypothesis : follow GEV(0,scale0,shape)
 	for s in sample:
 		for m in models:
-			gev = sd.GEVLaw( method = clim.ns_law_args["method"] , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
-			gev.fit( Yo_GEV_stats.loc[:,s,m].values , floc = 0 )
+			gev = sd.GEV()
+			gev.fit( Yo_GEV_stats.loc[:,s,m].values , f_loc = 0 , l_scale = climIn.ns_law.lparams["scale"].link , l_shape = climIn.ns_law.lparams["shape"].link )
 			ns_params.loc["scale0",s,m] = gev.coef_[0]
-			ns_params.loc["shape",s,m]  = gev.coef_[1]
+			ns_params.loc["shape0",s,m] = gev.coef_[1]
 	
 	
 	## Save
@@ -340,10 +340,10 @@ def constraints_C0_GEV_exp( climIn , Yo , verbose = False ): ##{{{
 	Yo_GEV_stats = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs - ns_params.loc["loc0",:,:]) / np.exp( ns_params.loc["scale1",:,:] * Xo_bs ) ## Hypothesis : follow GEV(0,scale0,shape)
 	for s in sample:
 		for m in models:
-			gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_scale = ExpLink() , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
-			gev.fit( Yo_GEV_stats.loc[:,s,m].values , floc = 0 )
+			gev = sd.GEV()
+			gev.fit( Yo_GEV_stats.loc[:,s,m].values , f_loc = 0 , l_scale = climIn.ns_law.lparams["scale"].link , l_shape = climIn.ns_law.lparams["shape"].link )
 			ns_params.loc["scale0",s,m] = gev.coef_[0]
-			ns_params.loc["shape",s,m]  = gev.coef_[1]
+			ns_params.loc["shape0",s,m] = gev.coef_[1]
 	
 	
 	## Save
