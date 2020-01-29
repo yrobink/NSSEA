@@ -12,6 +12,7 @@
 from .__linkParams       import LinkParams
 from .__decomposition    import decomposition
 from .__probabilities    import probabilities
+from .__probabilities    import probabilities_not_zero
 from .__intensities      import intensities
 from .__stats_event      import stats_event
 from .__stats_event      import stats_relative
