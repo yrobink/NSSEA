@@ -20,8 +20,7 @@ from .__tools import matrix_squareroot
 from .__tools import ProgressBar
 
 from .models.__Normal import Normal
-#from .models.__GEV    import GEV
-#from .models.__new_impl    import N_Normal
+from .models.__GEV    import GEV
 
 from SDFC.tools import IdLink
 from SDFC.tools import ExpLink
@@ -307,6 +306,54 @@ def constraints_C0_GEV( climIn , Yo , verbose = False ): ##{{{
 	return clim
 ##}}}
 
+def constraints_C0_GEV_exp( climIn , Yo , verbose = False ): ##{{{
+	
+	if verbose: print( "Constraints C0 (GEVExp)" , end = "\r" )
+	
+	clim  = climIn.copy()
+	n_models  = clim.X.models.size
+	n_sample  = clim.n_sample
+	models    = clim.X.models
+	time      = clim.time
+	time_Yo   = Yo.index
+	n_time_Yo = Yo.size
+	sample = clim.X.sample
+	
+	# New NS_param
+	ns_params = clim.ns_params
+	
+	## Bootstrap on Yo
+	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,clim.X.sample] , dims = ["time","sample"] )
+	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,clim.X.sample,models] , dims = ["time","sample","models"] )
+	Yo_bs.loc[:,"be"] = np.ravel(Yo)
+	Xo_bs.loc[:,"be",:] = clim.X.loc[time_Yo,"be","all",:]
+	for s in sample[1:]:
+		idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
+		Yo_bs.loc[:,s] = np.ravel( Yo.loc[idx].values )
+		for m in models:
+			Xo_bs.loc[:,s,m] = clim.X.loc[idx,s,"all",m].values
+	
+	## Fit loc0
+	ns_params.loc["loc0",:,:] = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs ).quantile( np.exp(-1) , dim = "time" )
+	
+	## Fit scale0 and shape
+	Yo_GEV_stats = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs - ns_params.loc["loc0",:,:]) / np.exp( ns_params.loc["scale1",:,:] * Xo_bs ) ## Hypothesis : follow GEV(0,scale0,shape)
+	for s in sample:
+		for m in models:
+			gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_scale = ExpLink() , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
+			gev.fit( Yo_GEV_stats.loc[:,s,m].values , floc = 0 )
+			ns_params.loc["scale0",s,m] = gev.coef_[0]
+			ns_params.loc["shape",s,m]  = gev.coef_[1]
+	
+	
+	## Save
+	clim.ns_params = ns_params
+	
+	if verbose: print( "Constraints C0 (GEVExp, Done)" )
+	
+	return clim
+##}}}
+
 def constraints_C0_GEV_bound_valid( climIn , Yo , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEV)" , end = "\r" )
@@ -361,54 +408,6 @@ def constraints_C0_GEV_bound_valid( climIn , Yo , verbose = False ): ##{{{
 	clim.ns_params = ns_params
 	
 	if verbose: print( "Constraints C0 (GEV, Done)" )
-	
-	return clim
-##}}}
-
-def constraints_C0_GEV_exp( climIn , Yo , verbose = False ): ##{{{
-	
-	if verbose: print( "Constraints C0 (GEVExp)" , end = "\r" )
-	
-	clim  = climIn.copy()
-	n_models  = clim.X.models.size
-	n_sample  = clim.n_sample
-	models    = clim.X.models
-	time      = clim.time
-	time_Yo   = Yo.index
-	n_time_Yo = Yo.size
-	sample = clim.X.sample
-	
-	# New NS_param
-	ns_params = clim.ns_params
-	
-	## Bootstrap on Yo
-	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,clim.X.sample] , dims = ["time","sample"] )
-	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,clim.X.sample,models] , dims = ["time","sample","models"] )
-	Yo_bs.loc[:,"be"] = np.ravel(Yo)
-	Xo_bs.loc[:,"be",:] = clim.X.loc[time_Yo,"be","all",:]
-	for s in sample[1:]:
-		idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
-		Yo_bs.loc[:,s] = np.ravel( Yo.loc[idx].values )
-		for m in models:
-			Xo_bs.loc[:,s,m] = clim.X.loc[idx,s,"all",m].values
-	
-	## Fit loc0
-	ns_params.loc["loc0",:,:] = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs ).quantile( np.exp(-1) , dim = "time" )
-	
-	## Fit scale0 and shape
-	Yo_GEV_stats = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs - ns_params.loc["loc0",:,:]) / np.exp( ns_params.loc["scale1",:,:] * Xo_bs ) ## Hypothesis : follow GEV(0,scale0,shape)
-	for s in sample:
-		for m in models:
-			gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_scale = ExpLink() , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
-			gev.fit( Yo_GEV_stats.loc[:,s,m].values , floc = 0 )
-			ns_params.loc["scale0",s,m] = gev.coef_[0]
-			ns_params.loc["shape",s,m]  = gev.coef_[1]
-	
-	
-	## Save
-	clim.ns_params = ns_params
-	
-	if verbose: print( "Constraints C0 (GEVExp, Done)" )
 	
 	return clim
 ##}}}
@@ -516,6 +515,12 @@ def constraints_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): #
 			return constraints_C0_Normal( climIn , Yo , verbose )
 		if isinstance(climIn.ns_law.lparams["scale"].link,ExpLink):
 			return constraints_C0_Normal_exp( climIn , Yo , verbose )
+	
+	if isinstance(climIn.ns_law,GEV):
+		if isinstance(climIn.ns_law.lparams["scale"].link,IdLink):
+			return constraints_C0_GEV( climIn , Yo , verbose )
+		if isinstance(climIn.ns_law.lparams["scale"].link,ExpLink):
+			return constraints_C0_GEV_exp( climIn , Yo , verbose )
 	
 	return climIn.copy()
 ##}}}
