@@ -536,8 +536,13 @@ def constraints_bayesian( clim , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max
 	climCB = clim.copy()
 	
 	## Define prior
-	n_params  = clim.ns_law.n_ns_params
-	prior_law = sc.multivariate_normal( mean = climCB.mm_params.mean[-n_params:] , cov = climCB.mm_params.cov[-n_params:,-n_params:] , allow_singular = True )
+#	n_params  = clim.ns_law.n_ns_params
+#	prior_law = sc.multivariate_normal( mean = climCB.mm_params.mean[-n_params:] , cov = climCB.mm_params.cov[-n_params:,-n_params:] , allow_singular = True )
+	prior_sample = climCB.ns_params.loc[:,:,"multi"].values.T
+	prior_mean   = np.mean(prior_sample,axis=0).squeeze()
+	prior_cov    = np.cov( prior_sample.T )
+	prior_law    = sc.multivariate_normal( mean = prior_mean , cov = prior_cov , allow_singular = True )
+	
 	
 	for s in clim.X.sample:
 		if verbose: pb.print()
