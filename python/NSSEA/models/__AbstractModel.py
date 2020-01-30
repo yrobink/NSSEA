@@ -46,7 +46,8 @@ class Params:##{{{
 
 class AbstractModel:
 	
-	def __init__( self , law , sdlaw , lparams , **kwargs ):##{{{
+	def __init__( self , name , law , sdlaw , lparams , **kwargs ):##{{{
+		self.name    = name
 		self.law     = law
 		self.sdlaw   = sdlaw
 		self.lparams = { p["name"] : Params(**p) for p in lparams }
@@ -55,8 +56,30 @@ class AbstractModel:
 			self.n_ns_params += 1 if self.lparams[p].is_cst else 2
 	##}}}
 	
-	def to_netcdf( self ):
-		ncargs = {}
+	def __str__( self ):##{{{
+		out = ""
+		out += self.name + "\n"
+		out += "params: "
+		for pn in self.get_params_names(False):
+			out += pn + ", "
+		out += "\n"
+		for p in self.lparams:
+			out += str(self.lparams[p].link)
+		return out
+	##}}}
+	
+	def __repr__( self ):##{{{
+		return self.__str__()
+	##}}}
+	
+	def to_netcdf( self ):##{{{
+		ncargs = { "ns_law_name" : self.name }
+		for p in self.lparams:
+			ncargs[ "ns_law_param_" + p + "_cst" ]  = str(self.lparams[p].is_cst)
+			ncargs[ "ns_law_param_" + p + "_link" ] = self.lparams[p].link
+		return ncargs
+	##}}}
+	
 	
 	## Fit methods
 	##============

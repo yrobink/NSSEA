@@ -12,8 +12,11 @@
 import numpy   as np
 import xarray  as xr
 import netCDF4 as nc
+import SDFC.tools as sdt
 
-from .__multi_model import MultiModelParams
+from .models.__Normal import Normal
+from .models.__GEV    import GEV
+from .__multi_model   import MultiModelParams
 
 
 #############
@@ -238,14 +241,17 @@ def to_netcdf( clim , event , ofile , constraints = None ):##{{{
 		ncFile.constraints = constraints
 		
 		## Attributes for law
-		ncFile.ns_law = str(clim.ns_law)
+		nclaw = clim.ns_law.to_netcdf()
+		for p in nclaw:
+			ncFile.setncattr_string( str(p) , str(nclaw[p]) )
 		
 ##}}}
 
-def from_netcdf( ifile , ns_law ):##{{{
+def from_netcdf( ifile , ns_law = None ):##{{{
 	with nc.Dataset( ifile , "r" ) as ncFile:
 		
 		## Extract dimensions
+		##===================
 		time      = np.ma.getdata( ncFile.variables["time"][:] )
 		sample    = ncFile.variables["sample"][:]
 		forcing   = ncFile.variables["forcing"][:]
@@ -254,8 +260,36 @@ def from_netcdf( ifile , ns_law ):##{{{
 		stats     = ncFile.variables["stat"][:]
 		reference = np.ma.getdata( ncFile.variables["reference"][:] )
 		
+		if ns_law is None:
+			## Extract ns_law attributes
+			##==========================
+			ns_law_attr = []
+			for p in ncFile.__dict__:
+				if "ns_law" in p: ns_law_attr.append(p)
+			
+			## Transform ns_law attributes to ns_law params
+			##=============================================
+			ns_law_kwargs = {}
+			for p in ns_law_attr:
+				if "ns_law_param" in p:
+					pn,pk = p.split("_")[-2:]
+					if pk == "cst":
+						ns_law_kwargs[ pn + "_cst" ] = ncFile.__dict__[p] == str(True)
+					if pk == "link":
+						if ncFile.__dict__[p] == str(sdt.ExpLink()):
+							ns_law_kwargs[ "l_" + pn ] = sdt.ExpLink()
+						else:
+							ns_law_kwargs[ "l_" + pn ] = sdt.IdLink()
+			
+			ns_law = None
+			if ncFile.__dict__["ns_law_name"] == "Normal":
+				ns_law = Normal( **ns_law_kwargs )
+			elif ncFile.__dict__["ns_law_name"] == "GEV":
+				ns_law = GEV( **ns_law_kwargs )
+		
 		
 		##  Set climatology
+		##=================
 		clim = Climatology( time , models , ns_law )
 		clim.X         = xr.DataArray( np.ma.getdata( ncFile.variables["X"][:]         ) , coords = [time,sample,forcing,models] , dims = ["time","sample","forcing","models"] )
 		clim.ns_params = xr.DataArray( np.ma.getdata( ncFile.variables["ns_params"][:] ) , coords = [ns_param,sample,models]     , dims = ["ns_params","sample","models"]      )

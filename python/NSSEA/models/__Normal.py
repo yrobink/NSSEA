@@ -25,7 +25,7 @@ class Normal(AbstractModel):
 		lparams = []
 		lparams.append( { "name" : "loc"   , "is_cst" :   loc_cst , "link" : kwargs.get("l_loc") , "name_tex" : r"\mu"    } )
 		lparams.append( { "name" : "scale" , "is_cst" : scale_cst , "link" : l_scale             , "name_tex" : r"\sigma" } )
-		AbstractModel.__init__( self , sc.norm , sd.Normal , lparams , **kwargs )
+		AbstractModel.__init__( self , "Normal" , sc.norm , sd.Normal , lparams , **kwargs )
 	
 	def loct( self , t ):
 		return self.lparams["loc"](t)

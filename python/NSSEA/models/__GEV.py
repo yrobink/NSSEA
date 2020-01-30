@@ -26,7 +26,7 @@ class GEV(AbstractModel):
 		lparams.append( { "name" : "loc"   , "is_cst" :   loc_cst , "link" : kwargs.get("l_loc")   , "name_tex" : r"\mu"    } )
 		lparams.append( { "name" : "scale" , "is_cst" : scale_cst , "link" : l_scale               , "name_tex" : r"\sigma" } )
 		lparams.append( { "name" : "shape" , "is_cst" : shape_cst , "link" : kwargs.get("l_shape") , "name_tex" : r"\xi"    } )
-		AbstractModel.__init__( self , sc.genextreme , sd.GEV , lparams , **kwargs )
+		AbstractModel.__init__( self , "GEV" , sc.genextreme , sd.GEV , lparams , **kwargs )
 	
 	def loct( self , t ):
 		return self.lparams["loc"](t)
