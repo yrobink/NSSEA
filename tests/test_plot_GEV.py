@@ -157,8 +157,8 @@ if __name__ == "__main__":
 	## Path
 	##=====
 	basepath = os.path.dirname(os.path.abspath(__file__))
-	pathInp  = os.path.join( basepath , "input/GEV"  )
-	pathOut  = os.path.join( basepath , "output/GEV" )
+	pathInp  = os.path.join( basepath ,  "input/Normal"  )
+	pathOut  = os.path.join( basepath , "output/Normal" )
 	assert(os.path.exists(pathInp))
 	assert(os.path.exists(pathOut))
 	
@@ -170,38 +170,24 @@ if __name__ == "__main__":
 	n_mcmc_drawn_min = 5000  
 	n_mcmc_drawn_max = 10000 
 	n_sample    = 1000 if not is_test else 10
-	ns_law      = nsm.GEV()
-	event       = ns.Event( "HW19D3" , 2019 , None , time_reference , type_event = "hard" , name_variable = "TX_3D" , unit_variable = "K" )
+	ns_law      = nsm.Normal()
+#	event       = ns.Event( "HW19D3" , 2019 , None , time_reference , type_event = "hard" , name_variable = "TX_3D" , unit_variable = "K" )
 	verbose     = True
 	ci          = 0.05 if not is_test else 0.1
 	
-	
 	## Load data
 	##==========
-	climCXCB,_ = ns.from_netcdf( os.path.join( pathOut , "HW19D3_GEV_climCXCB.nc" ) , ns_law )
-#	climCXCB,_ = ns.from_netcdf( os.path.join( pathOut , "HW03_Normal_climCXCB.nc" ) , ns_law )
-	
-	
-	nsp.probabilities( climCXCB , event , "Proba.pdf" )
-	
+#	climCXCB,_ = ns.from_netcdf( os.path.join( pathOut , "HW19D3_GEV_climCXCB.nc" ) , ns_law )
+#	climCXCB,event = ns.from_netcdf( os.path.join( pathOut , "HW03_Normal_climCXCB.nc" ) , ns_law )
 #	
-#	
-#	## Plot
-#	##=====
-#	nsp.write_package_tabular( climCXCB   , event , os.path.join( pathOut , "SummaryCXCB.txt"   ) , verbose = verbose )
-#	nsp.write_package_tabular( climCXC0   , event , os.path.join( pathOut , "SummaryCXC0.txt"   ) , verbose = verbose )
-#	nsp.write_package_tabular( climCXC0CB , event , os.path.join( pathOut , "SummaryCXC0CB.txt" ) , verbose = verbose )
-#	nsp.decomposition( lX , clim.X , event                      , os.path.join( pathOut , "decomposition.pdf" ) , verbose = verbose )
-#	nsp.constraints_CX( climMM , climCXCB , Xo , time_reference , os.path.join( pathOut , "constraintCX.pdf" )  , verbose = verbose )
-#	nsp.plot_classic_packages( climMM     , event , path = pathOut , suffix = "MM"     , ci = ci , verbose = verbose )
-#	nsp.plot_classic_packages( climCX     , event , path = pathOut , suffix = "CX"     , ci = ci , verbose = verbose )
-#	nsp.plot_classic_packages( climCXCB   , event , path = pathOut , suffix = "CXCB"   , ci = ci , verbose = verbose )
-#	nsp.plot_classic_packages( climC0     , event , path = pathOut , suffix = "C0"     , ci = ci , verbose = verbose )
-#	nsp.plot_classic_packages( climCXC0   , event , path = pathOut , suffix = "CXC0"   , ci = ci , verbose = verbose )
-#	nsp.plot_classic_packages( climCXC0CB , event , path = pathOut , suffix = "CXC0CB" , ci = ci , verbose = verbose )
-#	nsp.ns_params_comparison( climMM , climCXC0   , ofile = os.path.join( pathOut , "ns_paramsMM_CXC0.pdf"   ) , ci = ci , verbose = verbose )
-#	nsp.ns_params_comparison( climMM , climCXCB   , ofile = os.path.join( pathOut , "ns_paramsMM_CXCB.pdf"   ) , ci = ci , verbose = verbose )
-#	nsp.ns_params_comparison( climMM , climCXC0CB , ofile = os.path.join( pathOut , "ns_paramsMM_CXC0CB.pdf" ) , ci = ci , verbose = verbose )
+#	ns.to_netcdf( climCXCB , event , "test.nc" , "CXCB" )
+	
+	c,e = ns.from_netcdf( "test.nc" )
+	
+#	nsp.probabilities( climCXCB , event , "Proba.pdf" )
+	
+	
+	
 	
 	print("Done")
 
