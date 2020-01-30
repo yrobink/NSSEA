@@ -30,7 +30,7 @@ from .__stats_event   import stats_relative
 ###############
 
 
-def plot_classic_packages( clim , event , path , suffix = "" , ci = 0.05 , verbose = False ):
+def plot_classic_packages( clim , event , path , suffix = "" , be_is_median = False , ci = 0.05 , verbose = False ):
 	"""
 	NSSEA.plot.plot_classic_packages
 	================================
@@ -58,7 +58,7 @@ def plot_classic_packages( clim , event , path , suffix = "" , ci = 0.05 , verbo
 	"""
 	
 	if verbose: print( "Plot classic_packages ({}): 0/5".format(suffix) , end = "\r" )
-	probabilities(  clim , event , ofile = os.path.join( path , "Probabilities" + suffix + ".pdf"                       ) , ci = ci , verbose = False )
+	probabilities(  clim , event , ofile = os.path.join( path , "Probabilities" + suffix + ".pdf"                       ) , ci = ci , be_is_median = be_is_median , verbose = False )
 	if verbose: print( "Plot classic_packages ({}): 1/5".format(suffix) , end = "\r" )
 	intensities(    clim , event , ofile = os.path.join( path , "Intensities"   + suffix + ".pdf"                       ) , ci = ci , verbose = False )
 	if verbose: print( "Plot classic_packages ({}): 2/5".format(suffix) , end = "\r" )

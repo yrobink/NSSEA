@@ -25,7 +25,7 @@ from .__linkParams import LinkParams
 ###############
 
 
-def probabilities( clim , event , ofile , ci = 0.05 , verbose = False ): ##{{{
+def probabilities( clim , event , ofile , be_is_median = False , ci = 0.05 , verbose = False ): ##{{{
 	"""
 	NSSEA.plot.probabilities
 	========================
@@ -60,6 +60,7 @@ def probabilities( clim , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 	## Find quantiles
 	##===============
 	qstats = stats[:,1:,:,:].quantile( [ci / 2 , 1 - ci / 2 , 0.5 ] , dim = "sample" ).assign_coords( quantile = [ "ql" , "qu" , "be" ] )
+	if not be_is_median: qstats.loc["be",:,:,:] = stats[:,0,:,:]
 	
 	## Special case : PR
 	##==================
