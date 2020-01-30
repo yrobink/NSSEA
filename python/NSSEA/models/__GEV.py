@@ -19,7 +19,7 @@ from .__AbstractModel import AbstractModel
 #############
 
 class GEV(AbstractModel):
-	def __init__( self , loc_cst = False , scale_cst = False , shape_cst = True , **kwargs ):
+	def __init__( self , loc_cst = False , scale_cst = False , shape_cst = True , **kwargs ):##{{{
 		l_scale = kwargs.get("l_scale")
 		if l_scale is None: l_scale = sdt.ExpLink()
 		lparams = []
@@ -27,15 +27,19 @@ class GEV(AbstractModel):
 		lparams.append( { "name" : "scale" , "is_cst" : scale_cst , "link" : l_scale               , "name_tex" : r"\sigma" } )
 		lparams.append( { "name" : "shape" , "is_cst" : shape_cst , "link" : kwargs.get("l_shape") , "name_tex" : r"\xi"    } )
 		AbstractModel.__init__( self , "GEV" , sc.genextreme , sd.GEV , lparams , **kwargs )
+	##}}}
 	
-	def loct( self , t ):
+	def loct( self , t ):##{{{
 		return self.lparams["loc"](t)
+	##}}}
 	
-	def scalet( self , t ):
+	def scalet( self , t ):##{{{
 		return self.lparams["scale"](t)
+	##}}}
 	
-	def shapet( self , t ):
+	def shapet( self , t ):##{{{
 		return self.lparams["shape"](t)
+	##}}}
 	
 	def meant( self , t ):##{{{
 		shapet = self.shapet(t)
@@ -48,7 +52,53 @@ class GEV(AbstractModel):
 	def mediant( self , t ):##{{{
 		return self.loct(t) + self.scalet(t) * ( np.pow( np.log(2) , - self.shapet(t) ) - 1. ) / self.shapet(t)
 	##}}}
-
+	
+	def upper_boundt( self , t ):##{{{
+		"""
+		Upper bound of GEV model (can be infinite)
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		bound : np.array
+			bound at time t
+		"""
+		loc   = self.loct(t)
+		scale = self.scalet(t)
+		shape = self.shapet(t)
+		bound = loc - scale / shape
+		idx   = np.logical_not( shape < 0 )
+		bound[idx] = np.inf
+		return bound
+	##}}}
+	
+	def lower_boundt( self , t ):##{{{
+		"""
+		Lower bound of GEV model (can be -infinite)
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		bound : np.array
+			bound at time t
+		"""
+		loc   = self.loct(t)
+		scale = self.scalet(t)
+		shape = self.shapet(t)
+		bound = loc - scale / shape
+		idx   = shape < 0
+		bound[idx] = - np.inf
+		return bound
+	##}}}
+	
 	def _get_sckwargs( self , t ):##{{{
 		sckwargs = AbstractModel._get_sckwargs( self , t )
 		sckwargs["c"] = - sckwargs["shape"]
