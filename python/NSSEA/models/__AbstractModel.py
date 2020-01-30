@@ -104,7 +104,7 @@ class AbstractModel:
 	def drawn_bayesian( self , Y , X  , n_mcmc_drawn , prior ):##{{{
 		sdkwargs = self._get_sdkwargs(X)
 		sdlaw = self.sdlaw( method = "bayesian" )
-		sdlaw.fit( Y , n_mcmc_drawn = n_mcmc_drawn , prior = prior , **sdkwargs )
+		sdlaw.fit( -Y , n_mcmc_drawn = n_mcmc_drawn , prior = prior , **sdkwargs )
 		return sdlaw._info.draw
 	##}}}
 	
@@ -176,7 +176,7 @@ class AbstractModel:
 			A time series following the NS law
 		"""
 		sckwargs = self._get_sckwargs(t)
-		return self.law.cdf( size = t.size , **sckwargs )
+		return self.law.rvs( size = t.size , **sckwargs )
 	##}}}
 	
 	def cdf( self , Y , t ):##{{{

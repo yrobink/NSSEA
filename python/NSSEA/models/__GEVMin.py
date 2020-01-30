@@ -50,6 +50,10 @@ class GEVMin(AbstractModel):
 		AbstractModel.set_covariable( self , -X , t )
 	##}}}
 	
+	def fit( self , Y , X ):##{{{
+		AbstractModel.fit( self , -Y , X )
+	##}}}
+	
 	
 	## Stats methods
 	##==============
@@ -92,9 +96,9 @@ class GEVMin(AbstractModel):
 		bound : np.array
 			bound at time t
 		"""
-		loc   = self.loct(t)
-		scale = self.scalet(t)
-		shape = self.shapet(t)
+		loc   = -self.loct(t)
+		scale =  self.scalet(t)
+		shape =  self.shapet(t)
 		bound = loc - scale / shape
 		idx   = np.logical_not( shape < 0 )
 		bound[idx] = np.inf
@@ -115,9 +119,9 @@ class GEVMin(AbstractModel):
 		bound : np.array
 			bound at time t
 		"""
-		loc   = self.loct(t)
-		scale = self.scalet(t)
-		shape = self.shapet(t)
+		loc   = -self.loct(t)
+		scale =  self.scalet(t)
+		shape =  self.shapet(t)
 		bound = loc - scale / shape
 		idx   = shape < 0
 		bound[idx] = - np.inf
@@ -127,7 +131,6 @@ class GEVMin(AbstractModel):
 	
 	def _get_sckwargs( self , t ):##{{{
 		sckwargs = AbstractModel._get_sckwargs( self , t )
-		sckwargs["loc"] = -sckwargs["loc"]
 		sckwargs["c"] = - sckwargs["shape"]
 		del sckwargs["shape"]
 		return sckwargs
@@ -148,7 +151,7 @@ class GEVMin(AbstractModel):
 			A time series following the NS law
 		"""
 		sckwargs = self._get_sckwargs(t)
-		return self.law.sf( size = t.size , **sckwargs )
+		return - self.law.rvs( size = t.size , **sckwargs )
 	##}}}
 	
 	def cdf( self , Y , t ):##{{{
