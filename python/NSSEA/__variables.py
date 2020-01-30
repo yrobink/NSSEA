@@ -16,6 +16,7 @@ import SDFC.tools as sdt
 
 from .models.__Normal import Normal
 from .models.__GEV    import GEV
+from .models.__GEVMin import GEVMin
 from .__multi_model   import MultiModelParams
 
 
@@ -286,6 +287,8 @@ def from_netcdf( ifile , ns_law = None ):##{{{
 				ns_law = Normal( **ns_law_kwargs )
 			elif ncFile.__dict__["ns_law_name"] == "GEV":
 				ns_law = GEV( **ns_law_kwargs )
+			elif ncFile.__dict__["ns_law_name"] == "GEVMin":
+				ns_law = GEVMin( **ns_law_kwargs )
 		
 		
 		##  Set climatology
