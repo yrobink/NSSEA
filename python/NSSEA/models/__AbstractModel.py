@@ -101,10 +101,14 @@ class AbstractModel:
 			self.lparams[p].coef_ = sdlaw.params._dparams[p].coef_
 	##}}}
 	
-	def drawn_bayesian( self , Y , X  , n_mcmc_drawn , prior ):##{{{
+	def drawn_bayesian( self , Y , X  , n_mcmc_drawn , prior , min_rate_accept = 0.25 ):##{{{
 		sdkwargs = self._get_sdkwargs(X)
 		sdlaw = self.sdlaw( method = "bayesian" )
-		sdlaw.fit( -Y , n_mcmc_drawn = n_mcmc_drawn , prior = prior , **sdkwargs )
+		test_rate = False
+		while not test_rate:
+			sdlaw.fit( Y , n_mcmc_drawn = n_mcmc_drawn , prior = prior , **sdkwargs )
+			print(sdlaw._info.rate_accept)
+			test_rate = sdlaw._info.rate_accept > min_rate_accept
 		return sdlaw._info.draw
 	##}}}
 	

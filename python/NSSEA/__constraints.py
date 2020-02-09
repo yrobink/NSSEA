@@ -529,7 +529,7 @@ def constraints_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): #
 ## Bayesian constraint
 ##====================
 
-def constraints_bayesian( clim , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10000 , verbose = False ):##{{{
+def constraints_bayesian( clim , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10000 , min_rate_accept = 0.25 , verbose = False ):##{{{
 	
 	pb = ProgressBar( "Constraints Bayesian" , clim.n_sample + 1 )
 	
@@ -548,7 +548,7 @@ def constraints_bayesian( clim , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max
 		if verbose: pb.print()
 		X   = clim.X.loc[Yo.index,s,"all","multi"].values.squeeze()
 		n_mcmc_drawn = np.random.randint( n_mcmc_drawn_min , n_mcmc_drawn_max )
-		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law )
+		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law , min_rate_accept )
 		climCB.ns_params.loc[:,s,"multi"] = draw[-1,:]
 	
 	climCB.ns_params.loc[:,"be","multi"] = climCB.ns_params[:,1:,:].loc[:,:,"multi"].median( dim = "sample" )
