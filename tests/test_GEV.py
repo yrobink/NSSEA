@@ -225,10 +225,10 @@ if __name__ == "__main__":
 	## Apply constraints
 	##==================
 	climCX     = ns.constraints_CX( climMM , Xo , time_reference = time_reference , verbose = verbose )
-	climCXCB   = ns.constraints_bayesian( climCX , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , verbose = verbose )
+	climCXCB   = ns.constraints_bayesian( climCX , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , min_rate_accept = 0.05 , verbose = verbose )
 	climC0     = ns.constraints_C0( climMM , Yo , verbose = verbose )
 	climCXC0   = ns.constraints_C0( climCX , Yo , verbose = verbose )
-	climCXC0CB = ns.constraints_bayesian( climCXC0 , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , verbose = verbose )
+	climCXC0CB = ns.constraints_bayesian( climCXC0 , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , min_rate_accept = 0.05 , verbose = verbose )
 	
 	## Compute stats
 	##==============
