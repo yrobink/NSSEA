@@ -24,6 +24,23 @@ import matplotlib.backends.backend_pdf as mpdf
 ###############
 
 def	ns_params( clim , ofile , ci = 0.05 , verbose = False ):##{{{
+	"""
+	NSSEA.plot.ns_params
+	====================
+	
+	Plot boxplot of non-stationary parameters 
+	
+	Arguments
+	---------
+	clim      : NSSEA.Climatology
+		Climatology
+	ofile     : str
+		output file
+	ci        : float
+		Size of confidence interval, default is 0.05 (95% confidence)
+	verbose   : bool
+		Print (or not) state of execution
+	"""
 	
 	if verbose: print( "Plot ns_params" , end = "\r" )
 	## ns params
@@ -73,6 +90,25 @@ def	ns_params( clim , ofile , ci = 0.05 , verbose = False ):##{{{
 ##}}}
 
 def	ns_params_comparison( clim , clim2 , ofile , ci = 0.05 , verbose = False ):##{{{
+	"""
+	NSSEA.plot.ns_params_comparison
+	===============================
+	
+	Plot boxplot of two set of non-stationary parameters for comparison
+	
+	Arguments
+	---------
+	clim      : NSSEA.Climatology
+		Climatology
+	clim2      : NSSEA.Climatology
+		Climatology
+	ofile     : str
+		output file
+	ci        : float
+		Size of confidence interval, default is 0.05 (95% confidence)
+	verbose   : bool
+		Print (or not) state of execution
+	"""
 	
 	if verbose: print( "Plot ns_params_comparison" , end = "\r" )
 	## ns params
@@ -136,4 +172,76 @@ def	ns_params_comparison( clim , clim2 , ofile , ci = 0.05 , verbose = False ):#
 	if verbose: print( "Plot ns_params_comparison (Done)" )
 ##}}}
 
+def ns_params_time( clim , ofile , time = None , ci = 0.05 , verbose = False ):##{{{
+	"""
+	NSSEA.plot.ns_params_time
+	=========================
+	
+	Plot non-stationary parameters along time
+	
+	Arguments
+	---------
+	clim      : NSSEA.Climatology
+		Climatology
+	ofile     : str
+		output file
+	time      : array
+		Array of time where to plot ns_params
+	ci        : float
+		Size of confidence interval, default is 0.05 (95% confidence)
+	verbose   : bool
+		Print (or not) state of execution
+	"""
+	
+	if verbose: print( "Plot time ns_params" , end = "\r" )
+	if time is None:
+		time = clim.time
+	
+	l_params = [k for k in clim.ns_law.lparams]
+	s_params = xr.DataArray( np.zeros( (time.size,clim.n_sample+1,2,3) ) , dims = ["time","sample","forcing","params"] , coords = [time,clim.X.sample,["all","nat"],l_params] )
+	
+	for m in clim.models:
+		for s in s_params.sample:
+			clim.ns_law.set_params(clim.ns_params.loc[:,s,m].values)
+			for f in s_params.forcing:
+				clim.ns_law.set_covariable( clim.X.loc[time,s,f,m].values , time )
+				for p in l_params:
+					s_params.loc[:,s,f,p] = clim.ns_law.lparams[p](time)
+		
+		qs_params = s_params[:,1:,:,:].quantile( [ ci / 2 , 1 - ci / 2 , 0.5 ] , dim = "sample" ).assign_coords( quantile = ["ql","qu","me"] )
+		
+		xlim = [time.min(),time.max()]
+		deltax = 0.05 * ( xlim[1] - xlim[0] )
+		xlim[0] -= deltax
+		xlim[1] += deltax
+		
+		pdf = mpdf.PdfPages( ofile )
+		fig = plt.figure( figsize = (12,12) )
+		
+		
+		for i,p in enumerate(qs_params.params):
+		
+			ax = fig.add_subplot( len(l_params) , 1 , i + 1 )
+			ax.plot( time , qs_params.loc["me",:,"all",p] , color = "red" )
+			ax.fill_between( time , qs_params.loc["ql",:,"all",p] , qs_params.loc["qu",:,"all",p] , color = "red" , alpha = 0.5 )
+			ax.plot( time , qs_params.loc["me",:,"nat",p] , color = "blue" )
+			ax.fill_between( time , qs_params.loc["ql",:,"nat",p] , qs_params.loc["qu",:,"nat",p] , color = "blue" , alpha = 0.5 )
+			xticks = ax.get_xticks()
+			ax.set_xticks([])
+			ax.set_xlim( xlim )
+			ax.set_ylabel(str(p.values))
+			if i == 0: ax.set_title(m)
+		
+		ax.set_xticks(xticks)
+		ax.set_xlim(xlim)
+		ax.set_xlabel("Time")
+		
+		
+		fig.set_tight_layout(True)
+		pdf.savefig(fig)
+		plt.close(fig)
+	
+	pdf.close()
+	if verbose: print( "Plot time ns_params (Done)" )
+##}}}
 
