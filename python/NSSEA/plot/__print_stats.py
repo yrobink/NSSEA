@@ -23,12 +23,22 @@ def print_time_stats( clim , time , model = "multi" , digit = 3 , ci = 0.05 , ve
 	"""
 	NSSEA.plot.print_time_stats
 	===========================
-	Print in a string a tabular summarizing statistics (FAR,RR,dI,p1,p0,I1,I0) at a time.
+	Print in a string a tabular summarizing statistics (FAR,PR,dI,pF,pC,RtF,RtC,IF,IC) at a time.
+	
+	FAR : Fraction of Attribuable Risk
+	PR  : Probability Ratio
+	dI  : Difference in intensity between factual/counter world
+	pF  : Probability of event in factual world
+	pC  : Probability of event in counter factual world
+	RtF : Return time of event in factual world
+	RtC : Return time of event in counter factual world
+	IF  : Intensity of event in factual world
+	IC  : Intensity of event in counter factual world
 	
 	Parameters
 	----------
-	S       : xr.DataArray
-		Statistics from coffee (coffee.stats)
+	clim    : NSSEA.Climatology
+		Climatology fitted
 	time    : time type
 		A time compatible with S.time
 	model   : string
@@ -51,6 +61,13 @@ def print_time_stats( clim , time , model = "multi" , digit = 3 , ci = 0.05 , ve
 		S = S.loc[time,:,:,model].copy()
 	except:
 		return ""
+	
+	## Add FAR and return time
+	FAR = (1 - 1 / S.loc[:,"PR"]).assign_coords( stats = "FAR" )
+	Rt  = ( 1. / S.loc[:,["pF","pC"]] ).assign_coords( stats = ["RtF","RtC"] )
+	S = xr.concat( (S,FAR,Rt) , dim = "stats" )
+	
+	## Find quantile
 	q0 = ci /2
 	qm = 0.5
 	q1 = 1 - ci / 2
@@ -62,9 +79,9 @@ def print_time_stats( clim , time , model = "multi" , digit = 3 , ci = 0.05 , ve
 	tab.set_cols_dtype( ["t" ,"e" , "e","e" , "e"])
 	
 	tab.header( ["Stats {}".format(time),"Best estimate","Quantile {}".format(q0),"Median","Quantile {}".format(q1)])
-	tab.add_row( [ "FAR" , float(1-1/S.loc["be","PR"]) , float(1-1/Sq.loc["q0","PR"]) ,float(1-1/Sq.loc["qm","PR"]) , float(1-1/Sq.loc["q1","PR"]) ] )
-	for s in ["PR","dI","pF","pC","IF","IC"]:
+	for s in ["FAR","PR","dI","RtF","RtC","pF","pC","IF","IC"]:
 		tab.add_row( [ s , float(S.loc["be",s]) , float(Sq.loc["q0",s]) , float(Sq.loc["qm",s]), float(Sq.loc["q1",s]) ] )
+	
 	
 	if verbose: print( "Print time stats (Done)" )
 	return tab.draw() + "\n"
@@ -100,21 +117,25 @@ def print_relative_time_stats( clim , time , time_rel , model = "multi" , digit 
 	"""
 	if verbose: print( "Print relative time stats" , end = "\r" )
 	try:
-		S = clim.stats
-		Sr = S.loc[time,:,:,model].copy()
-		d  = ["pC","pF","PR"]
-		i  = ["IC","IF","dI"]
-		Sr.loc[:,d] = Sr.loc[:,d] / S.loc[time_rel,:,d,model]
-		Sr.loc[:,i] = Sr.loc[:,i] - S.loc[time_rel,:,i,model]
-		S = Sr
+		S = clim.stats.loc[[time,time_rel],:,:,model]
 	except:
 		return ""
 	
 	
+	## Add FAR and return time
+	FAR = (1 - 1 / S.loc[:,:,"PR"]).assign_coords( stats = "FAR" )
+	Rt  = ( 1. / S.loc[:,:,["pF","pC"]] ).assign_coords( stats = ["RtF","RtC"] )
+	S = xr.concat( (S,FAR,Rt) , dim = "stats" )
+	
+	div = ["pC","pF","PR","FAR"]
+	sub = ["IC","IF","dI","RtF","RtC"]
+	S.loc[:,:,div] = S.loc[:,:,div] / S.loc[time_rel,:,div]
+	S.loc[:,:,sub] = S.loc[:,:,sub] - S.loc[time_rel,:,sub]
+	
 	q0 = ci /2
 	qm = 0.5
 	q1 = 1 - ci / 2
-	Sq = S[1:,:].quantile( [ q0,qm,q1 ] , dim = "sample" ).assign_coords( quantile = ["q0","qm","q1"] )
+	Sq = S[:,1:,:].quantile( [ q0,qm,q1 ] , dim = "sample" ).assign_coords( quantile = ["q0","qm","q1"] )
 	
 	tab = tt.Texttable()
 	tab.set_precision(digit)
@@ -122,10 +143,8 @@ def print_relative_time_stats( clim , time , time_rel , model = "multi" , digit 
 	tab.set_cols_dtype( ["t" ,"e" , "e","e" , "e"])
 	
 	tab.header( ["Stats {} / {}".format(time,time_rel),"Best estimate","Quantile {}".format(q0),"Median","Quantile {}".format(q1)])
-	s = "PR"
-	tab.add_row( [ "FAR" , float(1-1/S.loc["be",s]) , float(1-1/Sq.loc["q0",s]) ,float(1-1/Sq.loc["qm",s]) , float(1-1/Sq.loc["q1",s]) ] )
-	for s in ["PR","dI","pF","pC","IF","IC"]:
-		tab.add_row( [ s , float(S.loc["be",s]) , float(Sq.loc["q0",s]) , float(Sq.loc["qm",s]), float(Sq.loc["q1",s]) ] )
+	for s in ["FAR","PR","dI","RtF","RtC","pF","pC","IF","IC"]:
+		tab.add_row( [ s , float(S.loc[time,"be",s]) , float(Sq.loc["q0",time,s]) , float(Sq.loc["qm",time,s]), float(Sq.loc["q1",time,s]) ] )
 	
 	if verbose: print( "Print relative time stats (Done)" )
 	return tab.draw() + "\n"
