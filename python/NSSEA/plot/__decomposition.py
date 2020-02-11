@@ -66,7 +66,7 @@ def decomposition( lX , X , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 	ylabel = r"${}$".format( "\mathrm{" + event.name_variable +"}\ \mathrm{(" + event.unit_variable + ")}" )
 	
 	## Loop
-	for i,m in enumerate(X.models):
+	for i,m in enumerate(models):
 		nrow,ncol = 3,1
 		fs = 10
 		fig = plt.figure( figsize = ( fs * ncol , 0.4 * fs * nrow ) )
@@ -78,7 +78,7 @@ def decomposition( lX , X , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 		ax.set_ylim( (ymin,ymax) )
 		ax.legend( loc = "upper left" )
 		ax.set_xticks([])
-		ax.set_title( "{}".format( str(m.values).replace("_"," ") ) )
+		ax.set_title( "{}".format( str(m).replace("_"," ") ) )
 		ax.set_ylabel( ylabel )
 		
 		ax = fig.add_subplot( nrow , ncol , 2 )
