@@ -10,6 +10,7 @@ rm -rf python/var
 
 rm -rf tests/output/Normal/*
 rm -rf tests/output/GEV/*
+rm -rf tests/output/GEVMin/*
 
 
 ## Delete R temporary files
