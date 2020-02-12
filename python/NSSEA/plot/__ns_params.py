@@ -200,6 +200,7 @@ def ns_params_time( clim , ofile , time = None , ci = 0.05 , verbose = False ):#
 	l_params = [k for k in clim.ns_law.lparams]
 	s_params = xr.DataArray( np.zeros( (time.size,clim.n_sample+1,2,3) ) , dims = ["time","sample","forcing","params"] , coords = [time,clim.X.sample,["all","nat"],l_params] )
 	
+	pdf = mpdf.PdfPages( ofile )
 	for m in clim.models:
 		for s in s_params.sample:
 			clim.ns_law.set_params(clim.ns_params.loc[:,s,m].values)
@@ -215,7 +216,6 @@ def ns_params_time( clim , ofile , time = None , ci = 0.05 , verbose = False ):#
 		xlim[0] -= deltax
 		xlim[1] += deltax
 		
-		pdf = mpdf.PdfPages( ofile )
 		fig = plt.figure( figsize = (12,12) )
 		
 		
