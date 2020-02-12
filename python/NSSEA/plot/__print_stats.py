@@ -150,18 +150,6 @@ def print_relative_time_stats( clim , time , time_rel , model = "multi" , digit 
 	return tab.draw() + "\n"
 ##}}}
 
-def write_package_tabular( clim , event , ofile , model = "multi" , time_future = 2040 , digit = 3 , ci = 0.05 , verbose = False ):##{{{
-	if verbose: print( "Write package tabular" , end = "\r" )
-	
-	with open( ofile , "w" ) as f:
-		f.write( str(event) + "\n\n" )
-		f.write( print_time_stats( clim , event.time  , model = model , digit = digit , ci = ci , verbose = False ) + "\n" )
-		f.write( print_time_stats( clim , time_future , model = model , digit = digit , ci = ci , verbose = False ) + "\n" )
-		f.write( print_relative_time_stats( clim , time_future , event.time , model = model , digit = digit , ci = ci , verbose = False ) + "\n" )
-	
-	if verbose: print( "Write package tabular (Done)" , end = "\n" )
-##}}}
-
 def print_time_ns_params( clim , time , model = "multi" , digit = 3 , ci = 0.05 , verbose = False ):##{{{
 	"""
 	NSSEA.plot.print_time_ns_params
@@ -233,4 +221,16 @@ def print_time_ns_params( clim , time , model = "multi" , digit = 3 , ci = 0.05 
 	return tab.draw() + "\n"
 ##}}}
 
+def write_package_tabular( clim , event , ofile , model = "multi" , time_future = 2040 , digit = 3 , ci = 0.05 , verbose = False ):##{{{
+	if verbose: print( "Write package tabular" , end = "\r" )
+	
+	with open( ofile , "w" ) as f:
+		f.write( str(event) + "\n\n" )
+		f.write( print_time_stats( clim , event.time  , model = model , digit = digit , ci = ci , verbose = False ) + "\n" )
+		f.write( print_time_stats( clim , time_future , model = model , digit = digit , ci = ci , verbose = False ) + "\n" )
+		f.write( print_time_ns_params( clim , event.time , model = model , digit = digit , ci = ci , verbose = False ) + "\n" )
+		f.write( print_relative_time_stats( clim , time_future , event.time , model = model , digit = digit , ci = ci , verbose = False ) + "\n" )
+	
+	if verbose: print( "Write package tabular (Done)" , end = "\n" )
+##}}}
 
