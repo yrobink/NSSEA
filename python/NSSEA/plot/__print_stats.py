@@ -184,7 +184,7 @@ def print_time_ns_params( clim , time , model = "multi" , digit = 3 , ci = 0.05 
 	
 	## NS params along time
 	l_params = [k for k in clim.ns_law.lparams]
-	s_params = xr.DataArray( np.zeros( (clim.n_sample+1,2,3) ) , dims = ["sample","forcing","params"] , coords = [clim.X.sample,["all","nat"],l_params] )
+	s_params = xr.DataArray( np.zeros( (clim.n_sample+1,2,len(l_params)) ) , dims = ["sample","forcing","params"] , coords = [clim.X.sample,["all","nat"],l_params] )
 	
 	for s in s_params.sample:
 		clim.ns_law.set_params(clim.ns_params.loc[:,s,model].values)
