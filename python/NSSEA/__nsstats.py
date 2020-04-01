@@ -173,7 +173,25 @@ def stats_relative_event( stats , time_event ):##{{{
 	return statsEvent
 ##}}}
 
-def build_params_along_time( clim ):##{{{
+def build_params_along_time( clim , verbose = False ):##{{{
+	"""
+	NSSEA.extremes_stats
+	====================
+	Compute extremes statistics and add it to a Climatology.
+	
+	Arguments
+	---------
+	clim : NSSEA.Climatology
+		A clim variable
+	verbose: bool
+		Print state of execution or not
+	
+	Return
+	------
+	ns_params : xr.DataArray
+		An array containing ns_params along time
+	
+	"""
 	ns_law = clim.ns_law
 	
 	l_params = [k for k in clim.ns_law.lparams]
@@ -182,13 +200,21 @@ def build_params_along_time( clim ):##{{{
 	s_params = xr.DataArray( np.zeros( (clim.n_time,clim.n_sample+1,2,len(l_params),clim.n_models) ) , dims = xrdims , coords = xrcoords )
 	
 	
+	pb = ProgressBar( "build_params_along_time" , clim.n_models * (clim.n_sample + 1) )
 	for m in clim.models:
 		for s in s_params.sample:
+			if verbose: pb.print()
+			
 			clim.ns_law.set_params( clim.ns_params.loc[:,s,m].values )
 			for f in s_params.forcing:
 				clim.ns_law.set_covariable( clim.X.loc[clim.time,s,f,m].values , clim.time )
 				for p in l_params:
 					s_params.loc[:,s,f,p,m] = clim.ns_law.lparams[p](clim.time)
 	
+	
+	if verbose: pb.end()
+	
 	return s_params
 ##}}}
+
+
