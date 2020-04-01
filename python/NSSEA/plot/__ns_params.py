@@ -17,7 +17,7 @@ mpl.use("pdf")
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as mpdf
 
-
+from NSSEA.__nsstats import build_params_along_time
 
 ###############
 ## Functions ##
@@ -172,7 +172,7 @@ def	ns_params_comparison( clim , clim2 , ofile , ci = 0.05 , verbose = False ):#
 	if verbose: print( "Plot ns_params_comparison (Done)" )
 ##}}}
 
-def ns_params_time( clim , ofile , time = None , ci = 0.05 , verbose = False ):##{{{
+def ns_params_time( clim , ofile , ns_params = None , time = None , ci = 0.05 , verbose = False ):##{{{
 	"""
 	NSSEA.plot.ns_params_time
 	=========================
@@ -185,6 +185,8 @@ def ns_params_time( clim , ofile , time = None , ci = 0.05 , verbose = False ):#
 		Climatology
 	ofile     : str
 		output file
+	ns_params : xr.DataArray or None
+		ns params along time, if None, computed with function NSSEA.build_params_along_time
 	time      : array
 		Array of time where to plot ns_params
 	ci        : float
@@ -197,19 +199,15 @@ def ns_params_time( clim , ofile , time = None , ci = 0.05 , verbose = False ):#
 	if time is None:
 		time = clim.time
 	
+	if ns_params is None:
+		ns_params = build_params_along_time(clim)
+	
 	l_params = [k for k in clim.ns_law.lparams]
-	s_params = xr.DataArray( np.zeros( (time.size,clim.n_sample+1,2,len(l_params)) ) , dims = ["time","sample","forcing","params"] , coords = [time,clim.X.sample,["all","nat"],l_params] )
+	qs_params = ns_params[:,1:,:,:,:].quantile( [ ci / 2 , 1 - ci / 2 , 0.5 ] , dim = "sample" ).assign_coords( quantile = ["ql","qu","me"] )
 	
 	pdf = mpdf.PdfPages( ofile )
 	for m in clim.models:
-		for s in s_params.sample:
-			clim.ns_law.set_params(clim.ns_params.loc[:,s,m].values)
-			for f in s_params.forcing:
-				clim.ns_law.set_covariable( clim.X.loc[time,s,f,m].values , time )
-				for p in l_params:
-					s_params.loc[:,s,f,p] = clim.ns_law.lparams[p](time)
 		
-		qs_params = s_params[:,1:,:,:].quantile( [ ci / 2 , 1 - ci / 2 , 0.5 ] , dim = "sample" ).assign_coords( quantile = ["ql","qu","me"] )
 		
 		xlim = [time.min(),time.max()]
 		deltax = 0.05 * ( xlim[1] - xlim[0] )
@@ -222,10 +220,10 @@ def ns_params_time( clim , ofile , time = None , ci = 0.05 , verbose = False ):#
 		for i,p in enumerate(qs_params.params):
 		
 			ax = fig.add_subplot( len(l_params) , 1 , i + 1 )
-			ax.plot( time , qs_params.loc["me",:,"all",p] , color = "red" )
-			ax.fill_between( time , qs_params.loc["ql",:,"all",p] , qs_params.loc["qu",:,"all",p] , color = "red" , alpha = 0.5 )
-			ax.plot( time , qs_params.loc["me",:,"nat",p] , color = "blue" )
-			ax.fill_between( time , qs_params.loc["ql",:,"nat",p] , qs_params.loc["qu",:,"nat",p] , color = "blue" , alpha = 0.5 )
+			ax.plot( time , qs_params.loc["me",:,"all",p,m] , color = "red" )
+			ax.fill_between( time , qs_params.loc["ql",:,"all",p,m] , qs_params.loc["qu",:,"all",p,m] , color = "red" , alpha = 0.5 )
+			ax.plot( time , qs_params.loc["me",:,"nat",p,m] , color = "blue" )
+			ax.fill_between( time , qs_params.loc["ql",:,"nat",p,m] , qs_params.loc["qu",:,"nat",p,m] , color = "blue" , alpha = 0.5 )
 			xticks = ax.get_xticks()
 			ax.set_xticks([])
 			ax.set_xlim( xlim )
@@ -244,4 +242,5 @@ def ns_params_time( clim , ofile , time = None , ci = 0.05 , verbose = False ):#
 	pdf.close()
 	if verbose: print( "Plot time ns_params (Done)" )
 ##}}}
+
 
