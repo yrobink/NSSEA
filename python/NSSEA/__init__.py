@@ -6,7 +6,7 @@
 #############################
 
 
-__version__ = "0.3.0a9"
+__version__ = "0.3.0a10"
 
 #############
 ## Imports ##
@@ -37,6 +37,7 @@ from .__multi_model import infer_multi_model
 from .__multi_model import MultiModelParams
 from .__nsstats     import extremes_stats
 from .__nsstats     import stats_relative_event
+from .__nsstats     import build_params_along_time
 #from NSSEA.__nsstats  import RR_correction
 
 ## Constraints
