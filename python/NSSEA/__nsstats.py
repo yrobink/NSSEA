@@ -173,3 +173,22 @@ def stats_relative_event( stats , time_event ):##{{{
 	return statsEvent
 ##}}}
 
+def build_params_along_time( clim ):##{{{
+	ns_law = clim.ns_law
+	
+	l_params = [k for k in clim.ns_law.lparams]
+	xrdims   = ["time","sample","forcing","params","models"]
+	xrcoords = [clim.time,clim.X.sample,["all","nat"],l_params,clim.models]
+	s_params = xr.DataArray( np.zeros( (clim.n_time,clim.n_sample+1,2,len(l_params),clim.n_models) ) , dims = xrdims , coords = xrcoords )
+	
+	
+	for m in clim.models:
+		for s in s_params.sample:
+			clim.ns_law.set_params( clim.ns_params.loc[:,s,m].values )
+			for f in s_params.forcing:
+				clim.ns_law.set_covariable( clim.X.loc[clim.time,s,f,m].values , clim.time )
+				for p in l_params:
+					s_params.loc[:,s,f,p,m] = clim.ns_law.lparams[p](clim.time)
+	
+	return s_params
+##}}}
