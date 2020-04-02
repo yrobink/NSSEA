@@ -243,4 +243,70 @@ def probabilities_not_zero( clim , event , ofile , ci = 0.05 , verbose = False )
 	if verbose: print( "Plot probabilities (Done)" )
 ##}}}
 
+def return_time( clim , event , ofile , be_is_median = False , ci = 0.05 , verbose = False ):##{{{
+	"""
+	NSSEA.plot.probabilities
+	========================
+	
+	Plot return time (RtF,RtC) along time
+	
+	Arguments
+	---------
+	clim      : NSSEA.Climatology
+		Climatology with stats computed
+	event     : NSSEA.Event
+		Event variable
+	ofile     : str
+		output file
+	be_is_median : boolean
+		If we assume than the true best estimate is the median of bootstrap (usefull for Bayesian)
+	ci        : float
+		Size of confidence interval, default is 0.05 (95% confidence)
+	verbose   : bool
+		Print (or not) state of execution
+	"""
+	
+	if verbose: print( "Plot return time" , end = "\r" )
+	
+	## Compute quantiles and best estimate
+	##====================================
+	qRt = clim.stats[:,1:,:,:].loc[:,:,["RtF","RtC"],:].quantile( [ci/2,1-ci/2,0.5] , dim = "sample" ).assign_coords( quantile = ["ql","qu","med"] )
+	if not be_is_median: qRt.loc["med",:,:,:] = clim.stats.loc[:,"be",["RtF","RtC"],:]
+	
+	## Some parameters
+	##================
+	lp = np.log10
+	pdf = mpdf.PdfPages( ofile )
+	
+	for m in qRt.models:
+		
+		fig = plt.figure( figsize = (8,6) )
+		
+		ax = fig.add_subplot( 1 , 1 , 1 )
+		
+		ax.plot( qRt.time , lp(qRt.loc["med",:,"RtF",m]) , color = "red" , label = r"Rt$^F$" )
+		ax.fill_between( qRt.time , lp(qRt.loc["ql",:,"RtF",m]) , lp(qRt.loc["qu",:,"RtF",m]) , color = "red" , alpha = 0.5 )
+		
+		ax.plot( qRt.time , lp(qRt.loc["med",:,"RtC",m]) , color = "blue" , label = r"Rt$^C$" )
+		ax.fill_between( qRt.time , lp(qRt.loc["ql",:,"RtC",m]) , lp(qRt.loc["qu",:,"RtC",m]) , color = "blue" , alpha = 0.5 )
+		
+		ylim = ax.get_ylim()
+		ax.plot( [event.time,event.time] , ylim          , linestyle = "--" , marker = "" , color = "black" )
+		ax.set_ylim(ylim)
+		
+		imax = int(lp(float(qRt.loc["qu",:,:,m].max()))) + 1
+		
+		ax.set_yticks( range(imax) )
+		ax.set_yticklabels( [ 10**i for i in range(imax) ] )
+		ax.set_xlabel( "Time" )
+		ax.set_ylabel( "Return time" )
+		ax.legend()
+		ax.set_title( m.values )
+		
+		pdf.savefig(fig)
+		plt.close(fig)
+	
+	pdf.close()
+	if verbose: print( "Plot return time (Done)" )
+##}}}
 
