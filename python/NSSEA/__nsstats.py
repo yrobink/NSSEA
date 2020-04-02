@@ -177,7 +177,7 @@ def build_params_along_time( clim , verbose = False ):##{{{
 	"""
 	NSSEA.extremes_stats
 	====================
-	Compute extremes statistics and add it to a Climatology.
+	Build trajectories of ns_params alon time
 	
 	Arguments
 	---------
@@ -217,4 +217,34 @@ def build_params_along_time( clim , verbose = False ):##{{{
 	return s_params
 ##}}}
 
+def add_return_time( climIn ):##{{{
+	"""
+	NSSEA.add_return_time
+	=====================
+	Add return time to statistics computed (require that NSSEA.extremes_stats has been previously called)
+	A copy is returned.
+	
+	Arguments
+	---------
+	climIn : NSSEA.Climatology
+		A clim variable
+	
+	Return
+	------
+	clim : NSSEA.Climatology
+		A clim variable with return time
+	
+	"""
+	clim = climIn.copy()
+	
+	xrdims   = ["time","sample","stats","models"]
+	xrcoords = [clim.time,clim.stats.sample,["RtF","RtC"],clim.models]
+	Rt = xr.DataArray( np.zeros( (clim.n_time,clim.n_sample+1,2,clim.n_models) ) , dims = xrdims , coords = xrcoords )
+	
+	Rt.loc[:,:,:,:,] = 1. / clim.stats.loc[:,:,["pF","pC"]].values
+	
+	clim.stats = xr.concat( (clim.stats,Rt) , dim = "stats" )
+	
+	return clim
+##}}}
 

@@ -38,6 +38,7 @@ from .__multi_model import MultiModelParams
 from .__nsstats     import extremes_stats
 from .__nsstats     import stats_relative_event
 from .__nsstats     import build_params_along_time
+from .__nsstats     import add_return_time
 #from NSSEA.__nsstats  import RR_correction
 
 ## Constraints
