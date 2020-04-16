@@ -6,7 +6,7 @@
 #############################
 
 
-__version__ = "0.3.0a11"
+__version__ = "0.3.0a12"
 
 #############
 ## Imports ##
@@ -39,6 +39,7 @@ from .__nsstats     import extremes_stats
 from .__nsstats     import stats_relative_event
 from .__nsstats     import build_params_along_time
 from .__nsstats     import add_return_time
+from .__nsstats     import add_FAR
 #from NSSEA.__nsstats  import RR_correction
 
 ## Constraints
