@@ -248,3 +248,35 @@ def add_return_time( climIn ):##{{{
 	return clim
 ##}}}
 
+def add_FAR( climIn ):##{{{
+	"""
+	NSSEA.add_FAR
+	=============
+	Add FAR (Fraction of Attribuable Risk = 1 - 1 / PR) to statistics computed (require that NSSEA.extremes_stats has been previously called)
+	A copy is returned.
+	
+	Arguments
+	---------
+	climIn : NSSEA.Climatology
+		A clim variable
+	
+	Return
+	------
+	clim : NSSEA.Climatology
+		A clim variable with FAR
+	
+	"""
+	clim = climIn.copy()
+	
+	xrdims   = ["time","sample","stats","models"]
+	xrcoords = [clim.time,clim.stats.sample,["FAR"],clim.models]
+	FAR = xr.DataArray( np.zeros( (clim.n_time,clim.n_sample+1,1,clim.n_models) ) , dims = xrdims , coords = xrcoords )
+	
+	FAR.loc[:,:,"FAR",:] =  1. - 1. / clim.stats.loc[:,:,"PR",:].values
+	
+	clim.stats = xr.concat( (clim.stats,FAR) , dim = "stats" )
+	
+	return clim
+##}}}
+
+
