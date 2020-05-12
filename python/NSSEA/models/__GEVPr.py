@@ -23,7 +23,20 @@ class GEVPr:
 		self._coefs = np.zeros(3)
 		self._mle_with_bayesian = mle_with_bayesian
 		self.n_ns_params = 3
+		self.lparams = ["loc","scale","shape"]
 	##}}}
+	
+	def to_netcdf( self ):##{{{
+		ncargs = { "ns_law_name" : "GEVPr" }
+		ncargs[ "ns_law_param_loc_cst" ]  = False
+		ncargs[ "ns_law_param_loc_link" ] = sdt.IdLink()
+		ncargs[ "ns_law_param_scale_cst" ]  = False
+		ncargs[ "ns_law_param_scale_link" ] = sdt.IdLink()
+		ncargs[ "ns_law_param_shape_cst" ]  = False
+		ncargs[ "ns_law_param_shape_link" ] = sdt.IdLink()
+		return ncargs
+	##}}}
+	
 	
 	## Methods
 	##{{{
