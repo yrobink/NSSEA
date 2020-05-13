@@ -290,14 +290,18 @@ def return_time( clim , event , ofile , be_is_median = False , ci = 0.05 , verbo
 		ax.plot( qRt.time , lp(qRt.loc["med",:,"RtC",m]) , color = "blue" , label = r"Rt$^C$" )
 		ax.fill_between( qRt.time , lp(qRt.loc["ql",:,"RtC",m]) , lp(qRt.loc["qu",:,"RtC",m]) , color = "blue" , alpha = 0.5 )
 		
-		ylim = ax.get_ylim()
-		ax.plot( [event.time,event.time] , ylim          , linestyle = "--" , marker = "" , color = "black" )
-		ax.set_ylim(ylim)
 		
-		imax = int(lp(float(qRt.loc["qu",:,:,m].max()))) + 1
+		imax = lp(float(qRt.loc["qu",:,:,m].max()))
+		if np.isfinite(imax): imax = int(imax) + 1
+		else: imax = 6
 		
 		ax.set_yticks( range(imax) )
 		ax.set_yticklabels( [ 10**i for i in range(imax) ] )
+		ylim = (0,imax)
+		ax.plot( [event.time,event.time] , ylim          , linestyle = "--" , marker = "" , color = "black" )
+		ax.set_ylim(ylim)
+		
+		
 		ax.set_xlabel( "Time" )
 		ax.set_ylabel( "Return time" )
 		ax.legend()
