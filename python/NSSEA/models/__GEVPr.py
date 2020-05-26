@@ -161,7 +161,7 @@ class GEVPr:
 		tscale = np.mean( gev.scale * np.exp( - ratio * self._X ) )
 		alpha  = 0.1
 		
-		mcoefs = np.array( [tmu,tscale,gev.shape[0],alpha] )
+		mcoefs = np.array( [tmu,tscale,float(gev.shape[0]),alpha] )
 		coefs  = mcoefs.copy()
 		factor = 1
 		nit    = 1
