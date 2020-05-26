@@ -20,10 +20,10 @@ import SDFC.tools        as sdt
 class GEVPr:
 	
 	def __init__( self , mle_with_bayesian = False , **kwargs ):##{{{
-		self._coefs = np.zeros(3)
+		self._coefs = np.zeros(4)
 		self._mle_with_bayesian = mle_with_bayesian
-		self.n_ns_params = 3
-		self.lparams = ["loc","scale","shape"]
+		self.n_ns_params = 4
+		self.lparams = ["loc","scale","shape","alpha"]
 	##}}}
 	
 	def to_netcdf( self ):##{{{
@@ -34,6 +34,8 @@ class GEVPr:
 		ncargs[ "ns_law_param_scale_link" ] = sdt.IdLink()
 		ncargs[ "ns_law_param_shape_cst" ]  = False
 		ncargs[ "ns_law_param_shape_link" ] = sdt.IdLink()
+		ncargs[ "ns_law_param_alpha_cst" ]  = False
+		ncargs[ "ns_law_param_alpha_link" ] = sdt.IdLink()
 		return ncargs
 	##}}}
 	
@@ -110,9 +112,9 @@ class GEVPr:
 	
 	def get_params_names( self , tex = False ): ##{{{
 		if not tex:
-			return ["loc","scale","shape"]
+			return ["loc","scale","shape","alpha"]
 		else:
-			return [r"$\mu$",r"$\sigma$",r"$\xi$"]
+			return [r"$\mu$",r"$\sigma$",r"$\xi$",r"$\alpha$"]
 	##}}}
 	
 	def set_params( self , coefs ):##{{{
@@ -120,7 +122,7 @@ class GEVPr:
 	##}}}
 	
 	def set_covariable( self , X , t ):##{{{
-		ratio = self._coefs[1] / self._coefs[0]
+		ratio = self._coefs[3] / self._coefs[0]
 		loc   = np.squeeze( self._coefs[0] * np.exp( ratio * X ) )
 		scale = np.squeeze( self._coefs[1] * np.exp( ratio * X ) )
 		shape = np.zeros_like(X.squeeze()) + self._coefs[2]
@@ -157,17 +159,27 @@ class GEVPr:
 		
 		tmu    = np.mean( gev.loc   * np.exp( - ratio * self._X ) )
 		tscale = np.mean( gev.scale * np.exp( - ratio * self._X ) )
+		alpha  = 0.1
 		
-		return np.array( [tmu,tscale,gev.shape[0]] )
+		mcoefs = np.array( [tmu,tscale,gev.shape[0],alpha] )
+		coefs  = mcoefs.copy()
+		factor = 1
+		nit    = 1
+		while not np.isfinite(self._negloglikelihood(coefs)) or not np.isfinite(self._gradient_nlll(coefs)).all():
+			coefs = np.random.multivariate_normal( mean = mcoefs , cov = factor * np.identity(4) )
+			if nit % 100 == 0: factor *= 2
+			if nit == 1000: break
+		
+		return coefs
 	##}}}
 	
 	def _negloglikelihood( self , coef ):##{{{
 		
 		## Build loc, scale and shape
 		##===========================
-		tloc,tscale,tshape = coef
+		tloc,tscale,tshape,alpha = coef
 		
-		E     = np.exp( tscale / tloc * self._X )
+		E     = np.exp( alpha / tloc * self._X )
 		loc   = tloc * E
 		scale = tscale * E
 		shape = tshape + np.zeros_like(self._X)
@@ -191,10 +203,10 @@ class GEVPr:
 		
 		## Build loc, scale and shape
 		##===========================
-		tloc,tscale,tshape = coef
+		tloc,tscale,tshape,alpha = coef
 		
-		E      = np.exp(   tscale / tloc * self._X )
-		G      = np.exp( - tscale / tloc * self._X )
+		E      = np.exp(   alpha / tloc * self._X )
+		G      = np.exp( - alpha / tloc * self._X )
 		loc    = tloc * E
 		scale  = tscale * E
 		shape  = tshape + np.zeros_like(self._X)
@@ -207,20 +219,32 @@ class GEVPr:
 		Zamsi = np.power( Za1 , - ishape )
 		C1    = 1 + ( 1 - Zamsi ) * ishape / Za1
 		
+		A0 = ( 1. + ishape - ishape * Zamsi ) / Za1
+		
 		
 		## Gradient of loc
 		##================
-		grloc = np.sum( C1 * shape / tscale * ( self._X * self._Y * tscale / tloc / loc -1 ) - self._X * tscale / tloc**2 )
+		grmu_sig = - scale * alpha * self._X / tloc**2
+		grmu_Za1 = - shape * ( self._Y * grmu_sig / scale**2 - 1. / tscale )
+		grloc    = np.sum( A0 * grmu_Za1 + grmu_sig / scale )
 		
 		## Gradient of scale
 		##==================
-		grscale = np.sum( C1 * shape / tscale**2 * ( tloc - self._Y * G * ( tscale * self._X / tloc + 1 ) ) + ( 1 + tscale * self._X / tloc ) / tscale )
+		grsig_sig = E
+		grsig_Za1 = - shape * Z / tscale
+		grscale   = np.sum( A0 * grsig_Za1 + grsig_sig / scale )
 		
 		## Gradient of shape
 		##==================
-		grshape = np.sum( ( Zamsi - 1 ) * np.log(Za1) / shape**2 + C1 * Z )
+		grshape   = np.sum( ( Zamsi - 1 ) * np.log(Za1) / shape**2 + C1 * Z )
 		
-		return np.array( [grloc,grscale,grshape] )
+		## Gradient of alpha
+		##==================
+		gralp_Za1 = - shape * self._Y * self._X / scale / tloc
+		gralp_sig = scale * self._X / tloc
+		gralpha   = np.sum( A0 * gralp_Za1 + gralp_sig / scale )
+		
+		return np.array( [grloc,grscale,grshape,gralpha] )
 	##}}}
 	
 	def fit( self , Y , X ):##{{{
@@ -228,7 +252,7 @@ class GEVPr:
 		self._Y = Y.reshape(-1,1)
 		
 		self._coefs = self._init_mle()
-		self.optim_result = sco.minimize( self._negloglikelihood , self._coefs , method = "BFGS" , jac = self._gradient_nlll )
+		self.optim_result = sco.minimize( self._negloglikelihood , self._coefs , method = "BFGS" )#, jac = self._gradient_nlll )
 		self._coefs = self.optim_result.x
 		
 		del self._X,self._Y
@@ -243,7 +267,7 @@ class GEVPr:
 	def _fit_bayesian( self , n_mcmc_drawn , prior ):##{{{
 		## Parameters
 		##===========
-		n_features = 3
+		n_features = 4
 		transition = lambda x : x + np.random.normal( size = n_features , scale = 0.1 )
 		
 		## MCMC algorithm
