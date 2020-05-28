@@ -209,7 +209,7 @@ def load_models_obs( path ):##{{{
 	Xo  = pd.DataFrame( dXo.temperature_anomaly.values.squeeze() , columns = ["Xo"] , index = np.arange( 1850 , 2019 , 1 , dtype = np.int ) )
 	
 	dYo = xr.open_dataset( os.path.join( path , "Yo.nc" ) )
-	Yo  = pd.DataFrame( dYo.Tm.values.squeeze() , columns = ["Yo"] , index = np.arange( 1947 , 2020 , 1 , dtype = np.int ) )
+	Yo  = pd.DataFrame( dYo.tg.values.squeeze() , columns = ["Yo"] , index = np.arange( 1950 , 2020 , 1 , dtype = np.int ) )
 	
 	return models,lX,lY,Xo,Yo
 ##}}}
