@@ -17,13 +17,30 @@ mpl.use("pdf")
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as mpdf
 
-
+from NSSEA.__nsstats import build_params_along_time
 
 ###############
 ## Functions ##
 ###############
 
 def	ns_params( clim , ofile , ci = 0.05 , verbose = False ):##{{{
+	"""
+	NSSEA.plot.ns_params
+	====================
+	
+	Plot boxplot of non-stationary parameters 
+	
+	Arguments
+	---------
+	clim      : NSSEA.Climatology
+		Climatology
+	ofile     : str
+		output file
+	ci        : float
+		Size of confidence interval, default is 0.05 (95% confidence)
+	verbose   : bool
+		Print (or not) state of execution
+	"""
 	
 	if verbose: print( "Plot ns_params" , end = "\r" )
 	## ns params
@@ -35,10 +52,11 @@ def	ns_params( clim , ofile , ci = 0.05 , verbose = False ):##{{{
 	ns_q = ns_q.assign_coords( quantile = ["l","u"] )
 	
 	
-	ns_law = clim.ns_law
-	ns_law_args = clim.ns_law_args
-	law = ns_law(**ns_law_args)
-	lf = law.link_fct_by_params()
+	law = clim.ns_law
+	lf = []
+	for p in law.lparams:
+		for _ in range(law.lparams[p].n_params):
+			lf.append(law.lparams[p].link)
 	
 	pdf = mpdf.PdfPages( ofile )
 	for m in ns_params.models:
@@ -59,7 +77,7 @@ def	ns_params( clim , ofile , ci = 0.05 , verbose = False ):##{{{
 		ax.set_title( "{}".format( str(m.values).replace("_"," ") ) )
 		ax.set_xlim( (-0.5,n_ns_params-0.5) )
 		ax.set_xticks( range(n_ns_params) )
-		ax.set_xticklabels( ns_params.ns_params.values.tolist() )
+		ax.set_xticklabels( law.get_params_names(True) )
 		ax.set_xlabel( "Parameters" )
 		ax.set_ylabel( "Anomalies parameters" )
 		
@@ -72,6 +90,25 @@ def	ns_params( clim , ofile , ci = 0.05 , verbose = False ):##{{{
 ##}}}
 
 def	ns_params_comparison( clim , clim2 , ofile , ci = 0.05 , verbose = False ):##{{{
+	"""
+	NSSEA.plot.ns_params_comparison
+	===============================
+	
+	Plot boxplot of two set of non-stationary parameters for comparison
+	
+	Arguments
+	---------
+	clim      : NSSEA.Climatology
+		Climatology
+	clim2      : NSSEA.Climatology
+		Climatology
+	ofile     : str
+		output file
+	ci        : float
+		Size of confidence interval, default is 0.05 (95% confidence)
+	verbose   : bool
+		Print (or not) state of execution
+	"""
 	
 	if verbose: print( "Plot ns_params_comparison" , end = "\r" )
 	## ns params
@@ -86,16 +123,17 @@ def	ns_params_comparison( clim , clim2 , ofile , ci = 0.05 , verbose = False ):#
 	ns_q2 = ns_q2.assign_coords( quantile = ["l","u"] )
 	
 	
-	ns_law = clim.ns_law
-	ns_law_args = clim.ns_law_args
-	law = ns_law(**ns_law_args)
-	lf = law.link_fct_by_params()
+	law = clim.ns_law
+	law2 = clim2.ns_law
+	lf = []
+	for p in law.lparams:
+		for _ in range(law.lparams[p].n_params):
+			lf.append(law.lparams[p].link)
 	
-	ns_law2 = clim2.ns_law
-	ns_law_args2 = clim2.ns_law_args
-	law2 = ns_law2(**ns_law_args2)
-	lf2 = law2.link_fct_by_params()
-	
+	lf2 = []
+	for p in law2.lparams:
+		for _ in range(law2.lparams[p].n_params):
+			lf2.append(law2.lparams[p].link)
 	
 	pdf = mpdf.PdfPages( ofile )
 	for m in ns_params.models:
@@ -121,7 +159,7 @@ def	ns_params_comparison( clim , clim2 , ofile , ci = 0.05 , verbose = False ):#
 		ax.set_title( "{}".format( str(m.values).replace("_"," ") ) )
 		ax.set_xlim( (-0.5,n_ns_params-0.5) )
 		ax.set_xticks( range(n_ns_params) )
-		ax.set_xticklabels( ns_params.ns_params.values.tolist() )
+		ax.set_xticklabels( law.get_params_names(True) )
 		
 		ax.set_xlabel( "Parameters" )
 		ax.set_ylabel( "Anomalies parameters" )
@@ -132,6 +170,77 @@ def	ns_params_comparison( clim , clim2 , ofile , ci = 0.05 , verbose = False ):#
 	
 	pdf.close()
 	if verbose: print( "Plot ns_params_comparison (Done)" )
+##}}}
+
+def ns_params_time( clim , ofile , ns_params = None , time = None , ci = 0.05 , verbose = False ):##{{{
+	"""
+	NSSEA.plot.ns_params_time
+	=========================
+	
+	Plot non-stationary parameters along time
+	
+	Arguments
+	---------
+	clim      : NSSEA.Climatology
+		Climatology
+	ofile     : str
+		output file
+	ns_params : xr.DataArray or None
+		ns params along time, if None, computed with function NSSEA.build_params_along_time
+	time      : array
+		Array of time where to plot ns_params
+	ci        : float
+		Size of confidence interval, default is 0.05 (95% confidence)
+	verbose   : bool
+		Print (or not) state of execution
+	"""
+	
+	if verbose: print( "Plot time ns_params" , end = "\r" )
+	if time is None:
+		time = clim.time
+	
+	if ns_params is None:
+		ns_params = build_params_along_time(clim)
+	
+	l_params = [k for k in clim.ns_law.lparams]
+	qs_params = ns_params[:,1:,:,:,:].quantile( [ ci / 2 , 1 - ci / 2 , 0.5 ] , dim = "sample" ).assign_coords( quantile = ["ql","qu","me"] )
+	
+	pdf = mpdf.PdfPages( ofile )
+	for m in clim.models:
+		
+		
+		xlim = [time.min(),time.max()]
+		deltax = 0.05 * ( xlim[1] - xlim[0] )
+		xlim[0] -= deltax
+		xlim[1] += deltax
+		
+		fig = plt.figure( figsize = (12,12) )
+		
+		
+		for i,p in enumerate(qs_params.params):
+		
+			ax = fig.add_subplot( len(l_params) , 1 , i + 1 )
+			ax.plot( time , qs_params.loc["me",:,"all",p,m] , color = "red" )
+			ax.fill_between( time , qs_params.loc["ql",:,"all",p,m] , qs_params.loc["qu",:,"all",p,m] , color = "red" , alpha = 0.5 )
+			ax.plot( time , qs_params.loc["me",:,"nat",p,m] , color = "blue" )
+			ax.fill_between( time , qs_params.loc["ql",:,"nat",p,m] , qs_params.loc["qu",:,"nat",p,m] , color = "blue" , alpha = 0.5 )
+			xticks = ax.get_xticks()
+			ax.set_xticks([])
+			ax.set_xlim( xlim )
+			ax.set_ylabel(str(p.values))
+			if i == 0: ax.set_title(m)
+		
+		ax.set_xticks(xticks)
+		ax.set_xlim(xlim)
+		ax.set_xlabel("Time")
+		
+		
+		fig.set_tight_layout(True)
+		pdf.savefig(fig)
+		plt.close(fig)
+	
+	pdf.close()
+	if verbose: print( "Plot time ns_params (Done)" )
 ##}}}
 
 

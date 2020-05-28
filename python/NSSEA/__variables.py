@@ -12,6 +12,12 @@
 import numpy   as np
 import xarray  as xr
 import netCDF4 as nc
+import SDFC.tools as sdt
+
+from .models.__Normal import Normal
+from .models.__GEV    import GEV
+from .models.__GEVMin import GEVMin
+from .__multi_model   import MultiModelParams
 
 
 #############
@@ -24,67 +30,53 @@ class Event: ##{{{
 	===========
 	
 	Event variable containing information about event considered
-	
-	Attributes
-	----------
-	
-	name     : str
-		Name of event
-	dir_name : str
-		Directory of output
-	time     : time_index
-		Time of event
-	anom     : double
-		Anomaly of event
-	ref_anom : array
-		Time period to considered as reference for anomaly
-	var      : str
-		Name of variable
-	unit     : str
-		Unit of variable
-	side     : str
-		"upper" or "lower" extremes event
-	def_type : str
-		If is is anomaly bellow a threshold ("threshold") or a hard value ("hard_value")
 	"""
 	
-	def __init__( self , name , dir_name , time , anom , ref_anom , var , unit , side , def_type = "threshold" ):
+	def __init__( self , name_event , time , anomaly , reference , type_event = "threshold" , side = "upper" , name_variable = "variable" , unit_variable = "U" ):
 		"""
 		Constructor of Event
 		
 		Arguments
 		---------
 		
-		name     : str
+		name_event    : str
 			Name of event
-		dir_name : str
-			Directory of output
-		time     : time_index
-			Time of event
-		anom     : double
+		time          : time_index
+			Time when event occured
+		anomaly       : double
 			Anomaly of event
-		ref_anom : array
+		reference     : array
 			Time period to considered as reference for anomaly
-		var      : str
-			Name of variable
-		side     : str
+		type_event    : "threshold" or "hard"
+			If we compute probabilities as a threshold beyond mean, or anomaly is used as a hard value.
+		side          : str
 			"upper" or "lower" extremes event
+		name_variable : str
+			Name of variable (temperature, precipitation, etc)
+		unit_variable : str
+			Unit of the variable
 		"""
-		self.name     = name
-		self.dir_name = dir_name
-		self.def_type = def_type
-		self.time     = time
-		self.anom     = anom
-		self.ref_anom = ref_anom
-		self.var      = var
-		self.unit     = unit
-		self.side     = side
+		self.name_event    = name_event
+		self.time          = time
+		self.anomaly       = anomaly
+		self.reference     = reference
+		self.type_event    = type_event if type_event in ["threshold","hard"] else "threshold"
+		self.side          = side if side in ["upper","lower"] else "upper"
+		self.name_variable = name_variable
+		self.unit_variable = unit_variable
 	
 	def __repr__(self):
 		return self.__str__()
 	
 	def __str__(self):
-		return "Event    : {},\ntime     : {},\nanom     : {},\nref_anom : {} / {},\nvar      : {},\nside     : {}\n".format(self.name,self.time,self.anom,self.ref_anom.min(),self.ref_anom.max(),self.var,self.side)
+		out = ""
+		out += "Event     : {},\n".format(self.name_event)
+		out += "variable  : {} ({}),\n".format(self.name_variable,self.unit_variable)
+		out += "time      : {},\n".format(self.time)
+		out += "anomaly   : {},\n".format(self.anomaly)
+		out += "reference : {}-{},\n".format(self.reference.min(),self.reference.max())
+		out += "side      : {}\n".format(self.side)
+		return out
 ##}}}
 
 class Climatology: ##{{{
@@ -109,7 +101,7 @@ class Climatology: ##{{{
 		Arguments pass to NSModel
 	"""
 	
-	def __init__( self , time , n_sample , models , ns_law , ns_law_args = None ):
+	def __init__( self , time , models , ns_law ):##{{{
 		"""
 		Constructor of the clim variable
 		
@@ -127,75 +119,69 @@ class Climatology: ##{{{
 		"""
 		self.X           = None
 		self.time        = time
-		self.n_time      = len(time)
-		self.n_sample    = n_sample
 		self.models      = models
-		self.n_models    = len(models)
 		
 		self.ns_law      = ns_law
-		self.ns_law_args = ns_law.default_arg(ns_law_args)
 		self.ns_params   = None
-		self.n_ns_params = None
-		
 		self.stats       = None
-		self.n_stats     = None
-		
-		self.mm_params   = None
-		self.n_mm_params = None
+		self.mm_params   = MultiModelParams()
+	##}}}
 	
-	def copy(self):
-		c             = Climatology( self.time.copy() , self.n_sample , self.models , self.ns_law , self.ns_law_args )
+	## Properties {{{
+	
+	@property
+	def n_time(self):
+		return self.time.size
+	
+	@property
+	def n_models(self):
+		return len(self.models)
+	
+	@property
+	def n_sample(self):
+		return None if self.X is None else self.X.shape[1] - 1
+	
+	@property
+	def n_ns_params(self):
+		return None if self.ns_params is None else self.ns_params.shape[0]
+	
+	@property
+	def n_stats(self):
+		return None if self.stats is None else self.stats.shape[2]
+	
+	@property
+	def n_mm_params(self):
+		return self.mm_params.n_mm_params
+	##}}}
+	
+	def keep_models( self , models ):##{{{
+		models = models if type(models) is list else [models]
+		if not np.all( [m in self.models for m in models] ):
+			return
+		self.models = models
+		if self.X         is not None: self.X         = self.X.loc[:,:,:,models]
+		if self.ns_params is not None: self.ns_params = self.ns_params.loc[:,:,models]
+		if self.stats     is not None: self.stats     = self.stats.loc[:,:,:,models]
+	##}}}
+	
+	def remove_models( self , models ):##{{{
+		models_keep = [ m for m in self.models if m not in models ]
+		self.keep_models(models_keep)
+	##}}}
+	
+	def copy(self):##{{{
+		c           = Climatology( self.time.copy() , self.models , self.ns_law )
+		c.X         = self.X.copy()         if self.X         is not None else None
+		c.ns_params = self.ns_params.copy() if self.ns_params is not None else None
+		c.mm_params = self.mm_params.copy() if self.mm_params is not None else None
+		c.stats     = self.stats.copy()     if self.stats     is not None else None
 		
-		c.X           = self.X.copy()         if self.X         is not None else None
-		c.ns_params   = self.ns_params.copy() if self.ns_params is not None else None
-		c.mm_params   = self.mm_params.copy() if self.mm_params is not None else None
-		c.stats       = self.stats.copy()     if self.stats     is not None else None
-		
-		c.n_models    = self.n_models
-		c.n_ns_params = self.n_ns_params
-		c.n_mm_params = self.n_mm_params
-		c.n_stats     = self.n_stats
 		return c
-##}}}
-
-class CXParams: ##{{{
-	"""
-	NSSEA.CXParams
-	==============
-	
-	Parameters of the CX constraints
-	
-	Attributes
-	----------
-	
-	centering: bool
-		If we need or not to center covariates to observed covariates
-	ref      : array
-		Time period of reference period
-	trust    : bool
-		If we assume that the covariance matrix of observed covariate has the same scale that covariates
-	"""
-	def __init__( self , centering , ref , trust ):
-		"""
-		Constructor
-		
-		Arguments
-		---------
-		
-		centering: bool
-			If we need or not to center covariates to observed covariates
-		ref      : array
-			Time period of reference period
-		trust    : bool
-			If we assume that the covariance matrix of observed covariate has the same scale that covariates
-		"""
-		self.centering = centering
-		self.ref       = ref
-		self.trust     = trust
+	##}}}
 ##}}}
 
 
-def clim2netcdf( clim , event , ofile , with_cx = False , with_co = False ):##{{{
+def to_netcdf( clim , event , ofile , constraints = None ):##{{{
 	with nc.Dataset( ofile , "w" , format = "NETCDF4" ) as ncFile:
 	
 		## Create dimensions
@@ -205,65 +191,119 @@ def clim2netcdf( clim , event , ofile , with_cx = False , with_co = False ):##{{
 		dim_models   = ncFile.createDimension( "models"   , clim.X.models.size            )
 		dim_ns_param = ncFile.createDimension( "ns_param" , clim.ns_params.ns_params.size )
 		dim_stat     = ncFile.createDimension( "stat"     , clim.stats.stats.size         )
+		dim_ref      = ncFile.createDimension( "ref"      , event.reference.size          )
+		dim_multimod = ncFile.createDimension( "mm_size"  , clim.n_mm_params              )
+		
 		
 		## Set dimensions as variables
-		nc_time     = ncFile.createVariable( "time"     , clim.X.time.dtype    , ("time",)     )
-		nc_sample   = ncFile.createVariable( "sample"   , clim.X.sample.dtype  , ("sample",)   )
-		nc_forcing  = ncFile.createVariable( "forcing"  , clim.X.forcing.dtype , ("forcing",)  )
-		nc_models   = ncFile.createVariable( "models"   , str                    , ("models",)   )
-		nc_ns_param = ncFile.createVariable( "ns_param" , str                    , ("ns_param",) )
-		nc_stat     = ncFile.createVariable( "stat"     , str                    , ("stat",)     )
+		nc_time      = ncFile.createVariable( "time"      , clim.X.time.dtype     , ("time",)     )
+		nc_sample    = ncFile.createVariable( "sample"    , str                   , ("sample",)   )
+		nc_forcing   = ncFile.createVariable( "forcing"   , str                   , ("forcing",)  )
+		nc_models    = ncFile.createVariable( "models"    , str                   , ("models",)   )
+		nc_ns_param  = ncFile.createVariable( "ns_param"  , str                   , ("ns_param",) )
+		nc_stat      = ncFile.createVariable( "stat"      , str                   , ("stat",)     )
+		nc_reference = ncFile.createVariable( "reference" , event.reference.dtype , ("ref",)      )
+		
 		
 		## Set dimensions values
-		nc_time[:]     = clim.X.time.values
-		nc_sample[:]   = clim.X.sample.values
-		nc_forcing[:]  = clim.X.forcing.values
-		nc_models[:]   = clim.X.models.values
-		nc_ns_param[:] = clim.ns_params.ns_params.values
-		nc_stat[:]     = clim.stats.stats.values
+		nc_time[:]      = clim.X.time.values
+		nc_sample[:]    = clim.X.sample.values
+		nc_forcing[:]   = clim.X.forcing.values
+		nc_models[:]    = clim.X.models.values
+		nc_ns_param[:]  = clim.ns_params.ns_params.values
+		nc_stat[:]      = clim.stats.stats.values
+		nc_reference[:] = event.reference
 		
 		## Variables
-		nc_X         = ncFile.createVariable( "X"         , clim.X.dtype         , ("time","sample","forcing","models") )
-		nc_ns_params = ncFile.createVariable( "ns_params" , clim.ns_params.dtype , ("ns_param","sample","models")       )
-		nc_stats     = ncFile.createVariable( "stats"     , clim.stats.dtype     , ("time","sample","stat","models")    )
+		nc_X         = ncFile.createVariable( "X"         , clim.X.dtype              , ("time","sample","forcing","models") )
+		nc_ns_params = ncFile.createVariable( "ns_params" , clim.ns_params.dtype      , ("ns_param","sample","models")       )
+		nc_stats     = ncFile.createVariable( "stats"     , clim.stats.dtype          , ("time","sample","stat","models")    )
+		nc_mm_mean   = ncFile.createVariable( "mm_mean"   , clim.mm_params.mean.dtype , ("mm_size")                          )
+		nc_mm_cov    = ncFile.createVariable( "mm_cov"    , clim.mm_params.cov.dtype  , ("mm_size","mm_size")                )
 		
 		## Set variables values
 		nc_X[:]         = clim.X.values
 		nc_ns_params[:] = clim.ns_params.values
 		nc_stats[:]     = clim.stats.values
+		nc_mm_mean[:]   = clim.mm_params.mean
+		nc_mm_cov[:]    = clim.mm_params.cov
 		
-		## Attributes
-		ncFile.event_name = event.name
-		ncFile.event_time = str(event.time)
-		ncFile.event_anom = event.anom
-		ncFile.event_var  = event.var
-		ncFile.event_unit = event.unit
-		ncFile.event_side = event.side
+		## Attributes for event
+		ncFile.event_name     = event.name_event
+		ncFile.event_time     = str(event.time)
+		ncFile.event_anomaly  = event.anomaly
+		ncFile.event_variable = event.name_variable
+		ncFile.event_unit     = event.unit_variable
+		ncFile.event_side     = event.side
+		ncFile.event_type     = event.type_event
 		
-		ncFile.cx = str(with_cx)
-		ncFile.co = str(with_co)
+		## Attributes for constraints
+		constraints = constraints if constraints is not None else "No_constraints"
+		ncFile.constraints = constraints
+		
+		## Attributes for law
+		nclaw = clim.ns_law.to_netcdf()
+		for p in nclaw:
+			ncFile.setncattr_string( str(p) , str(nclaw[p]) )
+		
 ##}}}
 
-def netcdf2clim( ifile , ns_law ):##{{{
+def from_netcdf( ifile , ns_law = None ):##{{{
 	with nc.Dataset( ifile , "r" ) as ncFile:
 		
 		## Extract dimensions
-		time     = ncFile.variables["time"][:]
-		sample   = ncFile.variables["sample"][:]
-		forcing  = ncFile.variables["forcing"][:]
-		models   = ncFile.variables["models"][:]
-		ns_param = ncFile.variables["ns_param"][:]
-		stats    = ncFile.variables["stat"][:]
+		##===================
+		time      = np.ma.getdata( ncFile.variables["time"][:] )
+		sample    = ncFile.variables["sample"][:]
+		forcing   = ncFile.variables["forcing"][:]
+		models    = ncFile.variables["models"][:]
+		ns_param  = ncFile.variables["ns_param"][:]
+		stats     = ncFile.variables["stat"][:]
+		reference = np.ma.getdata( ncFile.variables["reference"][:] )
 		
-		## 
-		clim = Climatology( time , sample.size - 1 , models , ns_law )
-		clim.n_ns_params = ns_param.size
-		clim.n_stats     = stats.size
-		clim.X         = xr.DataArray( ncFile.variables["X"][:]         , coords = [time,sample,forcing,models] , dims = ["time","sample","forcing","models"] )
-		clim.ns_params = xr.DataArray( ncFile.variables["ns_params"][:] , coords = [ns_param,sample,models]     , dims = ["ns_params","sample","models"]      )
-		clim.stats     = xr.DataArray( ncFile.variables["stats"][:]     , coords = [time,sample,stats,models]   , dims = ["time","sample","stats","models"]   )
+		if ns_law is None:
+			## Extract ns_law attributes
+			##==========================
+			ns_law_attr = []
+			for p in ncFile.__dict__:
+				if "ns_law" in p: ns_law_attr.append(p)
+			
+			## Transform ns_law attributes to ns_law params
+			##=============================================
+			ns_law_kwargs = {}
+			for p in ns_law_attr:
+				if "ns_law_param" in p:
+					pn,pk = p.split("_")[-2:]
+					if pk == "cst":
+						ns_law_kwargs[ pn + "_cst" ] = ncFile.__dict__[p] == str(True)
+					if pk == "link":
+						if ncFile.__dict__[p] == str(sdt.ExpLink()):
+							ns_law_kwargs[ "l_" + pn ] = sdt.ExpLink()
+						else:
+							ns_law_kwargs[ "l_" + pn ] = sdt.IdLink()
+			
+			ns_law = None
+			if ncFile.__dict__["ns_law_name"] == "Normal":
+				ns_law = Normal( **ns_law_kwargs )
+			elif ncFile.__dict__["ns_law_name"] == "GEV":
+				ns_law = GEV( **ns_law_kwargs )
+			elif ncFile.__dict__["ns_law_name"] == "GEVMin":
+				ns_law = GEVMin( **ns_law_kwargs )
+		
+		
+		##  Set climatology
+		##=================
+		clim = Climatology( time , models , ns_law )
+		clim.X         = xr.DataArray( np.ma.getdata( ncFile.variables["X"][:]         ) , coords = [time,sample,forcing,models] , dims = ["time","sample","forcing","models"] )
+		clim.ns_params = xr.DataArray( np.ma.getdata( ncFile.variables["ns_params"][:] ) , coords = [ns_param,sample,models]     , dims = ["ns_params","sample","models"]      )
+		clim.stats     = xr.DataArray( np.ma.getdata( ncFile.variables["stats"][:]     ) , coords = [time,sample,stats,models]   , dims = ["time","sample","stats","models"]   )
+		clim.mm_params.mean = np.ma.getdata( ncFile.variables["mm_mean"][:] )
+		clim.mm_params.cov  = np.ma.getdata( ncFile.variables["mm_cov"][:]  )
+		
+		## Set event
+		event = Event( ncFile.event_name , reference.dtype.type(ncFile.event_time) , clim.X.dtype.type(ncFile.event_anomaly) , reference , ncFile.event_type , ncFile.event_side , ncFile.event_variable , ncFile.event_unit ) 
 	
-	return clim
+	return clim,event
 ##}}}
 
 

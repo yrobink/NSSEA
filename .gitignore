@@ -10,3 +10,4 @@ NAMESPACE
 *.egg-info*
 build
 dist
+tests/output

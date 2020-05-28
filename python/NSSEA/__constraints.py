@@ -12,18 +12,18 @@
 import numpy as np
 import scipy.linalg as scl
 import scipy.optimize as sco
+import scipy.stats as sc
 import pandas as pd
 import xarray as xr
 
-from NSSEA.__tools import matrix_squareroot
+from .__tools import matrix_squareroot
+from .__tools import ProgressBar
 
-from NSSEA.models.__NSGaussianModel import NSGaussianModel
-from NSSEA.models.__NSGEVModel import NSGEVModel
+from .models.__Normal import Normal
+from .models.__GEV    import GEV
 
-
-from SDFC.tools import IdLinkFct
-from SDFC.tools import ExpLinkFct
-
+from SDFC.tools import IdLink
+from SDFC.tools import ExpLink
 
 import SDFC as sd
 
@@ -32,37 +32,15 @@ import SDFC as sd
 ## Classes ##
 #############
 
-class GenericConstraint: ##{{{
-	"""
-	NSSEA.GenericConstraint
-	=======================
-	
-	Attributes
-	----------
-	mean   : array
-		CX mean
-	cov    : array
-		CX covariance matrix
-	std    : array
-		Square root of CX covariance matrix
-	
-	"""
-	def __init__( self , x , SX , y , SY , H ):
-		"""
-		Do not use, call NSSEA.constraints_CX
-		"""
-		Sinv      = np.linalg.pinv( H @ SX @ H.T + SY )
-		K	      = SX @ H.T @ Sinv
-		self.mean = x + K @ ( y - H @ x )
-		self.cov  = SX - SX @ H.T @ Sinv @ H @ SX
-		self.std  = matrix_squareroot(self.cov)
-##}}}
-
 ###############
 ## Functions ##
 ###############
 
-def constraints_CX( climIn , Xo , cx_params , Sigma = None , verbose = False ): ##{{{
+## CX constraints
+##===============
+
+
+def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = False , verbose = False ): ##{{{
 	"""
 	NSSEA.constraintsCX
 	===================
@@ -74,22 +52,23 @@ def constraints_CX( climIn , Xo , cx_params , Sigma = None , verbose = False ): 
 		clim variable
 	Xo       : pandas.DataFrame
 		Covariate observed
-	cx_params: NSSEA.CXParams
-		Parameters
-	Sigma    : Matrix
-		Auto covariance matrix. If None, identity is used
+	time_reference: array
+		Reference time period of Xo
+	assume_good_scale : boolean
+		If we assume than observations and multi-model have the same scale
 	verbose  : bool
 		Print (or not) state of execution
 	
 	Returns
 	-------
 	clim : NSSEA.Climatology
-		A COPY of climIn constrained by Xo. coffeIn is NOT MODIFIED.
+		A COPY of climIn constrained by Xo. climIn is NOT MODIFIED.
 	"""
 	
 	if verbose: print( "Constraints CX" , end = "\r" )
 	
 	## Parameters
+	##===========
 	clim = climIn.copy()
 	time        = clim.time
 	time_Xo     = Xo.index
@@ -99,16 +78,15 @@ def constraints_CX( climIn , Xo , cx_params , Sigma = None , verbose = False ): 
 	n_ns_params = clim.n_ns_params
 	n_sample    = clim.n_sample
 	sample      = clim.X.sample
-	Sigma       = Sigma if Sigma is not None else np.identity(n_time)
-	Sigma       = xr.DataArray( Sigma , coords = [time,time] , dims = ["time1","time2"] )
 	
 	## Projection matrix H
+	##====================
 	cx = xr.DataArray( np.zeros( (n_time,n_time) )       , coords = [time,time]       , dims = ["time1","time2"] )
 	cy = xr.DataArray( np.zeros( (n_time_Xo,n_time_Xo) ) , coords = [time_Xo,time_Xo] , dims = ["time1","time2"] )
-	if not cx_params.trust:
-		cx.loc[:,cx_params.ref] = 1. / cx_params.ref.size
-	if not cx_params.trust:
-		cy.loc[:,cx_params.ref] = 1. / cx_params.ref.size
+	if not assume_good_scale:
+		cx.loc[:,time_reference] = 1. / time_reference.size
+	if not assume_good_scale:
+		cy.loc[:,time_reference] = 1. / time_reference.size
 	
 	centerX  = np.identity(n_time)    - cx.values
 	centerY  = np.identity(n_time_Xo) - cy.values
@@ -118,13 +96,15 @@ def constraints_CX( climIn , Xo , cx_params , Sigma = None , verbose = False ): 
 	
 	
 	# Other inputs : x, SX, y, SY
+	##===========================
 	X  = clim.mm_params.mean
 	SX = clim.mm_params.cov
 	Y  = np.ravel(centerY @ Xo)
-	SY = centerY @ Sigma.loc[time_Xo,time_Xo].values @ centerY.T
+	SY = centerY @ centerY.T
 	
 	## Rescale SY
-	if not cx_params.trust:
+	##===========
+	if not assume_good_scale:
 		res = Y - H @ X
 		K   = H @ SX @ H.T
 		
@@ -142,15 +122,24 @@ def constraints_CX( climIn , Xo , cx_params , Sigma = None , verbose = False ): 
 		lbda = sco.brentq( fct_to_root , a = a , b = b )
 		SY = lbda * SY
 	
-	## Constraints and sample
-	gc = GenericConstraint( X , SX , Y , SY , H )
+	## Apply constraints
+	##==================
+	
+	Sinv = np.linalg.pinv( H @ SX @ H.T + SY )
+	K	 = SX @ H.T @ Sinv
+	clim.mm_params.mean = X + K @ ( Y - H @ X )
+	clim.mm_params.cov  = SX - SX @ H.T @ Sinv @ H @ SX
+	
+	
+	## Sample from it
+	##===============
 	cx_sample = xr.DataArray( np.zeros( (n_time,n_sample + 1,3) ) , coords = [ clim.X.time , sample , clim.X.forcing ] , dims = ["time","sample","forcing"] )
 	
-	cx_sample.loc[:,"be","all"] = gc.mean[:n_time]
-	cx_sample.loc[:,"be","nat"] = gc.mean[n_time:(2*n_time)]
+	cx_sample.loc[:,"be","all"] = clim.mm_params.mean[:n_time]
+	cx_sample.loc[:,"be","nat"] = clim.mm_params.mean[n_time:(2*n_time)]
 	
 	for s in sample[1:]:
-		draw = gc.mean + gc.std @ np.random.normal(size = n_mm_params)
+		draw = clim.mm_params.rvs()
 		cx_sample.loc[:,s,"all"] = draw[:n_time]
 		cx_sample.loc[:,s,"nat"] = draw[n_time:(2*n_time)]
 	
@@ -165,8 +154,11 @@ def constraints_CX( climIn , Xo , cx_params , Sigma = None , verbose = False ): 
 ##}}}
 
 
-def constraints_C0_Gaussian( climIn , Yo , event , verbose = False ): ##{{{
-	if verbose: print( "Constraints C0 (Gaussian)" , end = "\r" )
+## C0 constraints
+##===============
+
+def constraints_C0_Normal( climIn , Yo , verbose = False ): ##{{{
+	if verbose: print( "Constraints C0 (Normal)" , end = "\r" )
 	
 	clim  = climIn.copy()
 	n_models  = clim.X.models.size
@@ -210,13 +202,13 @@ def constraints_C0_Gaussian( climIn , Yo , event , verbose = False ): ##{{{
 	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] * climIn.ns_params.loc["scale0",:,:]
 	clim.ns_params = ns_params
 	
-	if verbose: print( "Constraints C0 (Gaussian, Done)" )
+	if verbose: print( "Constraints C0 (Normal, Done)" )
 	
 	return clim
 ##}}}
 
-def constraints_C0_Gaussian_exp( climIn , Yo , event , verbose = False ): ##{{{
-	if verbose: print( "Constraints C0 (GaussianExp)" , end = "\r" )
+def constraints_C0_Normal_exp( climIn , Yo , verbose = False ): ##{{{
+	if verbose: print( "Constraints C0 (NormalExp)" , end = "\r" )
 	
 	clim  = climIn.copy()
 	n_models  = clim.X.models.size
@@ -258,12 +250,13 @@ def constraints_C0_Gaussian_exp( climIn , Yo , event , verbose = False ): ##{{{
 	## Save
 	clim.ns_params = ns_params
 	
-	if verbose: print( "Constraints C0 (GaussianExp, Done)" )
+	if verbose: print( "Constraints C0 (NormalExp, Done)" )
 	
 	return clim
 ##}}}
 
-def constraints_C0_GEV( climIn , Yo , event , verbose = False ): ##{{{
+
+def constraints_C0_GEV( climIn , Yo , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEV)" , end = "\r" )
 	
@@ -274,7 +267,7 @@ def constraints_C0_GEV( climIn , Yo , event , verbose = False ): ##{{{
 	time      = clim.time
 	time_Yo   = Yo.index
 	n_time_Yo = Yo.size
-	sample = clim.X.sample
+	sample    = clim.X.sample
 	
 	# New NS_param
 	ns_params = clim.ns_params
@@ -298,10 +291,10 @@ def constraints_C0_GEV( climIn , Yo , event , verbose = False ): ##{{{
 	Yo_GEV_stats = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs - ns_params.loc["loc0",:,:]) / ( 1 + ns_params.loc["scale1",:,:] * Xo_bs ) ## Hypothesis : follow GEV(0,scale0,shape)
 	for s in sample:
 		for m in models:
-			gev = sd.GEVLaw( method = clim.ns_law_args["method"] , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
-			gev.fit( Yo_GEV_stats.loc[:,s,m].values , floc = 0 )
+			gev = sd.GEV()
+			gev.fit( Yo_GEV_stats.loc[:,s,m].values , f_loc = 0 , l_scale = climIn.ns_law.lparams["scale"].link , l_shape = climIn.ns_law.lparams["shape"].link )
 			ns_params.loc["scale0",s,m] = gev.coef_[0]
-			ns_params.loc["shape",s,m]  = gev.coef_[1]
+			ns_params.loc["shape0",s,m] = gev.coef_[1]
 	
 	
 	## Save
@@ -313,7 +306,55 @@ def constraints_C0_GEV( climIn , Yo , event , verbose = False ): ##{{{
 	return clim
 ##}}}
 
-def constraints_C0_GEV_bound_valid( climIn , Yo , event , verbose = False ): ##{{{
+def constraints_C0_GEV_exp( climIn , Yo , verbose = False ): ##{{{
+	
+	if verbose: print( "Constraints C0 (GEVExp)" , end = "\r" )
+	
+	clim  = climIn.copy()
+	n_models  = clim.X.models.size
+	n_sample  = clim.n_sample
+	models    = clim.X.models
+	time      = clim.time
+	time_Yo   = Yo.index
+	n_time_Yo = Yo.size
+	sample = clim.X.sample
+	
+	# New NS_param
+	ns_params = clim.ns_params
+	
+	## Bootstrap on Yo
+	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,clim.X.sample] , dims = ["time","sample"] )
+	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,clim.X.sample,models] , dims = ["time","sample","models"] )
+	Yo_bs.loc[:,"be"] = np.ravel(Yo)
+	Xo_bs.loc[:,"be",:] = clim.X.loc[time_Yo,"be","all",:]
+	for s in sample[1:]:
+		idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
+		Yo_bs.loc[:,s] = np.ravel( Yo.loc[idx].values )
+		for m in models:
+			Xo_bs.loc[:,s,m] = clim.X.loc[idx,s,"all",m].values
+	
+	## Fit loc0
+	ns_params.loc["loc0",:,:] = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs ).quantile( np.exp(-1) , dim = "time" )
+	
+	## Fit scale0 and shape
+	Yo_GEV_stats = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs - ns_params.loc["loc0",:,:]) / np.exp( ns_params.loc["scale1",:,:] * Xo_bs ) ## Hypothesis : follow GEV(0,scale0,shape)
+	for s in sample:
+		for m in models:
+			gev = sd.GEV()
+			gev.fit( Yo_GEV_stats.loc[:,s,m].values , f_loc = 0 , l_scale = climIn.ns_law.lparams["scale"].link , l_shape = climIn.ns_law.lparams["shape"].link )
+			ns_params.loc["scale0",s,m] = gev.coef_[0]
+			ns_params.loc["shape0",s,m] = gev.coef_[1]
+	
+	
+	## Save
+	clim.ns_params = ns_params
+	
+	if verbose: print( "Constraints C0 (GEVExp, Done)" )
+	
+	return clim
+##}}}
+
+def constraints_C0_GEV_bound_valid( climIn , Yo , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEV)" , end = "\r" )
 	
@@ -371,55 +412,7 @@ def constraints_C0_GEV_bound_valid( climIn , Yo , event , verbose = False ): ##{
 	return clim
 ##}}}
 
-def constraints_C0_GEV_exp( climIn , Yo , event , verbose = False ): ##{{{
-	
-	if verbose: print( "Constraints C0 (GEVExp)" , end = "\r" )
-	
-	clim  = climIn.copy()
-	n_models  = clim.X.models.size
-	n_sample  = clim.n_sample
-	models    = clim.X.models
-	time      = clim.time
-	time_Yo   = Yo.index
-	n_time_Yo = Yo.size
-	sample = clim.X.sample
-	
-	# New NS_param
-	ns_params = clim.ns_params
-	
-	## Bootstrap on Yo
-	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,clim.X.sample] , dims = ["time","sample"] )
-	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,clim.X.sample,models] , dims = ["time","sample","models"] )
-	Yo_bs.loc[:,"be"] = np.ravel(Yo)
-	Xo_bs.loc[:,"be",:] = clim.X.loc[time_Yo,"be","all",:]
-	for s in sample[1:]:
-		idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
-		Yo_bs.loc[:,s] = np.ravel( Yo.loc[idx].values )
-		for m in models:
-			Xo_bs.loc[:,s,m] = clim.X.loc[idx,s,"all",m].values
-	
-	## Fit loc0
-	ns_params.loc["loc0",:,:] = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs ).quantile( np.exp(-1) , dim = "time" )
-	
-	## Fit scale0 and shape
-	Yo_GEV_stats = ( Yo_bs - ns_params.loc["loc1",:,:] * Xo_bs - ns_params.loc["loc0",:,:]) / np.exp( ns_params.loc["scale1",:,:] * Xo_bs ) ## Hypothesis : follow GEV(0,scale0,shape)
-	for s in sample:
-		for m in models:
-			gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_scale = ExpLinkFct() , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
-			gev.fit( Yo_GEV_stats.loc[:,s,m].values , floc = 0 )
-			ns_params.loc["scale0",s,m] = gev.coef_[0]
-			ns_params.loc["shape",s,m]  = gev.coef_[1]
-	
-	
-	## Save
-	clim.ns_params = ns_params
-	
-	if verbose: print( "Constraints C0 (GEVExp, Done)" )
-	
-	return clim
-##}}}
-
-def constraints_C0_GEV_exp_bound_valid( climIn , Yo , event , verbose = False ): ##{{{
+def constraints_C0_GEV_exp_bound_valid( climIn , Yo , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEVExp)" , end = "\r" )
 	
@@ -436,7 +429,7 @@ def constraints_C0_GEV_exp_bound_valid( climIn , Yo , event , verbose = False ):
 	ns_params = clim.ns_params
 	
 	
-	gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_scale = ExpLinkFct() , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
+	gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_scale = ExpLink() , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
 	for m in models:
 		X   = clim.X.loc[time_Yo,"be","all",m].values.squeeze()
 		Ybs = Yo.values.squeeze()
@@ -476,7 +469,8 @@ def constraints_C0_GEV_exp_bound_valid( climIn , Yo , event , verbose = False ):
 	return clim
 ##}}}
 
-def constraints_C0( climIn , Yo , event , gev_bound_valid = False , verbose = False ): ##{{{
+
+def constraints_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): ##{{{
 	"""
 	NSSEA.constraintsC0
 	===================
@@ -488,8 +482,6 @@ def constraints_C0( climIn , Yo , event , gev_bound_valid = False , verbose = Fa
 		clim variable
 	Yo       : pandas.DataFrame
 		Observations
-	event    : NSSEA.Event
-		Event
 	gev_bound_valid : bool
 		For GEVLaw, use only bootstrap where observations are between the bound of the GEV.
 	verbose  : bool
@@ -501,25 +493,69 @@ def constraints_C0( climIn , Yo , event , gev_bound_valid = False , verbose = Fa
 		A COPY of climIn constrained by Yo. climIn is NOT MODIFIED.
 	"""
 	
-	if climIn.ns_law == NSGaussianModel:
-		if isinstance(climIn.ns_law_args["link_fct_scale"],IdLinkFct):
-			return constraints_C0_Gaussian( climIn , Yo , event , verbose )
-		elif isinstance(climIn.ns_law_args["link_fct_scale"],ExpLinkFct):
-			return constraints_C0_Gaussian_exp( climIn , Yo , event , verbose )
-	if climIn.ns_law == NSGEVModel:
-		if isinstance(climIn.ns_law_args["link_fct_scale"],IdLinkFct):
-			if gev_bound_valid:
-				return constraints_C0_GEV_bound_valid( climIn , Yo , event , verbose )
-			else:
-				return constraints_C0_GEV( climIn , Yo , event , verbose )
-		elif isinstance(climIn.ns_law_args["link_fct_scale"],ExpLinkFct):
-			if gev_bound_valid:
-				return constraints_C0_GEV_exp_bound_valid( climIn , Yo , event , verbose )
-			else:
-				return constraints_C0_GEV_exp( climIn , Yo , event , verbose )
+#	if climIn.ns_law == Normal:
+#		if isinstance(climIn.ns_law_args["link_scale"],IdLink):
+#			return constraints_C0_Normal( climIn , Yo , verbose )
+#		elif isinstance(climIn.ns_law_args["link_scale"],ExpLink):
+#			return constraints_C0_Normal_exp( climIn , Yo , verbose )
+#	if climIn.ns_law == GEV:
+#		if isinstance(climIn.ns_law_args["link_scale"],IdLink):
+#			if gev_bound_valid:
+#				return constraints_C0_GEV_bound_valid( climIn , Yo , verbose )
+#			else:
+#				return constraints_C0_GEV( climIn , Yo , verbose )
+#		elif isinstance(climIn.ns_law_args["link_scale"],ExpLink):
+#			if gev_bound_valid:
+#				return constraints_C0_GEV_exp_bound_valid( climIn , Yo , verbose )
+#			else:
+#				return constraints_C0_GEV_exp( climIn , Yo , verbose )
+	
+	if isinstance(climIn.ns_law,Normal):
+		if isinstance(climIn.ns_law.lparams["scale"].link,IdLink):
+			return constraints_C0_Normal( climIn , Yo , verbose )
+		if isinstance(climIn.ns_law.lparams["scale"].link,ExpLink):
+			return constraints_C0_Normal_exp( climIn , Yo , verbose )
+	
+	if isinstance(climIn.ns_law,GEV):
+		if isinstance(climIn.ns_law.lparams["scale"].link,IdLink):
+			return constraints_C0_GEV( climIn , Yo , verbose )
+		if isinstance(climIn.ns_law.lparams["scale"].link,ExpLink):
+			return constraints_C0_GEV_exp( climIn , Yo , verbose )
 	
 	return climIn.copy()
 ##}}}
 
+
+## Bayesian constraint
+##====================
+
+def constraints_bayesian( clim , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10000 , min_rate_accept = 0.25 , verbose = False ):##{{{
+	
+	pb = ProgressBar( "Constraints Bayesian" , clim.n_sample + 1 )
+	
+	climCB = clim.copy()
+	
+	## Define prior
+#	n_params  = clim.ns_law.n_ns_params
+#	prior_law = sc.multivariate_normal( mean = climCB.mm_params.mean[-n_params:] , cov = climCB.mm_params.cov[-n_params:,-n_params:] , allow_singular = True )
+	prior_sample = climCB.ns_params.loc[:,:,"multi"].values.T
+	prior_mean   = np.mean(prior_sample,axis=0).squeeze()
+	prior_cov    = np.cov( prior_sample.T )
+	prior_law    = sc.multivariate_normal( mean = prior_mean , cov = prior_cov , allow_singular = True )
+	
+	
+	for s in clim.X.sample:
+		if verbose: pb.print()
+		X   = clim.X.loc[Yo.index,s,"all","multi"].values.squeeze()
+		n_mcmc_drawn = np.random.randint( n_mcmc_drawn_min , n_mcmc_drawn_max )
+		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law , min_rate_accept )
+		climCB.ns_params.loc[:,s,"multi"] = draw[-1,:]
+	
+	climCB.ns_params.loc[:,"be","multi"] = climCB.ns_params[:,1:,:].loc[:,:,"multi"].median( dim = "sample" )
+	
+	if verbose: pb.end()
+	
+	return climCB
+##}}}
 
 
