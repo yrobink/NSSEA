@@ -105,30 +105,29 @@ from .__linkParams import LinkParams
 ###############
 
 
-def probabilities( clim , event , ofile , be_is_median = False , ci = 0.05 , verbose = False ): ##{{{
-	"""
-	NSSEA.plot.probabilities
-	========================
+def split_into_valid_time( nan_values , ci ):##{{{
+	time_valid    = []
+	time_notvalid = []
+	t = int(nan_values.time[0])
+	on_valid      = bool(nan_values.loc[t] < ci)
+	curr = [t]
 	
-	Plot probabilities (pF,pC,PR) along time
+	for t in nan_values.time[1:]:
+		curr.append(int(t))
+		is_valid = bool(nan_values.loc[t] < ci)
+		if not is_valid == on_valid:
+			if on_valid: time_valid.append(curr)
+			else: time_notvalid.append(curr)
+			on_valid = not on_valid
+			curr = [int(t)]
+	if on_valid: time_valid.append(curr)
+	else: time_notvalid.append(curr)
 	
-	Arguments
-	---------
-	clim      : NSSEA.Climatology
-		Climatology with stats computed
-	event     : NSSEA.Event
-		Event variable
-	ofile     : str
-		output file
-	ci        : float
-		Size of confidence interval, default is 0.05 (95% confidence)
-	verbose   : bool
-		Print (or not) state of execution
-	"""
-	
-	if verbose: print( "Plot probabilities" , end = "\r" )
-	
-	stats  = clim.stats[:,:,:3,:]
+	return time_valid,time_notvalid
+##}}}
+
+def probabilities( clim , event , ofile , be_is_median = False , ci = 0.05 , verbose = False ):##{{{
+	stats = clim.stats
 	
 	## Find impossible values
 	##=======================
@@ -136,20 +135,24 @@ def probabilities( clim , event , ofile , be_is_median = False , ci = 0.05 , ver
 	nan_values = nan_idx.sum( dim = "sample" ) / ( stats.sample.size - 1 )
 	imp_values = ( stats[:,1:,:,:].loc[:,:,"pC",:] == 0 ).sum( dim = "sample" ) / ( stats.sample.size - 1 )
 	
-	
 	## Find quantiles
 	##===============
-	qstats = stats[:,1:,:,:].quantile( [ci / 2 , 1 - ci / 2 , 0.5 ] , dim = "sample" ).assign_coords( quantile = [ "ql" , "qu" , "be" ] )
+	qstats = stats[:,1:,:,:].quantile( [ci / 2 , 1 - ci / 2 , 0.5 , 0.5 , 0.5 ] , dim = "sample" ).assign_coords( quantile = [ "ql" , "qu" , "be" , "bel" , "beu" ] )
 	if not be_is_median: qstats.loc["be",:,:,:] = stats[:,0,:,:]
 	
 	## Special case : PR
 	##==================
 	qstats.loc["qu",:,"PR",:] = qstats.loc["qu",:,"PR",:].where( nan_values < ci , np.inf )
 	qstats.loc["ql",:,"PR",:] = qstats.loc["ql",:,"PR",:].where( nan_values < ci , 0      )
+	if be_is_median:
+		qstats.loc["be",:,"PR",:] = qstats.loc["be",:,"PR",:].where( nan_values < ci , 1 )
 	
-	## Plot itself
-	##============
+	## Split into continuous time period
+	##==================================
+	time_valid,time_notvalid = split_into_valid_time( nan_values , ci )
 	
+	## Main plot
+	##==========
 	lp = LinkParams()
 	
 	pdf = mpdf.PdfPages( ofile )
@@ -193,7 +196,10 @@ def probabilities( clim , event , ofile , be_is_median = False , ci = 0.05 , ver
 		
 		ax = fig.add_axes( [0.08,0.08,0.85,0.4] )
 		ax.plot( stats.time , lp.frr(qstats.loc["be",:,"PR",m]) , color = "red" , linestyle = "-" , marker = "" )
-		ax.fill_between( stats.time , lp.frr(qstats.loc["ql",:,"PR",m]) , lp.frr(qstats.loc["qu",:,"PR",m]) , color = "red" , alpha = 0.5 )
+		for t in time_valid:
+			ax.fill_between( t , lp.frr(qstats.loc["ql",t,"PR",m]) , lp.frr(qstats.loc["qu",t,"PR",m]) , color = "red" , alpha = 0.5 )
+		for t in time_notvalid:
+			ax.fill_between( t , lp.frr(qstats.loc["ql",t,"PR",m]) , lp.frr(qstats.loc["qu",t,"PR",m]) , color = "red" , alpha = 0.3 )
 		ax.set_ylim( (lp.rr.values.min(),lp.rr.values.max()) )
 		ax.set_yticks( lp.rr.values )
 		ax.set_yticklabels( lp.rr.names )
@@ -212,15 +218,11 @@ def probabilities( clim , event , ofile , be_is_median = False , ci = 0.05 , ver
 		ax.plot( [event.time,event.time] , ylim          , linestyle = "--" , marker = "" , color = "black" )
 		ax.set_xlim(xlim)
 		ax.set_ylim(ylim)
-
 		
-#		fig.set_tight_layout(True)
 		pdf.savefig( fig )
 		plt.close(fig)
 	
 	pdf.close()
-	
-	if verbose: print( "Plot probabilities (Done)" )
 ##}}}
 
 def probabilities_not_zero( clim , event , ofile , ci = 0.05 , verbose = False ): ##{{{
