@@ -106,7 +106,7 @@ list_packages = [
 
 setup(
 	name = "NSSEA" ,
-	version = "0.3.0" ,
+	version = "0.3.1" ,
 	description = "",
 	author = "Yoann Robin" ,
 	author_email = "yoann.robin.k@gmail.com" ,
