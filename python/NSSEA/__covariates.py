@@ -252,6 +252,7 @@ def gam_decomposition( lX , Xnat , dof = 7 , verbose = False ): ##{{{
 	Xa       = np.repeat( 0. , n_time )
 	
 	sample = ["be"] + [ "S{}".format(i) for i in range(n_sample) ]
+#	sample = ["BE"] + [ '{0:{fill}{align}{n}}'.format(i,fill="0",align=">",n=int(np.floor(np.log10(n_sample))+1)) for i in range(n_sample)]
 	X = xr.DataArray( np.zeros( (n_time,n_sample + 1,3,n_models) ) , coords = [time , sample , ["all","nat","ant"] , models ] , dims = ["time","sample","forcing","models"] )
 	
 	spl_pen = "auto"
