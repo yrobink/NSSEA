@@ -246,7 +246,7 @@ def gam_decomposition( lX , Xnat , dof = 7 , verbose = False ): ##{{{
 	models   = [ lx.columns[0] for lx in lX]
 	n_models = len(models)
 	n_sample = Xnat.shape[1] - 1
-	time     = np.unique( lX[0].index )
+	time     = Xnat.index
 	n_time   = time.size
 	time_l   = np.repeat( time[0] , n_time )
 	Xa       = np.repeat( 0. , n_time )
