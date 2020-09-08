@@ -261,13 +261,13 @@ if __name__ == "__main__":
 	
 	## Define clim variable from input
 	##================================
-	clim = ns.Climatology( time_period , models , ns_law )
+	clim = ns.Climatology2( time_period , models , n_sample , ns_law )
 	
 	
 	## Decomposition of covariates
 	##============================
 	Xebm   = ns.EBM().draw_sample( clim.time , n_sample + 1 , fix_first = 0 )
-	clim.X = ns.gam_decomposition( lX , Xebm , verbose = verbose )
+	clim   = ns.covariates_FC_GAM( clim , lX , Xebm , verbose = verbose )
 	
 	
 	## Fit distribution
@@ -277,54 +277,50 @@ if __name__ == "__main__":
 	
 	## Multi-model
 	##============
-	clim = ns.infer_multi_model( clim , verbose = verbose )
-	
-	
-	## Keep only multi-model
-	##======================
+	clim,mmodel = ns.infer_multi_model( clim , verbose = verbose )
 	climMM = clim.copy()
-	climMM.keep_models( ["multi"] )
+	climMM.keep_models( ["Multi_Synthesis"] )
 	
 	
 	## Apply constraints
 	##==================
-	climCX     = ns.constraints_CX( climMM , Xo , time_reference = time_reference , verbose = verbose )
-	climCXCB   = ns.constraints_bayesian( climCX , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , min_rate_accept = min_rate_accept , verbose = verbose )
-	climC0     = ns.constraints_C0( climMM , Yo , verbose = verbose )
-	climCXC0   = ns.constraints_C0( climCX , Yo , verbose = verbose )
-	
-	
-	## Compute stats
-	##==============
-	clim       = ns.extremes_stats( clim     , event , verbose = verbose )
-	climCX     = ns.extremes_stats( climCX   , event , verbose = verbose )
-	climCXCB   = ns.extremes_stats( climCXCB , event , verbose = verbose )
-	climC0     = ns.extremes_stats( climC0   , event , verbose = verbose )
-	climCXC0   = ns.extremes_stats( climCXC0 , event , verbose = verbose )
-	
-	
-	## Save in netcdf
-	##===============
-	ns.to_netcdf( clim     , event , os.path.join( pathOut , "HW03_Normal_clim.nc"       ) , ""       )
-	ns.to_netcdf( climCX   , event , os.path.join( pathOut , "HW03_Normal_climCX.nc"     ) , "CX"     )
-	ns.to_netcdf( climCXCB , event , os.path.join( pathOut , "HW03_Normal_climCXCB.nc"   ) , "CXCB"   )
-	ns.to_netcdf( climC0   , event , os.path.join( pathOut , "HW03_Normal_climC0.nc"     ) , "C0"     )
-	ns.to_netcdf( climCXC0 , event , os.path.join( pathOut , "HW03_Normal_climCXC0.nc"   ) , "CXC0"   )
-	
-	
-	## Plot
-	##=====
-	nsp.write_package_tabular( climCXCB , event , os.path.join( pathOut , "SummaryCXCB.txt"   ) , verbose = verbose )
-	nsp.write_package_tabular( climCXC0 , event , os.path.join( pathOut , "SummaryCXC0.txt"   ) , verbose = verbose )
-	nsp.decomposition( lX , clim.X , event                      , os.path.join( pathOut , "decomposition.pdf" ) , verbose = verbose )
-	nsp.constraints_CX( climMM , climCXCB , Xo , time_reference , os.path.join( pathOut , "constraintCX.pdf" )  , verbose = verbose )
-	nsp.plot_classic_packages( clim     , event , path = pathOut , suffix = "MM"     , ci = ci , verbose = verbose )
-	nsp.plot_classic_packages( climCX   , event , path = pathOut , suffix = "CX"     , ci = ci , verbose = verbose )
-	nsp.plot_classic_packages( climCXCB , event , path = pathOut , suffix = "CXCB"   , ci = ci , verbose = verbose )
-	nsp.plot_classic_packages( climC0   , event , path = pathOut , suffix = "C0"     , ci = ci , verbose = verbose )
-	nsp.plot_classic_packages( climCXC0 , event , path = pathOut , suffix = "CXC0"   , ci = ci , verbose = verbose )
-	nsp.ns_params_comparison( climMM , climCXC0   , ofile = os.path.join( pathOut , "ns_paramsMM_CXC0.pdf"   ) , ci = ci , verbose = verbose )
-	nsp.ns_params_comparison( climMM , climCXCB   , ofile = os.path.join( pathOut , "ns_paramsMM_CXCB.pdf"   ) , ci = ci , verbose = verbose )
+#	climCX     = ns.constraints_CX( climMM , Xo , time_reference = time_reference , verbose = verbose )
+#	climCXCB   = ns.constraints_bayesian( climCX , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , min_rate_accept = min_rate_accept , verbose = verbose )
+#	climC0     = ns.constraints_C0( climMM , Yo , verbose = verbose )
+#	climCXC0   = ns.constraints_C0( climCX , Yo , verbose = verbose )
+#	
+#	
+#	## Compute stats
+#	##==============
+#	clim       = ns.extremes_stats( clim     , event , verbose = verbose )
+#	climCX     = ns.extremes_stats( climCX   , event , verbose = verbose )
+#	climCXCB   = ns.extremes_stats( climCXCB , event , verbose = verbose )
+#	climC0     = ns.extremes_stats( climC0   , event , verbose = verbose )
+#	climCXC0   = ns.extremes_stats( climCXC0 , event , verbose = verbose )
+#	
+#	
+#	## Save in netcdf
+#	##===============
+#	ns.to_netcdf( clim     , event , os.path.join( pathOut , "HW03_Normal_clim.nc"       ) , ""       )
+#	ns.to_netcdf( climCX   , event , os.path.join( pathOut , "HW03_Normal_climCX.nc"     ) , "CX"     )
+#	ns.to_netcdf( climCXCB , event , os.path.join( pathOut , "HW03_Normal_climCXCB.nc"   ) , "CXCB"   )
+#	ns.to_netcdf( climC0   , event , os.path.join( pathOut , "HW03_Normal_climC0.nc"     ) , "C0"     )
+#	ns.to_netcdf( climCXC0 , event , os.path.join( pathOut , "HW03_Normal_climCXC0.nc"   ) , "CXC0"   )
+#	
+#	
+#	## Plot
+#	##=====
+#	nsp.write_package_tabular( climCXCB , event , os.path.join( pathOut , "SummaryCXCB.txt"   ) , verbose = verbose )
+#	nsp.write_package_tabular( climCXC0 , event , os.path.join( pathOut , "SummaryCXC0.txt"   ) , verbose = verbose )
+#	nsp.decomposition( lX , clim.X , event                      , os.path.join( pathOut , "decomposition.pdf" ) , verbose = verbose )
+#	nsp.constraints_CX( climMM , climCXCB , Xo , time_reference , os.path.join( pathOut , "constraintCX.pdf" )  , verbose = verbose )
+#	nsp.plot_classic_packages( clim     , event , path = pathOut , suffix = "MM"     , ci = ci , verbose = verbose )
+#	nsp.plot_classic_packages( climCX   , event , path = pathOut , suffix = "CX"     , ci = ci , verbose = verbose )
+#	nsp.plot_classic_packages( climCXCB , event , path = pathOut , suffix = "CXCB"   , ci = ci , verbose = verbose )
+#	nsp.plot_classic_packages( climC0   , event , path = pathOut , suffix = "C0"     , ci = ci , verbose = verbose )
+#	nsp.plot_classic_packages( climCXC0 , event , path = pathOut , suffix = "CXC0"   , ci = ci , verbose = verbose )
+#	nsp.ns_params_comparison( climMM , climCXC0   , ofile = os.path.join( pathOut , "ns_paramsMM_CXC0.pdf"   ) , ci = ci , verbose = verbose )
+#	nsp.ns_params_comparison( climMM , climCXCB   , ofile = os.path.join( pathOut , "ns_paramsMM_CXCB.pdf"   ) , ci = ci , verbose = verbose )
 	
 	
 	print("Done")
