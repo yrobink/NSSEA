@@ -92,17 +92,16 @@ import os
 import numpy as np
 import pandas as pd
 import xarray as xr
+import scipy.stats as sc
 import netCDF4 as nc4
 import pygam as pg
 
 from .__tools import ProgressBar
-from .__tools import matrix_positive_part
-from .__tools import matrix_squareroot
 
 
-#############
-## Classes ##
-#############
+##########################
+## Energy Balance Model ##
+##########################
 
 class EBM: ##{{{
 	"""
@@ -204,271 +203,144 @@ class EBM: ##{{{
 ##}}}
 
 
-###############
-## Functions ##
-###############
+#####################################################
+## Factual / counter factual forcing decomposition ##
+#####################################################
 
-def fit_gam_with_fix_dof( X , Y , dof ):##{{{
-	lam_up    = 1e2
-	lam_lo    = 1e-2
-	tol       = 1e-2
-	diff      = 1. + tol
-	n_splines = int(dof + 2)
-	nit       = 0
-	while diff > tol:
-		lam = ( lam_up + lam_lo ) / 2.
-		
-		gam_model = pg.LinearGAM( pg.s( 0 , n_splines = n_splines , penalties = "auto" , lam = lam ) + pg.l( 1 , penalties = None ) )
-		gam_model.fit( X , Y )
-		current_dof = gam_model.statistics_["edof"]
-		if current_dof < dof:
-			lam_up = lam
-		else:
-			lam_lo = lam
-		diff = np.abs( dof - current_dof )
-		nit += 1
-		if nit % 100 == 0:
-			lam_up    = 1e2
-			lam_lo    = 1e-2
-			n_splines += 1
-	return gam_model
+class GAM_FC:##{{{
+	def __init__( self , dof ):
+		self.dof   = dof
+		self.tol   = 1e-2
+		self.model = None
+
+	@property
+	def edof(self):
+		return self.model.statistics_["edof"]
+	
+	@property
+	def coef_(self):
+		return self.model.coef_
+	
+	@coef_.setter
+	def coef_( self , coef ):
+		self.model.coef_ = coef
+	
+	@property
+	def cov_(self):
+		return self.model.statistics_["cov"]
+	
+	def fit( self , X , Y ):
+		lam_up    = 1e2
+		lam_lo    = 1e-2
+		diff      = 1. + self.tol
+		n_splines = int(self.dof + 2)
+		nit       = 0
+		while diff > self.tol:
+			lam = ( lam_up + lam_lo ) / 2.
+			
+			self.model = pg.LinearGAM( pg.s( 0 , n_splines = n_splines , penalties = "auto" , lam = lam ) + pg.l( 1 , penalties = None ) )
+			self.model.fit( X , Y )
+			
+			if self.edof < self.dof:
+				lam_up = lam
+			else:
+				lam_lo = lam
+			diff = np.abs( self.dof - self.edof )
+			nit += 1
+			if nit % 100 == 0:
+				lam_up    = 1e2
+				lam_lo    = 1e-2
+				n_splines += 1
+	
+	def predict( self , X ):
+		return self.model.predict(X)
+	
+	def error_distribution(self):
+		return sc.multivariate_normal( mean = self.coef_ , cov = self.cov_ , allow_singular = True )
+
 ##}}}
 
-def gam_decomposition( lX , Xnat , dof = 7 , verbose = False ): ##{{{
+def covariates_FC_GAM( clim , lX , XN , dof = 7 , verbose = False ):##{{{
 	"""
-	NSSEA.gam_decomposition
+	NSSEA.covariates_FC_GAM
 	=======================
-	Perform the decomposition anthropic/natural forcing with GAM
 	
-	arguments
-	---------
+	This function add to the climatology "clim" the factual / counter factual
+	decomposition of the models "lX" with the following GAM model:
+	
+	X ~ X0 + XN + spline(clim.time) + normal_distribution
+	
+	Factual and counter covariates are of the form:
+	XF ~ X0 + XN + spline(clime.time)
+	XC ~ X0 + XN
+	
+	The GAM model is fitted with "dof" degree of freedom, i.e. if "dof = 7", we
+	have one dof for X0, one dof for XN, and 5 dof for the spline term.
+	
+	Parameters
+	==========
+	clim : [NSSEA.climatology] Climatology to add the covariate.
+	lX   : [list(pandas.DataFrame)] List of models, the column name must be the 
+	       name of the model, and defined in the climatology.
+	XN   : [pandas.DataFrame] Natural forcing.
+	dof  : [integer] Degree of freedom
+	verbose : [bool] If we print the progress of the fit or not.
+	
 	"""
-	models   = [ lx.columns[0] for lx in lX]
-	n_models = len(models)
-	n_sample = Xnat.shape[1] - 1
-	time     = Xnat.index
-	n_time   = time.size
-	time_l   = np.repeat( time[0] , n_time )
-	Xa       = np.repeat( 0. , n_time )
+	## Parameters
+	models   = clim.model
+	time     = clim.time
+	n_model  = clim.n_model
+	n_time   = clim.n_time
+	samples  = clim.sample
+	n_sample = clim.n_sample
 	
-	sample = ["be"] + [ "S{}".format(i) for i in range(n_sample) ]
-#	sample = ["BE"] + [ '{0:{fill}{align}{n}}'.format(i,fill="0",align=">",n=int(np.floor(np.log10(n_sample))+1)) for i in range(n_sample)]
-	X = xr.DataArray( np.zeros( (n_time,n_sample + 1,3,n_models) ) , coords = [time , sample , ["all","nat","ant"] , models ] , dims = ["time","sample","forcing","models"] )
+	## verbose
+	pb = ProgressBar( n_model * n_sample , "covariates_FC_GAM" , verbose )
 	
-	spl_pen = "auto"
-	lin_pen = None
+	## Define output
+	dX = xr.DataArray( np.zeros( (n_time,n_sample + 1,2,n_model) ) , coords = [time , samples , ["F","C"] , models ] , dims = ["time","sample","forcing","model"] )
 	
+	## Define others prediction variables
+	time_C   = np.repeat( time[0] , n_time )
 	
-	
-	pb = ProgressBar( "GAM decomposition" , n_models * n_sample )
-	for i in range(n_models):
+	## Main loop
+	for X in lX:
+		model = X.columns[0]
 		
-		Xl    = Xnat.values[:,0]
-		x_all = np.stack( (time  ,Xl) , -1 )
-		x_nat = np.stack( (time_l,Xl) , -1 )
+		xn = XN.values[:,0]
+		XF = np.stack( (time  ,xn) , -1 )
+		XC = np.stack( (time_C,xn) , -1 )
 		
 		## GAM decomposition
-		gam_model = fit_gam_with_fix_dof( np.stack( (lX[i].index,Xnat.loc[lX[i].index,0].values) , -1 ) , lX[i].values , dof )
+		gam_model = GAM_FC( dof )
+		gam_model.fit( np.stack( (X.index,XN.loc[X.index,0].values) , -1 ) , X.values )
 		
 		## prediction
-		X.values[:,0,0,i] = gam_model.predict( x_all )
-		X.values[:,0,1,i] = gam_model.predict( x_nat )
+		dX.loc[:,"BE","F",model] = gam_model.predict( XF )
+		dX.loc[:,"BE","C",model] = gam_model.predict( XC )
 		
-		mean_coef = gam_model.coef_
-		cov_coef  = gam_model.statistics_["cov"]
+		## Distribution of GAM coefficients
+		gam_law = gam_model.error_distribution()
+		coefs_  = gam_law.rvs(n_sample)
 		
-		for j in range(n_sample):
-			if verbose: pb.print()
+		for i,s in enumerate(samples[1:]):
+			pb.print()
 			
-			Xl    = Xnat.values[:,j+1]
-			x_all = np.stack( (time  ,Xl) , -1 )
-			x_nat = np.stack( (time_l,Xl) , -1 )
+			xn = XN.values[:,i+1]
+			XF = np.stack( (time  ,xn) , -1 )
+			XC = np.stack( (time_C,xn) , -1 )
 			
 			## Perturbation
-			gam_model.coef_ = np.random.multivariate_normal( mean = mean_coef , cov = cov_coef , size = 1 ).ravel()
+			gam_model.coef_ = coefs_[i,:]
 			
 			## Final decomposition
-			X.values[:,j+1,0,i] = gam_model.predict( x_all )
-			X.values[:,j+1,1,i] = gam_model.predict( x_nat )
-			
+			dX.loc[:,s,"F",model] = gam_model.predict( XF )
+			dX.loc[:,s,"C",model] = gam_model.predict( XC )
 	
-	X.loc[:,:,"ant",:] = X.loc[:,:,"all",:] - X.loc[:,:,"nat",:]
-	
-	if verbose: pb.end()
-	
-	return X
-	
-#	if time_center is not None:
-#		X_event = X.loc[time_center,:,"all",:]
-#		X_center = X - X_event
-#	
-#	
-#	return XSplitted( X , X_event , X_center )
-##}}}
+	clim.X = dX
+	pb.end()
+	return clim
+##}}}}
 
-
-
-#########
-## Old ##
-#########
-
-class XSplitted: ##{{{
-	def __init__( self , X , X_event , X_center ):
-		self.X        = X
-		self.X_event  = X_event
-		self.X_center = X_center
-	
-	def has_center(self):
-		return self.X_center is not None
-##}}}
-
-def gam_decomposition_classic( lX , Enat , Sigma = None , time_center = None , n_splines = None , gam_lam = None , verbose = False ): ##{{{
-	"""
-	NSSEA.gam_decomposition
-	=======================
-	Perform the decomposition anthropic/natural forcing with GAM
-	
-	arguments
-	---------
-	"""
-	models   = [ lx.columns[0] for lx in lX]
-	n_models = len(models)
-	n_sample = Enat.shape[1] - 1
-	time     = np.unique( lX[0].index )
-	n_time   = time.size
-	time_l   = np.repeat( time[0] , n_time )
-	Xa       = np.repeat( 0. , n_time )
-	
-	sample = ["be"] + [ "S{}".format(i) for i in range(n_sample) ]
-	X = xr.DataArray( np.zeros( (n_time,n_sample + 1,3,n_models) ) , coords = [time , sample , ["all","nat","ant"] , models ] , dims = ["time","sample","forcing","models"] )
-	
-	spl_pen = "auto"
-	lin_pen = None
-	
-	if n_splines is None:
-		n_splines = 8
-	if gam_lam is None:
-		gam_lam = 0.6
-	
-	
-	pb = ProgressBar( "GAM decomposition" , n_models * n_sample )
-	for i in range(n_models):
-		
-		Xl    = Enat.values[:,0]
-		x_all = np.stack( (time  ,Xl) , -1 )
-		x_nat = np.stack( (time_l,Xl) , -1 )
-		
-		## GAM decomposition
-		gam_model = pg.LinearGAM( pg.s( 0 , n_splines = n_splines , penalties = spl_pen , lam = gam_lam ) + pg.l( 1 , penalties = lin_pen ) )
-#		gam_model = pg.LinearGAM( pg.s( 0 , n_splines = gam_dof - 2 , penalties = spl_pen , lam = 0.9 ) + pg.l( 1 , penalties = lin_pen ) )
-#		gam_model = pg.LinearGAM( pg.s( 0 , n_splines = gam_dof - 2 , penalties = spl_pen ) + pg.l( 1 , penalties = lin_pen ) )
-		gam_model.fit( np.stack( (lX[i].index,Enat.loc[lX[i].index,0].values) , -1 ) , lX[i].values )
-		
-		X.values[:,0,0,i] = gam_model.predict( x_all )
-		X.values[:,0,1,i] = gam_model.predict( x_nat )
-		
-		mean_coef = gam_model.coef_
-		cov_coef  = gam_model.statistics_["cov"]
-		
-		for j in range(n_sample):
-			if verbose: pb.print()
-			
-			Xl    = Enat.values[:,j+1]
-			x_all = np.stack( (time  ,Xl) , -1 )
-			x_nat = np.stack( (time_l,Xl) , -1 )
-			
-			## Perturbation
-			gam_model.coef_ = np.random.multivariate_normal( mean = mean_coef , cov = cov_coef , size = 1 ).ravel()
-			
-			## Final decomposition
-			X.values[:,j+1,0,i] = gam_model.predict( x_all )
-			X.values[:,j+1,1,i] = gam_model.predict( x_nat )
-			
-	
-	X.loc[:,:,"ant",:] = X.loc[:,:,"all",:] - X.loc[:,:,"nat",:]
-	
-	if time_center is not None:
-		X_event = X.loc[time_center,:,"all",:]
-		X_center = X - X_event
-	
-	if verbose: pb.end()
-	
-	return XSplitted( X , X_event , X_center )
-##}}}
-
-def gam_decomposition_old_old_old( Xd , Enat , Sigma = None , time_center = None , gam_dof = 7 , verbose = False ): ##{{{
-	"""
-	NSSEA.gam_decomposition
-	=======================
-	Perform the decomposition anthropic/natural forcing with GAM
-	
-	arguments
-	---------
-	"""
-	models   = Xd.columns.to_list()
-	n_models = Xd.shape[1]
-	n_sample = Enat.shape[1] - 1
-	time     = Xd.index.values
-	n_time   = time.size
-	time_l   = np.repeat( time[0] , n_time )
-	Eant     = np.repeat( 0. , n_time )
-	
-	sample = ["be"] + [ "S{}".format(i) for i in range(n_sample) ]
-	X = xr.DataArray( np.zeros( (n_time,n_sample + 1,3,n_models) ) , coords = [time , sample , ["all","nat","ant"] , models ] , dims = ["time","sample","forcing","models"] )
-	
-	pb = ProgressBar( "GAM decomposition" , n_models * n_sample )
-	for i in range(n_models):
-		gam_model = pg.LinearGAM( pg.s( 0 , n_splines = gam_dof - 2 , penalties = None ) + pg.l( 1 , penalties = None ) )
-		gam_model.fit( np.stack( (time,Enat.values[:,0]) , -1 ) , Xd.values[:,i] )
-		
-		X.values[:,0,0,i] = gam_model.predict( np.stack( (time  ,Enat.values[:,0]) , -1 ) )
-		X.values[:,0,1,i] = gam_model.predict( np.stack( (time_l,Enat.values[:,0]) , -1 ) )
-		X.values[:,0,2,i] = gam_model.predict( np.stack( (time,Eant) , -1 ) )
-		
-		
-		
-		for j in range(n_sample):
-			if verbose: pb.print()
-		
-			Xl = Enat.values[:,j+1]
-			mVt = np.stack( (time  ,Xl) , -1 )
-			mVl = np.stack( (time_l,Xl) , -1 )
-			
-			## GAM decomposition
-			gam_model = pg.LinearGAM( pg.s( 0 , n_splines = gam_dof - 2 , penalties = None ) + pg.l(1, penalties = None ) )
-			gam_model.fit( mVt , Xd.values[:,i] )
-			
-			## Coefficients of decomposition
-			int_coef = gam_model.coef_[-1]
-			lin_coef = gam_model.coef_[-2]
-			spl_coef = gam_model.coef_[:-2]
-			
-			spl_mat  = gam_model._modelmat( mVt ).todense()[:,:-2]
-			proj_mat = spl_mat @ np.linalg.inv( spl_mat.T @ spl_mat ) @ spl_mat.T
-			
-			
-			## Noise of linear term
-			sigma_lin = np.sqrt( ( Xl.transpose() @ Sigma @ Xl ) / ( Xl.transpose() @ Xl )**2 )
-			noise_lin = np.random.normal( loc = 0 , scale = sigma_lin )
-			
-			## Noise of spline term
-			std_spl   = matrix_squareroot( matrix_positive_part( proj_mat.transpose() @ Sigma @ proj_mat ) )
-			noise_spl = np.ravel( std_spl @ np.random.normal( loc = 0 , scale = 1 , size = time.size ).reshape( (n_time,1) ) )
-			noise_spl = noise_spl - noise_spl[0]
-			
-			## Final decomposition
-			gam_model.coef_[-2] += noise_lin
-			X.values[:,j+1,0,i] = gam_model.predict( mVt ) + noise_spl
-			X.values[:,j+1,1,i] = gam_model.predict( mVl )
-			X.values[:,j+1,2,i] = gam_model.predict( np.stack( (time,Eant) , -1 ) ) + noise_spl
-			
-	
-	if time_center is not None:
-		X_event = X.loc[time_center,:,"all",:]
-		X_center = X - X_event
-	
-	if verbose: pb.end()
-	
-	return XSplitted( X , X_event , X_center )
-##}}}
 

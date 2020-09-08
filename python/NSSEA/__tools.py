@@ -88,6 +88,7 @@
 ## Libraries ##
 ###############
 
+import os
 import numpy as np
 import scipy.linalg as scl
 
@@ -107,37 +108,41 @@ class ProgressBar: ##{{{
 	>>     pb.print()
 	>> pb.end()
 	"""
-	
-	def __init__( self , message , size , digits = 2 ):
+	def __init__( self , n_step , message , verbose = True ):
 		"""
 		Constructor
 
 		Arguments
 		---------
-		message: str
-			Message printed
-		size   :
-			Lenght of loop where progress bar will be inserted
-		digits :
-			Number of digits for the percentage printed
+		n_step  : Lenght of loop where progress bar will be inserted
+		message : Message printed
+		verbose : If we print or not
 		"""
 		self.message = message
-		self.size    = size
-		self.digits  = digits
-		self.iter    = 1
-	
-	def print(self):
+		self.size_mess = len(message)
+		self.n_step  = n_step
+		self.step    = 0
+		self.verbose = verbose
+		self.print()
+
+	def print( self ):
 		"""
 		Method which print on the screen
 		"""
-		print( self.message + " ({}%)               ".format( round(self.iter / self.size * 100,self.digits) ) , end = "\r" )
-		self.iter += 1
+		if self.verbose:
+			n_char = os.get_terminal_size()[0] - self.size_mess - 14
+			n_char1 = int(n_char * self.step / self.n_step)
+			n_char2 = n_char - n_char1
+			output = "{} ({}) [{}{}]".format( self.message , "{0:{fill}{align}{n}}%".format(round(100 * self.step / self.n_step,2),fill=" ",align=">",n=5 ) , "#"*n_char1 , " "*n_char2 )
+			print( output  , end = "\r" ) 
+		self.step += 1
 	
 	def end(self):
 		"""
 		Method printed the final message afer loop
 		"""
-		print( self.message + " (Done)              " )
+		if self.verbose:
+			print("\n")
 ##}}}
 
 
