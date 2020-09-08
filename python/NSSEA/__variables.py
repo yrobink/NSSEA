@@ -263,9 +263,16 @@ class Climatology: ##{{{
 class Climatology2: ##{{{
 	
 	def __init__( self , time , models , n_sample , ns_law ): ##{{{
-		samples = ["BE"] + [ '{0:{fill}{align}{n}}'.format(i,fill="0",align=">",n=int(np.floor(np.log10(n_sample))+1)) for i in range(n_sample)]
+		samples = ["BE"] + [ 'S{0:{fill}{align}{n}}'.format(i,fill="0",align=">",n=int(np.floor(np.log10(n_sample))+1)) for i in range(n_sample)]
 		self.data   = xr.Dataset( { "time" : time , "model" : models , "sample" : samples } )
 		self.ns_law = ns_law
+	##}}}
+	
+	def _add_variable( self , name , variable ):##{{{
+		if name in self.data.variables:
+			self.data[name] = variable
+		else:
+			self.data = self.data.assign( { name : variable } )
 	##}}}
 	
 	## Generic properties {{{
@@ -307,10 +314,22 @@ class Climatology2: ##{{{
 	
 	@X.setter
 	def X( self , X_ ):
-		if "X" in self.data:
-			self.data.X = X_
-		else:
-			self.data = self.data.assign( { "X" : X_ } )
+		self._add_variable( "X" , X_ )
+	
+	##}}}
+	
+	## law params properties {{{
+	
+	@property
+	def law_coef(self):
+		try:
+			return self.data.law_coef
+		except:
+			return None
+	
+	@law_coef.setter
+	def law_coef( self , law_coef_ ):
+		self._add_variable( "law_coef" , law_coef_ )
 	
 	##}}}
 

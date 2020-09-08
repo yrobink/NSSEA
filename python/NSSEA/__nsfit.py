@@ -119,29 +119,29 @@ def nslaw_fit( lY , clim , verbose = False ):
 		Climatology variable with ns_params fitted
 	"""
 	## Parameters
-	models      = clim.models
-	n_models    = clim.n_models
-	sample      = clim.X.sample.values.tolist()
+	models      = clim.model
+	n_models    = clim.n_model
+	sample      = clim.sample
 	n_sample    = clim.n_sample
 	
 	n_ns_params = clim.ns_law.n_ns_params
 	ns_params_names = clim.ns_law.get_params_names()
 	
 	
-	clim.ns_params   = xr.DataArray( np.zeros( (n_ns_params,n_sample + 1,n_models) ) , coords = [ ns_params_names , sample , models ] , dims = ["ns_params","sample","models"] )
+	law_coef   = xr.DataArray( np.zeros( (n_ns_params,n_sample + 1,n_models) ) , coords = [ ns_params_names , sample , models ] , dims = ["coef","sample","model"] )
 	
-	pb = ProgressBar( "NS fit" , n_models * n_sample )
-	for i in range(n_models):
-		Y  = lY[i]
-		tY = Y.index
-		X  = clim.X.loc[tY,"be","all",models[i]]
+	pb = ProgressBar( n_models * (n_sample+1) , "nslaw_fit" , verbose )
+	for Y in lY:
+		model = Y.columns[0]
+		tY    = Y.index
+		X     = clim.X.loc[tY,"BE","F",model]
 		
 		law = clim.ns_law
 		law.fit(Y.values,X.values)
-		clim.ns_params.loc[:,"be",models[i]] = law.get_params()
+		law_coef.loc[:,"BE",model] = law.get_params()
 		
-		for j in range(n_sample):
-			if verbose: pb.print()
+		for s in sample:
+			pb.print()
 			
 			fit_is_valid = False
 			while not fit_is_valid:
@@ -150,14 +150,13 @@ def nslaw_fit( lY , clim , verbose = False ):
 				
 				tYs = tY.values[idx]
 				Ys = Y.iloc[idx].values
-				Xs = clim.X.loc[tYs,sample[j+1],"all",models[i]].values
+				Xs = clim.X.loc[tYs,s,"F",model].values
 				law.fit(Ys,Xs)
 				fit_is_valid = law.check( Y.values.squeeze() , X.values.squeeze() , np.arange( 0 , tY.size , 1 ) )
-			clim.ns_params.loc[:,sample[j+1],models[i]] = law.get_params()
+			law_coef.loc[:,s,model] = law.get_params()
 	
-	if verbose: pb.end()
-	
+	clim.law_coef = law_coef
+	pb.end()
 	return clim
-
 
 
