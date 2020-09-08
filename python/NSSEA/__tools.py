@@ -130,10 +130,10 @@ class ProgressBar: ##{{{
 		Method which print on the screen
 		"""
 		if self.verbose:
-			n_char = os.get_terminal_size()[0] - self.size_mess - 14
+			n_char = os.get_terminal_size()[0] - 25 - 13
 			n_char1 = int(n_char * self.step / self.n_step)
 			n_char2 = n_char - n_char1
-			output = "{} ({}) [{}{}]".format( self.message , "{0:{fill}{align}{n}}%".format(round(100 * self.step / self.n_step,2),fill=" ",align=">",n=5 ) , "#"*n_char1 , " "*n_char2 )
+			output = "{} ({}) [{}{}]".format( "{mess:<25}".format(mess=self.message) , "{0:{fill}{align}{n}}%".format(round(100 * self.step / self.n_step,2),fill=" ",align=">",n=5 ) , "#"*n_char1 , " "*n_char2 )
 			print( output  , end = "\r" ) 
 		self.step += 1
 	
