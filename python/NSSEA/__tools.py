@@ -142,7 +142,7 @@ class ProgressBar: ##{{{
 		Method printed the final message afer loop
 		"""
 		if self.verbose:
-			print("\n")
+			print("",end="\n")
 ##}}}
 
 
