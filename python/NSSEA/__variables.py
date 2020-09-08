@@ -274,6 +274,23 @@ class Climatology2: ##{{{
 			self.data = self.data.assign( { name : variable } )
 	##}}}
 	
+	def copy(self): ##{{{
+		clim = Climatology2( self.time , self.model , self.n_sample , self.ns_law )
+		clim.data = self.data.copy()
+		return clim
+	##}}}
+	
+	def keep_models( self , models ): ##{{{
+		if type(models) is not list: models = [models]
+		self.data = self.data.sel( model = models , drop = False )
+	##}}}
+	
+	def remove_models( self , models ):##{{{
+		if type(models) is not list: models = [models]
+		kept = [ m for m in self.model if m not in models ]
+		self.keep_models(keps)
+	##}}}
+	
 	## Generic properties {{{
 	
 	@property
