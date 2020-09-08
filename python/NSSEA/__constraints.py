@@ -95,6 +95,7 @@ import scipy.stats as sc
 import pandas as pd
 import xarray as xr
 
+from.__multi_model import MultiModel
 from .__tools import matrix_squareroot
 from .__tools import ProgressBar
 
@@ -115,14 +116,13 @@ import SDFC as sd
 ## Functions ##
 ###############
 
-## CX constraints
-##===============
+## Covariate constraint
+##=====================
 
-
-def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = False , verbose = False ): ##{{{
+def constrain_covariate( climIn , Xo , time_reference = None , assume_good_scale = False , verbose = False ): ##{{{
 	"""
-	NSSEA.constraintsCX
-	===================
+	NSSEA.constraint_covariate
+	==========================
 	Constrain covariates of clim by the observed covariates Xo
 	
 	Arguments
@@ -138,25 +138,26 @@ def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = Fa
 	verbose  : bool
 		Print (or not) state of execution
 	
-	Returns
-	-------
-	clim : NSSEA.Climatology
-		A COPY of climIn constrained by Xo. climIn is NOT MODIFIED.
+	Return
+	------
+	clim : NSSEA.Climatology, a copy is returned
 	"""
 	
-	if verbose: print( "Constraints CX" , end = "\r" )
+	pb = ProgressBar( 5 , "constrain_covariate" , verbose )
+	
+	clim = climIn.copy()
 	
 	## Parameters
 	##===========
-	clim = climIn.copy()
 	time        = clim.time
 	time_Xo     = Xo.index
 	n_time      = clim.n_time
 	n_time_Xo   = time_Xo.size
-	n_mm_params = clim.n_mm_params
-	n_ns_params = clim.n_ns_params
+	n_mm_coef   = clim.synthesis["mean"].size
+	n_coef      = clim.n_coef
 	n_sample    = clim.n_sample
-	sample      = clim.X.sample
+	samples     = clim.X.sample
+	pb.print()
 	
 	## Projection matrix H
 	##====================
@@ -169,17 +170,19 @@ def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = Fa
 	
 	centerX  = np.identity(n_time)    - cx.values
 	centerY  = np.identity(n_time_Xo) - cy.values
-	extractX = np.hstack( ( np.identity(n_time) , np.zeros( (n_time,n_time) ) , np.zeros( (n_time,n_ns_params) ) ) )
+	extractX = np.hstack( ( np.identity(n_time) , np.zeros( (n_time,n_time) ) , np.zeros( (n_time,n_coef) ) ) )
 	H_full   = pd.DataFrame( centerX @ extractX , index = time )	# Centering * extracting
 	H        = H_full.loc[time_Xo,:].values								# Restriction to the observed period
+	pb.print()
 	
 	
 	# Other inputs : x, SX, y, SY
 	##===========================
-	X  = clim.mm_params.mean
-	SX = clim.mm_params.cov
+	X  = clim.synthesis["mean"].values
+	SX = clim.synthesis["cov"].values
 	Y  = np.ravel(centerY @ Xo)
 	SY = centerY @ centerY.T
+	pb.print()
 	
 	## Rescale SY
 	##===========
@@ -200,34 +203,88 @@ def constraints_CX( climIn , Xo , time_reference = None , assume_good_scale = Fa
 		
 		lbda = sco.brentq( fct_to_root , a = a , b = b )
 		SY = lbda * SY
+	pb.print()
 	
 	## Apply constraints
 	##==================
 	
 	Sinv = np.linalg.pinv( H @ SX @ H.T + SY )
 	K	 = SX @ H.T @ Sinv
-	clim.mm_params.mean = X + K @ ( Y - H @ X )
-	clim.mm_params.cov  = SX - SX @ H.T @ Sinv @ H @ SX
+	clim.synthesis["mean"].values = X + K @ ( Y - H @ X )
+	clim.synthesis["cov"].values  = SX - SX @ H.T @ Sinv @ H @ SX
+	pb.print()
 	
 	
 	## Sample from it
 	##===============
-	cx_sample = xr.DataArray( np.zeros( (n_time,n_sample + 1,3) ) , coords = [ clim.X.time , sample , clim.X.forcing ] , dims = ["time","sample","forcing"] )
+	law       = MultiModel()
+	law.mean  = clim.synthesis["mean"].values
+	law.cov   = clim.synthesis["cov"].values
+	cx_sample = xr.DataArray( np.zeros( (n_time,n_sample + 1,2) ) , coords = [ clim.X.time , samples , clim.X.forcing ] , dims = ["time","sample","forcing"] )
 	
-	cx_sample.loc[:,"be","all"] = clim.mm_params.mean[:n_time]
-	cx_sample.loc[:,"be","nat"] = clim.mm_params.mean[n_time:(2*n_time)]
+	cx_sample.loc[:,"BE","F"] = law.mean[:n_time]
+	cx_sample.loc[:,"BE","C"] = law.mean[n_time:(2*n_time)]
 	
-	for s in sample[1:]:
-		draw = clim.mm_params.rvs()
-		cx_sample.loc[:,s,"all"] = draw[:n_time]
-		cx_sample.loc[:,s,"nat"] = draw[n_time:(2*n_time)]
+	for s in samples[1:]:
+		draw = law.rvs()
+		cx_sample.loc[:,s,"F"] = draw[:n_time]
+		cx_sample.loc[:,s,"C"] = draw[n_time:(2*n_time)]
 	
-	for m in clim.X.models:
+	for m in clim.model:
 		clim.X.loc[:,:,:,m] = cx_sample.values
 	
-	clim.X.loc[:,:,"ant",:] = clim.X.loc[:,:,"all",:] - clim.X.loc[:,:,"nat",:]
+	pb.end()
 	
-	if verbose: print( "Constraints CX (Done)" )
+	return clim
+##}}}
+
+
+## Bayesian constraint
+##====================
+
+def constrain_law( climIn , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10000 , verbose = False , **kwargs ):##{{{
+	"""
+	NSSEA.constraints_bayesian
+	==========================
+	Constrain the law_coef of the clim with a MCMC approach.
+	
+	Arguments
+	---------
+	climIn : [NSSEA.Climatology] clim variable
+	Yo       : [pandas.DataFrame] Observations of ns_law
+	n_mcmc_draw_min: [integer] Minimum number of coef to draw for each covariate
+	n_mcmc_draw_max: [integer] Maximum number of coef to draw for each covariate
+	verbose  : [bool] Print (or not) state of execution
+	
+	Return
+	------
+	clim : [NSSEA.Climatology] A copy is returned
+	"""
+	
+	clim = climIn.copy()
+	
+	pb = ProgressBar( clim.n_sample + 1 , "constrain_law" , verbose )
+	
+	
+	min_rate_accept = kwargs.get("min_rate_accept")
+	if min_rate_accept is None: min_rate_accept = 0.25
+	
+	## Define prior
+	prior_mean   = clim.synthesis["mean"][-clim.n_coef:].values
+	prior_cov    = clim.synthesis["cov"][-clim.n_coef:,-clim.n_coef:].values
+	prior_law    = sc.multivariate_normal( mean = prior_mean , cov = prior_cov , allow_singular = True )
+	
+	## And now MCMC loop
+	for s in clim.sample:
+		pb.print()
+		X   = clim.X.loc[Yo.index,s,"F","Multi_Synthesis"].values.squeeze()
+		n_mcmc_drawn = np.random.randint( n_mcmc_drawn_min , n_mcmc_drawn_max )
+		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law , min_rate_accept )
+		clim.law_coef.loc[:,s,"Multi_Synthesis"] = draw[-1,:]
+	
+	clim.law_coef.loc[:,"BE",:] = clim.law_coef[:,1:,:].median( dim = "sample" )
+	
+	pb.end()
 	
 	return clim
 ##}}}
@@ -604,37 +661,5 @@ def constraints_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): #
 	return climIn.copy()
 ##}}}
 
-
-## Bayesian constraint
-##====================
-
-def constraints_bayesian( clim , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10000 , min_rate_accept = 0.25 , verbose = False ):##{{{
-	
-	pb = ProgressBar( "Constraints Bayesian" , clim.n_sample + 1 )
-	
-	climCB = clim.copy()
-	
-	## Define prior
-#	n_params  = clim.ns_law.n_ns_params
-#	prior_law = sc.multivariate_normal( mean = climCB.mm_params.mean[-n_params:] , cov = climCB.mm_params.cov[-n_params:,-n_params:] , allow_singular = True )
-	prior_sample = climCB.ns_params.loc[:,:,"multi"].values.T
-	prior_mean   = np.mean(prior_sample,axis=0).squeeze()
-	prior_cov    = np.cov( prior_sample.T )
-	prior_law    = sc.multivariate_normal( mean = prior_mean , cov = prior_cov , allow_singular = True )
-	
-	
-	for s in clim.X.sample:
-		if verbose: pb.print()
-		X   = clim.X.loc[Yo.index,s,"all","multi"].values.squeeze()
-		n_mcmc_drawn = np.random.randint( n_mcmc_drawn_min , n_mcmc_drawn_max )
-		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law , min_rate_accept )
-		climCB.ns_params.loc[:,s,"multi"] = draw[-1,:]
-	
-	climCB.ns_params.loc[:,"be","multi"] = climCB.ns_params[:,1:,:].loc[:,:,"multi"].median( dim = "sample" )
-	
-	if verbose: pb.end()
-	
-	return climCB
-##}}}
 
 

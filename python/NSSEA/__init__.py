@@ -121,6 +121,10 @@ from .__nsstats     import add_FAR
 #from NSSEA.__nsstats  import RR_correction
 
 ## Constraints
-from .__constraints import constraints_CX
+from .__constraints import constrain_covariate
+from .__constraints import constrain_law
 from .__constraints import constraints_C0
-from .__constraints import constraints_bayesian
+
+
+
+

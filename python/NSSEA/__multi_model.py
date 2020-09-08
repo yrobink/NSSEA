@@ -93,7 +93,7 @@ import xarray       as xr
 
 from .__tools import matrix_positive_part
 from .__tools import matrix_squareroot
-from .__tools import barycenter_covariance
+from .__tools import ProgressBar
 
 
 #############
@@ -202,7 +202,9 @@ def infer_multi_model( clim , verbose = False ):
 	      name "Multi_Synthesis"
 	
 	"""
-	if verbose: print( "Multimodel synthesis" , end = "\r" )
+	
+	pb = ProgressBar( 3 , "infer_multi_model" , verbose )
+	
 	## Parameters
 	##===========
 	n_time    = clim.n_time
@@ -218,11 +220,13 @@ def infer_multi_model( clim , verbose = False ):
 	mm_data[:n_time,:,:]           = clim.X.loc[:,:,"F",:].values
 	mm_data[n_time:(2*n_time),:,:] = clim.X.loc[:,:,"C",:].values
 	mm_data[(2*n_time):,:,:]       = clim.law_coef.values
+	pb.print()
 	
 	## Multi model parameters inference
 	##=================================
 	mmodel = MultiModel()
 	mmodel.fit( mm_data )
+	pb.print()
 	
 	## Generate sample
 	##================
@@ -239,6 +243,7 @@ def infer_multi_model( clim , verbose = False ):
 		mm_sample.loc[:,s,"F",name] = draw[:n_time]
 		mm_sample.loc[:,s,"C",name] = draw[n_time:(2*n_time)]
 		mm_params.loc[:,s,name]     = draw[(2*n_time):]
+	pb.print()
 	
 	
 	## Add multimodel to clim
@@ -254,7 +259,7 @@ def infer_multi_model( clim , verbose = False ):
 	dmm_cov  = xr.DataArray( mmodel.cov  , dims = ["coef","coef"] , coords = [index,index] )
 	clim.synthesis = xr.Dataset( { "mean" : dmm_mean , "cov" : dmm_cov } )
 	
-	if verbose: print( "Multimodel synthesis (Done)" )
+	pb.end()
 	
 	return clim
 
