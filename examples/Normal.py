@@ -277,15 +277,15 @@ if __name__ == "__main__":
 	
 	## Multi-model
 	##============
-	clim,mmodel = ns.infer_multi_model( clim , verbose = verbose )
+	clim = ns.infer_multi_model( clim , verbose = verbose )
 	climMM = clim.copy()
 	climMM.keep_models( ["Multi_Synthesis"] )
 	
 	
 	## Apply constraints
 	##==================
-#	climCX     = ns.constraints_CX( climMM , Xo , time_reference = time_reference , verbose = verbose )
-#	climCXCB   = ns.constraints_bayesian( climCX , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , min_rate_accept = min_rate_accept , verbose = verbose )
+	climCX = ns.constrain_covariate( climMM , Xo , time_reference , verbose = verbose )
+	climCXCB   = ns.constrain_law( climCX , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , min_rate_accept = min_rate_accept , verbose = verbose )
 #	climC0     = ns.constraints_C0( climMM , Yo , verbose = verbose )
 #	climCXC0   = ns.constraints_C0( climCX , Yo , verbose = verbose )
 #	
