@@ -187,7 +187,9 @@ def infer_multi_model( clim , verbose = False ):
 	"""
 	NSSEA.infer_multi_model
 	=======================
-	Infer multimodel mean and covariance
+	Infer multi-model synthesis. A new model called "Multi_Synthesis" is added
+	to "clim", synthesis of the model. The parameters are given
+	in "clim.synthesis".
 	
 	Arguments
 	---------
@@ -198,8 +200,6 @@ def infer_multi_model( clim , verbose = False ):
 	------
 	clim: [NSSEA.Climatology] The clim with the multi model synthesis with
 	      name "Multi_Synthesis"
-	mmodel: [NSSEA.MultiModel] The multi model synthesis class with multi model
-	        parameters.
 	
 	"""
 	if verbose: print( "Multimodel synthesis" , end = "\r" )
@@ -247,7 +247,14 @@ def infer_multi_model( clim , verbose = False ):
 	law_coef = xr.concat( [clim.law_coef,mm_params] , "model" )
 	clim.data = xr.Dataset( { "X" : X , "law_coef" : law_coef } )
 	
+	## Add multimodel to xarray, and add to clim
+	##==========================================
+	index = [ "{}F".format(t) for t in clim.time ] + [ "{}C".format(t) for t in clim.time ] + clim.data.coef.values.tolist()
+	dmm_mean = xr.DataArray( mmodel.mean , dims = ["coef"] , coords = [index] )
+	dmm_cov  = xr.DataArray( mmodel.cov  , dims = ["coef","coef"] , coords = [index,index] )
+	clim.synthesis = xr.Dataset( { "mean" : dmm_mean , "cov" : dmm_cov } )
+	
 	if verbose: print( "Multimodel synthesis (Done)" )
 	
-	return clim,mmodel
+	return clim
 
