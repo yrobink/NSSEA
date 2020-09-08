@@ -260,6 +260,62 @@ class Climatology: ##{{{
 	##}}}
 ##}}}
 
+class Climatology2: ##{{{
+	
+	def __init__( self , time , models , n_sample , ns_law ): ##{{{
+		samples = ["BE"] + [ '{0:{fill}{align}{n}}'.format(i,fill="0",align=">",n=int(np.floor(np.log10(n_sample))+1)) for i in range(n_sample)]
+		self.data   = xr.Dataset( { "time" : time , "model" : models , "sample" : samples } )
+		self.ns_law = ns_law
+	##}}}
+	
+	## Generic properties {{{
+	
+	@property
+	def time(self):
+		return self.data.time.values
+	
+	@property
+	def n_time(self):
+		return self.data.time.size
+	
+	@property
+	def n_model(self):
+		return self.data.model.size
+	
+	@property
+	def model(self):
+		return self.data.model.values
+	
+	@property
+	def sample(self):
+		return self.data.sample.values
+	
+	@property
+	def n_sample(self):
+		return self.data.sample.size -1
+	
+	##}}}
+	
+	## Covariate properties {{{
+	
+	@property
+	def X(self):
+		try:
+			return self.data.X
+		except:
+			return None
+	
+	@X.setter
+	def X( self , X_ ):
+		if "X" in self.data:
+			self.data.X = X_
+		else:
+			self.data = self.data.assign( { "X" : X_ } )
+	
+	##}}}
+
+##}}}
+
 
 def to_netcdf( clim , event , ofile , constraints = None ):##{{{
 	with nc.Dataset( ofile , "w" , format = "NETCDF4" ) as ncFile:
