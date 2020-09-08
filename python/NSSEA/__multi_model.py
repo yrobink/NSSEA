@@ -100,10 +100,10 @@ from .__tools import barycenter_covariance
 ## Classes ##
 #############
 
-class MultiModelParams:##{{{
+class MultiModel:##{{{
 	"""
-	NSSEA.MultiModelParams
-	=============
+	NSSEA.MultiModel
+	================
 	Class infering multimodel parameters. Use NSSEA.infer_multi_model to build it
 	
 	
@@ -123,7 +123,7 @@ class MultiModelParams:##{{{
 		self.std  = None
 	##}}}
 	
-	def _fit_classic( self , mm_matrix ):##{{{
+	def _fit( self , mm_matrix ):##{{{
 		n_params,n_sample,n_models = mm_matrix.shape
 		
 		cov_S = np.zeros( (n_params,n_params) )
@@ -135,18 +135,7 @@ class MultiModelParams:##{{{
 		self.cov  = ( n_models + 1 ) / n_models * cov_CMU + cov_S / n_models**2
 	##}}}
 	
-	def _fit_empirical( self , mm_matrix ):##{{{
-		n_params,n_sample,n_models = mm_matrix.shape
-		self.cov = np.cov( mm_matrix.reshape( (n_params,n_sample*n_models) ) )
-	##}}}
-	
-	def _fit_barycenter( self , mm_matrix , verbose ):##{{{
-		n_params,n_sample,n_models = mm_matrix.shape
-		lcov = [ np.cov( mm_matrix[:,:,i] ) for i in range(n_models) ]
-		self.cov = barycenter_covariance( lcov , verbose = verbose )
-	##}}}
-	
-	def fit( self , mm_matrix , method , verbose = False ):##{{{
+	def fit( self , mm_matrix ):##{{{
 		"""
 		Fit Multi model parameters
 		
@@ -160,12 +149,7 @@ class MultiModelParams:##{{{
 			Print (or not) state of execution
 		"""
 		self.mean = np.mean( mm_matrix[:,0,:] , axis = 1 )
-		if method == "empirical":
-			self._fit_empirical(mm_matrix)
-		elif method == "barycenter":
-			self._fit_barycenter(mm_matrix,verbose)
-		else:
-			self._fit_classic(mm_matrix)
+		self._fit(mm_matrix)
 	##}}}
 	
 	def rvs(self):##{{{
@@ -178,7 +162,7 @@ class MultiModelParams:##{{{
 	## Properties {{{
 	
 	@property
-	def n_mm_params(self):
+	def n_mm_coef(self):
 		return None if self.mean is None else self.mean.size
 	
 	@property
@@ -192,13 +176,6 @@ class MultiModelParams:##{{{
 	
 	##}}}
 	
-	def copy(self):##{{{
-		mmp = MultiModelParams()
-		mmp.mean = None if self.mean is None else self.mean.copy()
-		if self._cov is not None:
-			mmp.cov = self.cov.copy()
-		return mmp
-	##}}}
 ##}}}
 
 
@@ -206,7 +183,7 @@ class MultiModelParams:##{{{
 ## Functions ##
 ###############
 
-def infer_multi_model( climIn , mm_method = "classic" , verbose = False ):
+def infer_multi_model( clim , verbose = False ):
 	"""
 	NSSEA.infer_multi_model
 	=======================
@@ -214,66 +191,63 @@ def infer_multi_model( climIn , mm_method = "classic" , verbose = False ):
 	
 	Arguments
 	---------
-	climIn : NSSEA.Climatology
-		clim variable
-	mm_method: str
-		Multi model method, currently "classic" (A. Ribes method) or "optimal" (Optimal transport)
-	verbose  : bool
-		Print (or not) state of execution
+	clim : [NSSEA.Climatology] Clim variable
+	verbose  : [bool] Print (or not) state of execution
 	
 	Return
 	------
-	clim: NSSEA.Climatology
-		A COPY of the input clim, where clim.mm_params is set, and clim.X contains multi model sample. The input clim IS NOT MODIFIED.
-	
+	clim: [NSSEA.Climatology] The clim with the multi model synthesis with
+	      name "Multi_Synthesis"
+	mmodel: [NSSEA.MultiModel] The multi model synthesis class with multi model
+	        parameters.
 	
 	"""
-	if verbose: print( "Multi model" , end = "\r" if mm_method == "classic" else "\n" )
+	if verbose: print( "Multimodel synthesis" , end = "\r" )
 	## Parameters
 	##===========
-	clim      = climIn.copy()
-	n_time      = clim.n_time
-	n_ns_params = clim.n_ns_params
-	n_sample    = clim.n_sample
-	n_models    = clim.n_models
-	sample      = clim.X.sample.values.tolist()
-	n_mm_params = 2 * n_time + n_ns_params
+	n_time    = clim.n_time
+	n_coef    = clim.n_coef
+	n_sample  = clim.n_sample
+	n_model   = clim.n_model
+	sample    = clim.sample
+	n_mm_coef = 2 * n_time + n_coef
 	
 	## Big matrix
 	##===========
-	mm_matrix                        = np.zeros( (n_mm_params,n_sample + 1,n_models) )
-	mm_matrix[:n_time,:,:]           = clim.X.loc[:,:,"all",:].values
-	mm_matrix[n_time:(2*n_time),:,:] = clim.X.loc[:,:,"nat",:].values
-	mm_matrix[(2*n_time):,:,:]       = clim.ns_params.values
+	mm_data                        = np.zeros( (n_mm_coef,n_sample + 1,n_model) )
+	mm_data[:n_time,:,:]           = clim.X.loc[:,:,"F",:].values
+	mm_data[n_time:(2*n_time),:,:] = clim.X.loc[:,:,"C",:].values
+	mm_data[(2*n_time):,:,:]       = clim.law_coef.values
 	
 	## Multi model parameters inference
 	##=================================
-	clim.mm_params.fit( mm_matrix , mm_method , verbose )
+	mmodel = MultiModel()
+	mmodel.fit( mm_data )
 	
 	## Generate sample
 	##================
-	mm_sample = xr.DataArray( np.zeros( (n_time,n_sample + 1,3,1) )    , coords = [ clim.X.time , sample , clim.X.forcing , ["multi"] ] , dims = ["time","sample","forcing","models"] )
-	mm_params = xr.DataArray( np.zeros( (n_ns_params,n_sample + 1,1) ) , coords = [ clim.ns_params.ns_params , sample , ["multi"] ]       , dims = ["ns_params","sample","models"] )
+	name = "Multi_Synthesis"
+	mm_sample = xr.DataArray( np.zeros( (n_time,n_sample + 1,2,1) ) , coords = [ clim.time , sample , clim.data.forcing , [name] ] , dims = ["time","sample","forcing","model"] )
+	mm_params = xr.DataArray( np.zeros( (n_coef,n_sample + 1,1) )   , coords = [ clim.law_coef.coef.values , sample , [name] ]     , dims = ["coef","sample","model"] )
 	
-	mm_sample.loc[:,"be","all","multi"] = clim.mm_params.mean[:n_time]
-	mm_sample.loc[:,"be","nat","multi"] = clim.mm_params.mean[n_time:(2*n_time)]
-	mm_params.loc[:,"be","multi"]       = clim.mm_params.mean[(2*n_time):]
+	mm_sample.loc[:,"BE","F",name] = mmodel.mean[:n_time]
+	mm_sample.loc[:,"BE","C",name] = mmodel.mean[n_time:(2*n_time)]
+	mm_params.loc[:,"BE",name]     = mmodel.mean[(2*n_time):]
 	
 	for s in sample[1:]:
-		draw = clim.mm_params.rvs()
-		mm_sample.loc[:,s,"all","multi"] = draw[:n_time]
-		mm_sample.loc[:,s,"nat","multi"] = draw[n_time:(2*n_time)]
-		mm_params.loc[:,s,"multi"]       = draw[(2*n_time):]
+		draw = mmodel.rvs()
+		mm_sample.loc[:,s,"F",name] = draw[:n_time]
+		mm_sample.loc[:,s,"C",name] = draw[n_time:(2*n_time)]
+		mm_params.loc[:,s,name]     = draw[(2*n_time):]
 	
-	mm_sample.loc[:,:,"ant","multi"] = mm_sample.loc[:,:,"all","multi"] - mm_sample.loc[:,:,"nat","multi"]
 	
 	## Add multimodel to clim
 	##=======================
-	clim.X         = xr.concat( [clim.X , mm_sample] , "models" )
-	clim.ns_params = xr.concat( [clim.ns_params,mm_params] , "models" )
-	clim.models.append( "multi" )
+	X        = xr.concat( [clim.X , mm_sample] , "model" )
+	law_coef = xr.concat( [clim.law_coef,mm_params] , "model" )
+	clim.data = xr.Dataset( { "X" : X , "law_coef" : law_coef } )
 	
-	if verbose: print( "Multi model (Done)" )
+	if verbose: print( "Multimodel synthesis (Done)" )
 	
-	return clim
+	return clim,mmodel
 

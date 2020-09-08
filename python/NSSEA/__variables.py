@@ -97,7 +97,6 @@ import SDFC.tools as sdt
 from .models.__Normal import Normal
 from .models.__GEV    import GEV
 from .models.__GEVMin import GEVMin
-from .__multi_model   import MultiModelParams
 
 
 #############

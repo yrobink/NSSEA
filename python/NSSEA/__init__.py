@@ -112,7 +112,7 @@ from .__covariates import covariates_FC_GAM
 ## Stats
 from .__nsfit       import nslaw_fit
 from .__multi_model import infer_multi_model
-from .__multi_model import MultiModelParams
+from .__multi_model import MultiModel
 from .__nsstats     import extremes_stats
 from .__nsstats     import stats_relative_event
 from .__nsstats     import build_params_along_time
