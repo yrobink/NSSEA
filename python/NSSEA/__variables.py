@@ -301,6 +301,13 @@ class Climatology2: ##{{{
 	def n_sample(self):
 		return self.data.sample.size -1
 	
+	@property
+	def n_coef(self):
+		try:
+			return self.data.coef.size
+		except:
+			return 0
+	
 	##}}}
 	
 	## Covariate properties {{{
