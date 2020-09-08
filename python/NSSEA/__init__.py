@@ -99,17 +99,15 @@ from .__tools import ProgressBar
 ## Variables
 from .__variables import Event
 from .__variables import Climatology
+from .__variables import Climatology2
 from .__variables import to_netcdf
 from .__variables import from_netcdf
 
 
 ## Covariate split
 from .__covariates import EBM
-from .__covariates import gam_decomposition
-#from NSSEA.__covariates import XSplitted
-#from NSSEA.__covariates import gam_decomposition_old
-#from NSSEA.__covariates import gam_decomposition_old_old
-#from NSSEA.__covariates import gam_decomposition_old_old_old
+from .__covariates import covariates_FC_GAM
+
 
 ## Stats
 from .__nsfit       import nslaw_fit
