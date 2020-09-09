@@ -93,7 +93,6 @@ import pandas as pd
 import xarray as xr
 
 import matplotlib as mpl
-#mpl.use("pdf")
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as mpdf
 
@@ -242,5 +241,66 @@ def GAM_decomposition( clim , lX , event , ofile , ci = 0.05 , verbose = False )
 
 ##}}}
 
+def constraint_covariate( clim , climCX , Xo , ofile , ci = 0.05 , verbose = False ):##{{{
+	"""
+	NSSEA.plot.constraint_covariate
+	===============================
+	
+	Plot the effect of the constraint of the covariate
+	
+	Arguments
+	---------
+	clim    : NSSEA.Climatology
+		clim variable without constraints
+	climCX  : NSSEA.Climatology
+		clim variable with constraints
+	
+	ofile     : str
+		output file
+	ci        : float
+		Size of confidence interval, default is 0.05 (95% confidence)
+	verbose   : bool
+		Print (or not) state of execution
+	"""
+	
+	pb = ProgressBar( 3 , "constraint_covariate" , verbose )
+	
+	X   = clim.X.loc[:,:,:,"Multi_Synthesis"]
+	cX = climCX.X.loc[:,:,:,"Multi_Synthesis"]
+	
+	
+	Xl  = X[:,1:,:].quantile(  ci / 2.      , dim = "sample" )
+	Xu  = X[:,1:,:].quantile(  1. - ci / 2. , dim = "sample" )
+	cXl = cX[:,1:,:].quantile( ci / 2.      , dim = "sample" )
+	cXu = cX[:,1:,:].quantile( 1. - ci / 2. , dim = "sample" )
+	
+	ymax = max([float(x) for x in [X.max(),cX.max(),Xo.max()]])
+	ymin = min([float(x) for x in [X.min(),cX.min(),Xo.min()]])
+	delta = 0.1 * (ymax - ymin)
+	ymax += delta
+	ymin -= delta
+	
+	pb.print()
+	
+	fig = plt.figure( figsize = (10,10) )
+	color = ["red","blue"]
+	
+	for i,f in enumerate(["F","C"]):
+		ax = fig.add_subplot(2,1,i+1)
+		ax.plot( X.time   , X.loc[:,"BE",f]  , color = "grey"  , linestyle = "-" , marker = ""  )
+		ax.plot( cX.time  , cX.loc[:,"BE",f] , color = "black" , linestyle = "-" , marker = ""  )
+		ax.plot( Xo.index , Xo.values        , color = "black" , linestyle = ""  , marker=  "." )
+		ax.fill_between( X.time  , Xl.loc[:,f]  , Xu.loc[:,f]  , color = color[i] , alpha = 0.2 )
+		ax.fill_between( cX.time , cXl.loc[:,f] , cXu.loc[:,f] , color = color[i] , alpha = 0.5 )
+		ax.set_ylim((ymin,ymax))
+		if i == 0:
+			ax.set_xticks([])
+		pb.print()
+	
+	fig.set_tight_layout(True)
+	plt.savefig( ofile )
+	
+	pb.end()
 
+##}}}
 

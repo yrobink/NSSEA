@@ -96,7 +96,6 @@ from .__probabilities    import return_time
 from .__intensities      import intensities
 from .__stats_event      import stats_event
 from .__stats_event      import stats_relative
-from .__constraintsCX    import constraints_CX
 from .__ns_params        import ns_params
 from .__ns_params        import ns_params_comparison
 from .__ns_params        import ns_params_time
@@ -106,4 +105,5 @@ from .__print_stats      import summary_table
 from .__print_stats      import summary_event
 
 from .__covariates       import GAM_decomposition
+from .__covariates       import constraint_covariate
 
