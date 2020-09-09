@@ -194,7 +194,7 @@ def extreme_statistics( clim , event , verbose = False , tol = sys.float_info.ep
 	return clim
 ##}}}
 
-def add_return_time( clim ):##{{{
+def add_return_time( clim , verbose = False ):##{{{
 	"""
 	NSSEA.add_return_time
 	=====================
@@ -213,7 +213,7 @@ def add_return_time( clim ):##{{{
 	
 	"""
 	
-	pb = ProgressBar( 1 , "add_return_time" )
+	pb = ProgressBar( 1 , "add_return_time" , verbose )
 	
 	xrdims   = ["time","sample","stats","model"]
 	xrcoords = [clim.time,clim.sample,["RtC","RtF"],clim.model]
@@ -229,7 +229,7 @@ def add_return_time( clim ):##{{{
 	return clim
 ##}}}
 
-def add_FAR( clim ):##{{{
+def add_FAR( clim , verbose = False ):##{{{
 	"""
 	NSSEA.add_FAR
 	=============
@@ -247,7 +247,7 @@ def add_FAR( clim ):##{{{
 		A clim variable with FAR
 	
 	"""
-	pb = ProgressBar( 1 , "add_FAR" )
+	pb = ProgressBar( 1 , "add_FAR" , verbose )
 	
 	xrdims   = ["time","sample","stats","model"]
 	xrcoords = [clim.time,clim.sample,["FAR"],clim.model]
