@@ -90,7 +90,6 @@
 #############
 
 from .__linkParams       import LinkParams
-from .__decomposition    import decomposition
 from .__probabilities    import probabilities
 from .__probabilities    import probabilities_not_zero
 from .__probabilities    import return_time
