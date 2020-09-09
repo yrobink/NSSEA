@@ -91,10 +91,6 @@
 
 import sys,os
 import pickle as pk
-import matplotlib as mpl
-mpl.use("pdf")
-import matplotlib.pyplot as plt
-import matplotlib.backends.backend_pdf as mpdf
 
 import numpy as np
 import pandas as pd
@@ -279,7 +275,7 @@ if __name__ == "__main__":
 	##============
 	clim = ns.infer_multi_model( clim , verbose = verbose )
 	climMM = clim.copy()
-	climMM.keep_models( ["Multi_Synthesis"] )
+	climMM.keep_models( "Multi_Synthesis" )
 	
 	
 	## Apply constraints
@@ -292,25 +288,26 @@ if __name__ == "__main__":
 	
 	## Compute stats
 	##==============
-#	clim       = ns.extremes_stats( clim     , event , verbose = verbose )
-#	climCX     = ns.extremes_stats( climCX   , event , verbose = verbose )
-#	climCXCB   = ns.extremes_stats( climCXCB , event , verbose = verbose )
-#	climC0     = ns.extremes_stats( climC0   , event , verbose = verbose )
-#	climCXC0   = ns.extremes_stats( climCXC0 , event , verbose = verbose )
-#	
-#	
-#	## Save in netcdf
-#	##===============
+	clim       = ns.extreme_statistics( clim     , event , verbose = verbose )
+	climCX     = ns.extreme_statistics( climCX   , event , verbose = verbose )
+	climCXCB   = ns.extreme_statistics( climCXCB , event , verbose = verbose )
+	climC0     = ns.extreme_statistics( climC0   , event , verbose = verbose )
+	climCXC0   = ns.extreme_statistics( climCXC0 , event , verbose = verbose )
+	params = ns.build_params_along_time( clim , verbose = verbose )
+	
+	
+	## Save in netcdf
+	##===============
 #	ns.to_netcdf( clim     , event , os.path.join( pathOut , "HW03_Normal_clim.nc"       ) , ""       )
 #	ns.to_netcdf( climCX   , event , os.path.join( pathOut , "HW03_Normal_climCX.nc"     ) , "CX"     )
 #	ns.to_netcdf( climCXCB , event , os.path.join( pathOut , "HW03_Normal_climCXCB.nc"   ) , "CXCB"   )
 #	ns.to_netcdf( climC0   , event , os.path.join( pathOut , "HW03_Normal_climC0.nc"     ) , "C0"     )
 #	ns.to_netcdf( climCXC0 , event , os.path.join( pathOut , "HW03_Normal_climCXC0.nc"   ) , "CXC0"   )
-#	
-#	
-#	## Plot
-#	##=====
-#	nsp.write_package_tabular( climCXCB , event , os.path.join( pathOut , "SummaryCXCB.txt"   ) , verbose = verbose )
+	
+	
+	## Plot
+	##=====
+	nsp.write_package_tabular( climCXCB , event , os.path.join( pathOut , "SummaryCXCB.txt"   ) , verbose = verbose )
 #	nsp.write_package_tabular( climCXC0 , event , os.path.join( pathOut , "SummaryCXC0.txt"   ) , verbose = verbose )
 #	nsp.decomposition( lX , clim.X , event                      , os.path.join( pathOut , "decomposition.pdf" ) , verbose = verbose )
 #	nsp.constraints_CX( climMM , climCXCB , Xo , time_reference , os.path.join( pathOut , "constraintCX.pdf" )  , verbose = verbose )
