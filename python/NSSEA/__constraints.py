@@ -294,99 +294,107 @@ def constrain_law( climIn , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10
 ##===============
 
 def constraints_C0_Normal( climIn , Yo , verbose = False ): ##{{{
-	if verbose: print( "Constraints C0 (Normal)" , end = "\r" )
+	pb = ProgressBar( 4 , "constraints_C0" , verbose )
 	
-	clim  = climIn.copy()
-	n_models  = clim.X.models.size
+	clim      = climIn.copy()
+	n_model   = clim.n_model
 	n_sample  = clim.n_sample
-	models    = clim.X.models
+	models    = clim.model
 	time      = clim.time
 	time_Yo   = Yo.index
 	n_time_Yo = Yo.size
-	sample = clim.X.sample
+	samples   = clim.sample
 	
 	# New NS_param
-	ns_params = clim.ns_params
-	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] / ns_params.loc["scale0",:,:]
+	law_coef = clim.law_coef
+	law_coef.loc["scale1",:,:] = law_coef.loc["scale1",:,:] / law_coef.loc["scale0",:,:]
+	pb.print()
 	
 	## Bootstrap on Yo
-	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,clim.X.sample] , dims = ["time","sample"] )
-	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,clim.X.sample,models] , dims = ["time","sample","models"] )
-	Yo_bs.loc[:,"be"] = np.ravel(Yo)
-	Xo_bs.loc[:,"be",:] = clim.X.loc[time_Yo,"be","all",:]
-	for s in sample[1:]:
+	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,samples] , dims = ["time","sample"] )
+	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_model) ) , coords = [time_Yo,samples,models] , dims = ["time","sample","model"] )
+	Yo_bs.loc[:,"BE"] = np.ravel(Yo)
+	Xo_bs.loc[:,"BE",:] = clim.X.loc[time_Yo,"BE","F",:]
+	for s in samples[1:]:
 		idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
 		Yo_bs.loc[:,s] = np.ravel( Yo.loc[idx].values )
 		for m in models:
-			Xo_bs.loc[:,s,m] = clim.X.loc[idx,s,"all",m].values
+			Xo_bs.loc[:,s,m] = clim.X.loc[idx,s,"F",m].values
+	pb.print()
 	
 	
 	## Correction of loc0
 	mu1X = xr.zeros_like(Xo_bs)
-	mu1X = Xo_bs * ns_params.loc["loc1",:,:]
+	mu1X = Xo_bs * law_coef.loc["loc1",:,:]
 	Yo_bs_mean_corrected  = Yo_bs - mu1X
-	ns_params.loc["loc0",:,:] = Yo_bs_mean_corrected.mean( axis = 0 )
+	law_coef.loc["loc0",:,:] = Yo_bs_mean_corrected.mean( axis = 0 )
+	pb.print()
 	
 	
 	## Correction of loc and scale
-	Yo_bs_mu0 = Yo_bs - ns_params.loc["loc0",:,:]
-	sig1X     = Xo_bs * ns_params.loc["scale1",:,:]
+	Yo_bs_mu0 = Yo_bs - law_coef.loc["loc0",:,:]
+	sig1X     = Xo_bs * law_coef.loc["scale1",:,:]
 	Yo_bs_full_corrected   = (Yo_bs_mu0 - mu1X) / ( 1. + sig1X )
-	ns_params.loc["scale0",:,:] = Yo_bs_full_corrected.std( axis = 0 )
+	law_coef.loc["scale0",:,:] = Yo_bs_full_corrected.std( axis = 0 )
+	pb.print()
 	
 	## Save
-	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] * climIn.ns_params.loc["scale0",:,:]
-	clim.ns_params = ns_params
+	law_coef.loc["scale1",:,:] = law_coef.loc["scale1",:,:] * climIn.law_coef.loc["scale0",:,:]
+	clim.law_coef.values = law_coef.values
 	
-	if verbose: print( "Constraints C0 (Normal, Done)" )
+	pb.end()
 	
 	return clim
 ##}}}
 
 def constraints_C0_Normal_exp( climIn , Yo , verbose = False ): ##{{{
-	if verbose: print( "Constraints C0 (NormalExp)" , end = "\r" )
+	pb = ProgressBar( 4 , "constraints_C0" , verbose )
 	
 	clim  = climIn.copy()
-	n_models  = clim.X.models.size
+	n_model   = clim.n_model
 	n_sample  = clim.n_sample
-	models    = clim.X.models
+	models    = clim.model
 	time      = clim.time
 	time_Yo   = Yo.index
 	n_time_Yo = Yo.size
-	sample = clim.X.sample
+	samples   = clim.sample
 	
 	# New NS_param
-	ns_params = clim.ns_params
+	law_coef = clim.law_coef
+	pb.print()
 	
 	## Bootstrap on Yo
-	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,clim.X.sample] , dims = ["time","sample"] )
-	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_models) ) , coords = [time_Yo,clim.X.sample,models] , dims = ["time","sample","models"] )
-	Yo_bs.loc[:,"be"] = np.ravel(Yo)
-	Xo_bs.loc[:,"be",:] = clim.X.loc[time_Yo,"be","all",:]
-	for s in sample[1:]:
+	Yo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1) ) , coords = [time_Yo,samples] , dims = ["time","sample"] )
+	Xo_bs = xr.DataArray( np.zeros( (n_time_Yo,n_sample+1,n_model) ) , coords = [time_Yo,samples,models] , dims = ["time","sample","model"] )
+	Yo_bs.loc[:,"BE"] = np.ravel(Yo)
+	Xo_bs.loc[:,"BE",:] = clim.X.loc[time_Yo,"BE","F",:]
+	for s in samples[1:]:
 		idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
 		Yo_bs.loc[:,s] = np.ravel( Yo.loc[idx].values )
 		for m in models:
-			Xo_bs.loc[:,s,m] = clim.X.loc[idx,s,"all",m].values
+			Xo_bs.loc[:,s,m] = clim.X.loc[idx,s,"F",m].values
+	pb.print()
 	
 	
 	## Correction of loc0
 	mu1X = xr.zeros_like(Xo_bs)
-	mu1X = Xo_bs * ns_params.loc["loc1",:,:]
+	mu1X = Xo_bs * law_coef.loc["loc1",:,:]
 	Yo_bs_mean_corrected  = Yo_bs - mu1X
-	ns_params.loc["loc0",:,:] = Yo_bs_mean_corrected.mean( axis = 0 )
+	law_coef.loc["loc0",:,:] = Yo_bs_mean_corrected.mean( axis = 0 )
+	pb.print()
 	
 	
 	## Correction of loc and scale
-	Yo_bs_mu0 = Yo_bs - ns_params.loc["loc0",:,:]
-	sig1X     = np.exp( Xo_bs * ns_params.loc["scale1",:,:] )
+	Yo_bs_mu0 = Yo_bs - law_coef.loc["loc0",:,:]
+	sig1X     = np.exp( Xo_bs * law_coef.loc["scale1",:,:] )
 	Yo_bs_full_corrected   = (Yo_bs_mu0 - mu1X) / sig1X
-	ns_params.loc["scale0",:,:] = np.log( Yo_bs_full_corrected.std( axis = 0 ) )
+	law_coef.loc["scale0",:,:] = np.log( Yo_bs_full_corrected.std( axis = 0 ) )
+	pb.print()
 	
 	## Save
-	clim.ns_params = ns_params
+	clim.data.law_coef.values = law_coef.values
 	
-	if verbose: print( "Constraints C0 (NormalExp, Done)" )
+	pb.end()
 	
 	return clim
 ##}}}
