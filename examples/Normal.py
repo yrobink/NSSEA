@@ -291,9 +291,12 @@ if __name__ == "__main__":
 	clim       = ns.extreme_statistics( clim     , event , verbose = verbose )
 	climCX     = ns.extreme_statistics( climCX   , event , verbose = verbose )
 	climCXCB   = ns.extreme_statistics( climCXCB , event , verbose = verbose )
-	climC0     = ns.extreme_statistics( climC0   , event , verbose = verbose )
 	climCXC0   = ns.extreme_statistics( climCXC0 , event , verbose = verbose )
-	params = ns.build_params_along_time( clim , verbose = verbose )
+	
+	params     = ns.build_params_along_time( clim , verbose = verbose )
+	paramsCX   = ns.build_params_along_time( climCX   , verbose = verbose )
+	paramsCXCB = ns.build_params_along_time( climCXCB , verbose = verbose )
+	paramsCXC0 = ns.build_params_along_time( climCXC0 , verbose = verbose )
 	
 	
 	## Save in netcdf
@@ -307,10 +310,11 @@ if __name__ == "__main__":
 	
 	## Plot
 	##=====
-	nsp.write_package_tabular( climCXCB , event , os.path.join( pathOut , "SummaryCXCB.txt"   ) , verbose = verbose )
-#	nsp.write_package_tabular( climCXC0 , event , os.path.join( pathOut , "SummaryCXC0.txt"   ) , verbose = verbose )
-#	nsp.decomposition( lX , clim.X , event                      , os.path.join( pathOut , "decomposition.pdf" ) , verbose = verbose )
-#	nsp.constraints_CX( climMM , climCXCB , Xo , time_reference , os.path.join( pathOut , "constraintCX.pdf" )  , verbose = verbose )
+	nsp.summary_event( clim     , event , t1 = 2040 , output = os.path.join( pathOut , "summary.txt"     ) , verbose = verbose )
+	nsp.summary_event( climCXCB , event , t1 = 2040 , output = os.path.join( pathOut , "summaryCXCB.txt" ) , verbose = verbose )
+	nsp.summary_event( climCXC0 , event , t1 = 2040 , output = os.path.join( pathOut , "summaryCXCO.txt" ) , verbose = verbose )
+	nsp.GAM_decomposition( clim , lX , event , os.path.join( pathOut , "GAM_decomposition.pdf" ) , verbose = verbose )
+	nsp.constraint_covariate( clim , climCXCB , Xo , os.path.join( pathOut , "constraint_covariate.pdf" )  , verbose = verbose )
 #	nsp.plot_classic_packages( clim     , event , path = pathOut , suffix = "MM"     , ci = ci , verbose = verbose )
 #	nsp.plot_classic_packages( climCX   , event , path = pathOut , suffix = "CX"     , ci = ci , verbose = verbose )
 #	nsp.plot_classic_packages( climCXCB , event , path = pathOut , suffix = "CXCB"   , ci = ci , verbose = verbose )
