@@ -359,7 +359,22 @@ class Climatology2: ##{{{
 		self._add_variable( "law_coef" , law_coef_ )
 	
 	##}}}
-
+	
+	## statistics properties {{{
+	
+	@property
+	def statistics(self):
+		try:
+			return self.data.statistics
+		except:
+			return None
+	
+	@statistics.setter
+	def statistics( self , stats ):
+		self._add_variable( "statistics" , stats )
+	
+	##}}}
+	
 ##}}}
 
 

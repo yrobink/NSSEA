@@ -248,9 +248,11 @@ def infer_multi_model( clim , verbose = False ):
 	
 	## Add multimodel to clim
 	##=======================
-	X        = xr.concat( [clim.X , mm_sample] , "model" )
-	law_coef = xr.concat( [clim.law_coef,mm_params] , "model" )
-	clim.data = xr.Dataset( { "X" : X , "law_coef" : law_coef } )
+	data = xr.Dataset( { "X" : mm_sample , "law_coef" : mm_params } )
+	clim.data = xr.concat( [clim.data,data] , dim = "model" , data_vars = "minimal" )
+#	X        = xr.concat( [clim.X , mm_sample] , "model" )
+#	law_coef = xr.concat( [clim.law_coef,mm_params] , "model" )
+#	clim.data = xr.Dataset( { "X" : X , "law_coef" : law_coef } )
 	
 	## Add multimodel to xarray, and add to clim
 	##==========================================
