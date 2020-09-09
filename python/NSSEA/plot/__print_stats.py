@@ -104,8 +104,8 @@ from NSSEA.__nsstats import add_return_time
 
 def summary_table( clim , t0 , model = "Multi_Synthesis" , t1 = None , digit = 3 , ci = 0.05 , output = None , verbose = False ):##{{{
 	"""
-	NSSEA.plot.print_time_stats
-	===========================
+	NSSEA.plot.summary_table
+	========================
 	Print in a string a tabular summarizing statistics (FAR,PR,dI,pF,pC,RtF,RtC,IF,IC) at a time.
 	
 	FAR : Fraction of Attribuable Risk
@@ -122,14 +122,18 @@ def summary_table( clim , t0 , model = "Multi_Synthesis" , t1 = None , digit = 3
 	----------
 	clim    : NSSEA.Climatology
 		Climatology fitted
-	time    : time type
-		A time compatible with S.time
+	t0      : time type
+		The time to print the statistics
 	model   : string
-		The model chosen (default is multi)
+		The model chosen (default is Multi_Synthesis)
+	t1      : time type or None
+		If t1 is not None, two lines are added containing the statitstics PR(t1) / PR(t0) and dI(t1) - dI(t0)
 	digit   : float
 		number of digits (default is 3)
 	ci      : float
 		Level of confidence interval, default is 0.05 (95%)
+	output  : string or None
+		If None, the table is returned, else the table is written in the file output.
 	verbose : bool
 		Print begin / end of execution
 	
@@ -192,6 +196,38 @@ def summary_table( clim , t0 , model = "Multi_Synthesis" , t1 = None , digit = 3
 ##}}}
 
 def summary_event( clim , event , model = "Multi_Synthesis" , t1 = None , digit = 3 , ci = 0.05 , output = None , verbose = False ): ##{{{
+	"""
+	NSSEA.plot.summary_event
+	========================
+	
+	Very similar to NSSEA.plot.summary_table, but print the event and the statistics
+	at t0, and if t1 is set, pass t1 to the summary table of t0 and print the table
+	for time t1.
+	
+	Parameters
+	----------
+	clim    : NSSEA.Climatology
+		Climatology fitted
+	t0      : time type
+		The time to print the statistics
+	model   : string
+		The model chosen (default is Multi_Synthesis)
+	t1      : time type or None
+		If t1 is not None, two lines are added containing the statitstics PR(t1) / PR(t0) and dI(t1) - dI(t0)
+	digit   : float
+		number of digits (default is 3)
+	ci      : float
+		Level of confidence interval, default is 0.05 (95%)
+	output  : string or None
+		If None, the table is returned, else the table is written in the file output.
+	verbose : bool
+		Print begin / end of execution
+	
+	Return
+	------
+	tab : string
+		A tabular of statistics
+	"""
 	
 	pb = ProgressBar( 1 , "summary_event" , verbose = verbose )
 	
