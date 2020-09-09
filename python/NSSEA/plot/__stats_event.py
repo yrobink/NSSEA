@@ -93,12 +93,12 @@ import pandas as pd
 import xarray as xr
 
 import matplotlib as mpl
-mpl.use("pdf")
+#mpl.use("pdf")
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as mpdf
 
 from .__linkParams   import LinkParams
-from NSSEA.__nsstats import stats_relative_event
+#from NSSEA.__nsstats import stats_relative_event
 
 
 ###############
