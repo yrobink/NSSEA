@@ -263,12 +263,11 @@ def add_FAR( clim ):##{{{
 	return clim
 ##}}}
 
-
 def build_params_along_time( clim , verbose = False ):##{{{
 	"""
 	NSSEA.extremes_stats
 	====================
-	Build trajectories of ns_params alon time
+	Build trajectories of params alon time
 	
 	Arguments
 	---------
@@ -279,24 +278,24 @@ def build_params_along_time( clim , verbose = False ):##{{{
 	
 	Return
 	------
-	ns_params : xr.DataArray
-		An array containing ns_params along time
+	params : xr.DataArray
+		An array containing params along time
 	
 	"""
 	ns_law = clim.ns_law
 	
 	l_params = [k for k in clim.ns_law.lparams]
-	xrdims   = ["time","sample","forcing","params","models"]
-	xrcoords = [clim.time,clim.X.sample,["all","nat"],l_params,clim.models]
-	s_params = xr.DataArray( np.zeros( (clim.n_time,clim.n_sample+1,2,len(l_params),clim.n_models) ) , dims = xrdims , coords = xrcoords )
+	xrdims   = ["time","sample","forcing","param","model"]
+	xrcoords = [clim.time,clim.sample,["F","C"],l_params,clim.model]
+	s_params = xr.DataArray( np.zeros( (clim.n_time,clim.n_sample+1,2,len(l_params),clim.n_model) ) , dims = xrdims , coords = xrcoords )
 	
 	
-	pb = ProgressBar( "build_params_along_time" , clim.n_models * (clim.n_sample + 1) )
-	for m in clim.models:
+	pb = ProgressBar(  clim.n_model * (clim.n_sample + 1) , "build_params_along_time" , verbose = verbose )
+	for m in clim.model:
 		for s in s_params.sample:
-			if verbose: pb.print()
+			pb.print()
 			
-			clim.ns_law.set_params( clim.ns_params.loc[:,s,m].values )
+			clim.ns_law.set_params( clim.law_coef.loc[:,s,m].values )
 			for f in s_params.forcing:
 				clim.ns_law.set_covariable( clim.X.loc[clim.time,s,f,m].values , clim.time )
 				for p in l_params:
@@ -307,3 +306,6 @@ def build_params_along_time( clim , verbose = False ):##{{{
 	
 	return s_params
 ##}}}
+
+
+
