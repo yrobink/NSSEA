@@ -286,12 +286,12 @@ if __name__ == "__main__":
 	##==================
 	climCX = ns.constrain_covariate( climMM , Xo , time_reference , verbose = verbose )
 	climCXCB   = ns.constrain_law( climCX , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , min_rate_accept = min_rate_accept , verbose = verbose )
-#	climC0     = ns.constraints_C0( climMM , Yo , verbose = verbose )
-#	climCXC0   = ns.constraints_C0( climCX , Yo , verbose = verbose )
-#	
-#	
-#	## Compute stats
-#	##==============
+	climC0     = ns.constraints_C0( climMM , Yo , verbose = verbose )
+	climCXC0   = ns.constraints_C0( climCX , Yo , verbose = verbose )
+	
+	
+	## Compute stats
+	##==============
 #	clim       = ns.extremes_stats( clim     , event , verbose = verbose )
 #	climCX     = ns.extremes_stats( climCX   , event , verbose = verbose )
 #	climCXCB   = ns.extremes_stats( climCXCB , event , verbose = verbose )
