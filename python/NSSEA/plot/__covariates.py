@@ -96,7 +96,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as mpdf
 
-from NSSEA.__tools import ProgressBar
+from ..__tools import ProgressBar
 
 
 ###############

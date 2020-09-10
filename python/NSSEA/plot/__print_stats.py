@@ -93,9 +93,9 @@ import pandas as pd
 import xarray as xr
 import texttable as tt
 
-from NSSEA.__tools import ProgressBar
-from NSSEA.__nsstats import add_FAR
-from NSSEA.__nsstats import add_return_time
+from ..__tools import ProgressBar
+from ..__nsstats import add_FAR
+from ..__nsstats import add_return_time
 
 
 ###############
