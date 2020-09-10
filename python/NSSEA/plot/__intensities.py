@@ -93,11 +93,10 @@ import pandas as pd
 import xarray as xr
 
 import matplotlib as mpl
-#mpl.use("pdf")
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as mpdf
 
-from .__linkParams import LinkParams
+from NSSEA.__tools import ProgressBar
 
 
 ###############
@@ -125,64 +124,66 @@ def intensities( clim , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 		Print (or not) state of execution
 	"""
 	
-	if verbose: print( "Plot intensities" , end = "\r" )
+	pb = ProgressBar( clim.n_model , "plot.intensities" , verbose = verbose )
+#	["pC","pF","IC","IF","PR","dI"]
 	
-	stats = clim.stats
-	statsl = stats[:,1:,3:,:].quantile( ci / 2.      , dim = "sample" )
-	statsu = stats[:,1:,3:,:].quantile( 1. - ci / 2. , dim = "sample" )
+	## Find quantile and best estimate
+	qstats = clim.statistics[:,1:,:,:].loc[:,:,["IC","IF","dI"],:].quantile( [ ci / 2. , 0.5 , 1 - ci / 2] , dim = "sample" ).assign_coords( quantile = ["ql","BE","qu"] )
+	if not clim.be_is_median:
+		qstats.loc["BE",:,:,:] = clim.statistics.loc[:,"BE",["IC","IF","dI"],:]
 	
 	pdf = mpdf.PdfPages( ofile )
 	
-	yminI  = min( stats[:,:,3:5,:].min() , statsu[:,:2,:].min() , statsl[:,:2,:].min() )
-	ymaxI  = max( stats[:,:,3:5,:].max() , statsu[:,:2,:].max() , statsl[:,:2,:].max() )
-	ymindI = min( stats[:,:,5,:].min()   , statsu[:,2,:].min()  , statsl[:,2,:].min()  )
-	ymaxdI = max( stats[:,:,5,:].max()   , statsu[:,2,:].max()  , statsl[:,2,:].max()  )
+	yminI  = float(qstats.loc[:,:,["IF","IC"],:].min())
+	ymaxI  = float(qstats.loc[:,:,["IF","IC"],:].max())
+	ymindI = float(qstats.loc[:,:,"dI",:].min())
+	ymaxdI = float(qstats.loc[:,:,"dI",:].max())
 	
 	ylabel = "\mathrm{(" + event.unit_variable + ")}"
 	
-	for m in stats.models:
+	for m in clim.model:
 		nrow,ncol = 3,1
 		fs = 10
 		fig = plt.figure( figsize = ( fs * ncol , 0.4 * fs * nrow ) )
 		
 		ax = fig.add_subplot( nrow , ncol , 1 )
-		ax.plot( stats.time , stats.loc[:,"be","IF",m] , color = "red" , linestyle = "-" , marker = "" )
-		ax.fill_between( stats.time , statsl.loc[:,"IF",m] , statsu.loc[:,"IF",m] , color = "red" , alpha = 0.5 )
-		ax.set_title( "{}".format( str(m.values).replace("_"," ") ) )
+		ax.plot( qstats.time , qstats.loc["BE",:,"IF",m] , color = "red" , linestyle = "-" , marker = "" )
+		ax.fill_between( qstats.time , qstats.loc["ql",:,"IF",m] , qstats.loc["qu",:,"IF",m] , color = "red" , alpha = 0.5 )
+		ax.set_title( " ".join(m.split("_")) )
 		ax.set_ylim( (yminI,ymaxI) )
 		ax.set_xticks([])
-		ax.set_ylabel( r"${}$".format( "\mathbf{I}_F(t)\ " + ylabel ) )
+		ax.set_ylabel( r"${}$".format( "\mathbf{I}^F_t\ " + ylabel ) )
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()
-		ax.plot( [event.time,event.time] , ylim          , linestyle = "--" , marker = "" , color = "black" )
-		ax.hlines( stats.loc[event.time,"be","IF",m] , xlim[0] , xlim[1] , color = "black" , linestyle = "--" )
+		ax.vlines( event.time , ylim[0] , ylim[1] , linestyle = "--" , color = "black" )
+		ax.hlines( qstats.loc["BE",event.time,"IF",m] , xlim[0] , xlim[1] , color = "black" , linestyle = "--" )
 		ax.set_xlim(xlim)
 		ax.set_ylim(ylim)
 		
 		ax = fig.add_subplot( nrow , ncol , 2 )
-		ax.plot( stats.time , stats.loc[:,"be","IC",m] , color = "red" , linestyle = "-" , marker = "" )
-		ax.fill_between( stats.time , statsl.loc[:,"IC",m] , statsu.loc[:,"IC",m] , color = "red" , alpha = 0.5 )
+		ax.plot( qstats.time , qstats.loc["BE",:,"IC",m] , color = "blue" , linestyle = "-" , marker = "" )
+		ax.fill_between( qstats.time , qstats.loc["ql",:,"IC",m] , qstats.loc["qu",:,"IC",m] , color = "blue" , alpha = 0.5 )
 		ax.set_ylim( (yminI,ymaxI) )
 		ax.set_xticks([])
-		ax.set_ylabel( r"${}$".format( "\mathbf{I}_C(t)\ " + ylabel ) )
+		ax.set_ylabel( r"${}$".format( "\mathbf{I}^C_t\ " + ylabel ) )
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()
-		ax.plot( [event.time,event.time] , ylim          , linestyle = "--" , marker = "" , color = "black" )
-		ax.hlines( stats.loc[event.time,"be","IC",m] , xlim[0] , xlim[-1] , color = "black" , linestyle = "--" )
+		ax.vlines( event.time , ylim[0] , ylim[1] , linestyle = "--" , color = "black" )
+		ax.hlines( qstats.loc["BE",event.time,"IC",m] , xlim[0] , xlim[-1] , color = "black" , linestyle = "--" )
 		ax.set_xlim(xlim)
 		ax.set_ylim(ylim)
 		
 		ax = fig.add_subplot( nrow , ncol , 3 )
-		ax.plot( stats.time , stats.loc[:,"be","dI",m] , color = "red" , linestyle = "-" , marker = "" )
-		ax.fill_between( stats.time , statsl.loc[:,"dI",m] , statsu.loc[:,"dI",m] , color = "red" , alpha = 0.5 )
+		ax.plot( qstats.time , qstats.loc["BE",:,"dI",m] , color = "red" , linestyle = "-" , marker = "" )
+		ax.fill_between( qstats.time , qstats.loc["ql",:,"dI",m] , qstats.loc["qu",:,"dI",m] , color = "red" , alpha = 0.5 )
 		ax.set_ylim( (ymindI,ymaxdI) )
 		ax.set_xlabel( "Time" )
-		ax.set_ylabel( r"${}$".format( "\Delta\mathbf{I}(t)\ " + ylabel ) )
+		ax.set_ylabel( r"${}$".format( "\Delta\mathbf{I}_t\ " + ylabel ) )
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()
-		ax.plot( [event.time,event.time] , ylim  , linestyle = "--" , marker = "" , color = "black" )
-		ax.plot( xlim                    , [0,0] , linestyle = "-"  , marker = "" , color = "black" )
-		ax.hlines( stats.loc[event.time,"be","dI",m] , xlim[0] , xlim[-1] , color = "black" , linestyle = "--" )
+		ax.vlines( event.time , ylim[0] , ylim[1] , linestyle = "--" , color = "black" )
+		ax.hlines( qstats.loc["BE",event.time,"dI",m] , xlim[0] , xlim[-1] , color = "black" , linestyle = "--" )
+		ax.hlines( 0 , xlim[0] , xlim[-1] , color = "black" , linestyle = "-" )
 		ax.set_xlim(xlim)
 		ax.set_ylim(ylim)
 		
@@ -190,10 +191,12 @@ def intensities( clim , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 		fig.set_tight_layout(True)
 		pdf.savefig( fig )
 		plt.close(fig)
+		pb.print()
 	
 	pdf.close()
 	
-	if verbose: print( "Plot intensities (Done)" )
+	pb.end()
+	
 ##}}}
 
 
