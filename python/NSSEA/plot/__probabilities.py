@@ -128,7 +128,25 @@ def split_into_valid_time( nan_values , ci ):##{{{
 ##}}}
 
 def probabilities( clim , ofile , event = None , ci = 0.05 , verbose = False ):##{{{
+	"""
+	NSSEA.plot.probabilities
+	========================
+	Function which plot pF, pC, RtF, RtC, PR and FAR.
 	
+	Arguments
+	---------
+	clim      : NSSEA.Climatology
+		Climatology with stats computed
+	ofile     : str
+		output file
+	event     : NSSEA.Event
+		If event is None, clim.event is used
+	ci        : float
+		Size of confidence interval, default is 0.05 (95% confidence)
+	verbose   : bool
+		Print (or not) state of execution
+	
+	"""
 	pb = ProgressBar( 2 * clim.n_model + 3 , "plot.probabilities" , verbose )
 	
 	if event is None:
