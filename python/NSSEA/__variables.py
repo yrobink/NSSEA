@@ -265,6 +265,7 @@ class Climatology2: ##{{{
 		samples = ["BE"] + [ 'S{0:{fill}{align}{n}}'.format(i,fill="0",align=">",n=int(np.floor(np.log10(n_sample))+1)) for i in range(n_sample)]
 		self.data   = xr.Dataset( { "time" : time , "model" : models , "sample" : samples } )
 		self.ns_law = ns_law
+		self.be_is_median = False
 	##}}}
 	
 	def _add_variable( self , name , variable ):##{{{

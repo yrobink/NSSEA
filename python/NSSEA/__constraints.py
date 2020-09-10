@@ -283,6 +283,7 @@ def constrain_law( climIn , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10
 		clim.law_coef.loc[:,s,"Multi_Synthesis"] = draw[-1,:]
 	
 	clim.law_coef.loc[:,"BE",:] = clim.law_coef[:,1:,:].median( dim = "sample" )
+	clim.be_is_median = True
 	
 	pb.end()
 	
