@@ -164,10 +164,14 @@ def summary_table( clim , t0 , model = "Multi_Synthesis" , t1 = None , digit = 3
 	ql = ci /2
 	qm = 0.5
 	qu = 1 - ci / 2
-	qS = S[1:,:].quantile( [ ql,qm,qu ] , dim = "sample" ).assign_coords( quantile = ["ql","qm","qu"] )
+	qS = S[1:,:].quantile( [ ql,qm,qm,qu ] , dim = "sample" ).assign_coords( quantile = ["ql","qm","BE","qu"] )
+	if not clim.BE_is_median:
+		qS.loc["BE",:] = S[0,:]
 	
 	if t1 is not None:
-		qS1 = S1[1:,:].quantile( [ql,qm,qu] , dim = "sample" ).assign_coords( quantile = ["ql","qm","qu"] )
+		qS1 = S1[1:,:].quantile( [ql,qm,qm,qu] , dim = "sample" ).assign_coords( quantile = ["ql","qm","BE","qu"] )
+		if not clim.BE_is_median:
+			qS1.loc["BE",:] = S1[0,:]
 	
 	pb.print()
 	
@@ -178,11 +182,11 @@ def summary_table( clim , t0 , model = "Multi_Synthesis" , t1 = None , digit = 3
 	
 	tab.header( ["Stats {}".format(t0),"Best estimate","Quantile {}".format(ql),"Median","Quantile {}".format(qu)] )
 	for s in ["FAR","PR","dI","RtF","RtC","pF","pC","IF","IC"]:
-		tab.add_row( [ s , float(S.loc["BE",s]) , float(qS.loc["ql",s]) , float(qS.loc["qm",s]), float(qS.loc["qu",s]) ] )
+		tab.add_row( [ s , float(qS.loc["BE",s]) , float(qS.loc["ql",s]) , float(qS.loc["qm",s]), float(qS.loc["qu",s]) ] )
 	
 	if t1 is not None:
 		for s in ["PR","dI"]:
-			tab.add_row( [ "{} {}/{}".format(s,t1,t0) , float(S1.loc["BE",s]) , float(qS1.loc["ql",s]) , float(qS1.loc["qm",s]) , float(qS1.loc["qu",s]) ] )
+			tab.add_row( [ "{} {}/{}".format(s,t1,t0) , float(qS1.loc["BE",s]) , float(qS1.loc["ql",s]) , float(qS1.loc["qm",s]) , float(qS1.loc["qu",s]) ] )
 	
 	pb.end()
 	

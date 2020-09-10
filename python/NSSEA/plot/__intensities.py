@@ -132,7 +132,7 @@ def intensities( clim , ofile , event = None , ci = 0.05 , verbose = False ): ##
 	
 	## Find quantile and best estimate
 	qstats = clim.statistics[:,1:,:,:].loc[:,:,["IC","IF","dI"],:].quantile( [ ci / 2. , 0.5 , 1 - ci / 2] , dim = "sample" ).assign_coords( quantile = ["ql","BE","qu"] )
-	if not clim.be_is_median:
+	if not clim.BE_is_median:
 		qstats.loc["BE",:,:,:] = clim.statistics.loc[:,"BE",["IC","IF","dI"],:]
 	
 	pdf = mpdf.PdfPages( ofile )

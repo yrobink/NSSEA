@@ -258,7 +258,7 @@ class Climatology2: ##{{{
 		self.event  = event
 		self.data   = xr.Dataset( { "time" : time , "model" : models , "sample" : samples } )
 		self.ns_law = ns_law
-		self.be_is_median = False
+		self.BE_is_median = False
 	##}}}
 	
 	def _add_variable( self , name , variable ):##{{{
