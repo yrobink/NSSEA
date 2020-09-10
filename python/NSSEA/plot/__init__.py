@@ -89,12 +89,6 @@
 ## Imports ##
 #############
 
-from .__stats_event      import stats_event
-from .__stats_event      import stats_relative
-from .__ns_params        import ns_params
-from .__ns_params        import ns_params_comparison
-from .__ns_params        import ns_params_time
-
 from .__summary          import summary
 
 from .__linkParams       import LinkPR
@@ -102,6 +96,7 @@ from .__linkParams       import Linkp
 from .__probabilities    import probabilities
 from .__intensities      import intensities
 from .__law_coef         import law_coef
+from .__law_coef         import constraint_law
 
 from .__print_stats      import summary_table
 from .__print_stats      import summary_event

@@ -106,7 +106,7 @@ from ..__tools import ProgressBar
 def law_coef( clim , ofile , ci = 0.05 , verbose = False ):##{{{
 	"""
 	NSSEA.plot.law_coef
-	====================
+	===================
 	
 	Plot a violin plot of the coefficients 
 	
@@ -177,5 +177,94 @@ def law_coef( clim , ofile , ci = 0.05 , verbose = False ):##{{{
 	pb.end()
 ##}}}
 
+def constraint_law( clim , clim_constrained , ofile , ci = 0.05 , verbose = False ):##{{{
+	"""
+	NSSEA.plot.constraint_law
+	=========================
+	
+	Plot a violin plot of the coefficients 
+	
+	Arguments
+	---------
+	clim      : [NSSEA.Climatology] Climatology
+	ofile     : [str] output file
+	ci        : [float] Size of confidence interval, default is 0.05 (95% confidence)
+	verbose   : [bool] Print (or not) state of execution
+	"""
+	
+	pb = ProgressBar( clim.n_model , "plot.constraint_law" , verbose )
+	
+	##
+	climc = clim_constrained
+	
+	## Quantile
+	
+	qcoefc = climc.law_coef[:,1:,:].quantile( [ci/2,1-ci/2,0.5] , dim = "sample" ).assign_coords( quantile = ["ql","qu","BE"] )
+	qcoef  = clim.law_coef[:,1:,:].quantile( [ci/2,1-ci/2,0.5] , dim = "sample" ).assign_coords( quantile = ["ql","qu","BE"] )
+	if not climc.BE_is_median:
+		qcoefc.loc["BE",:,:] = climc.law_coef.loc[:,"BE",:]
+	if not clim.BE_is_median:
+		qcoef.loc["BE",:,:]  = clim.law_coef.loc[:,"BE",:]
+	qcoefc.loc[["ql","qu"],:,:] = qcoefc.loc[["ql","qu"],:,:] - qcoefc.loc["BE",:,:]
+	qcoef = qcoef - qcoefc.loc["BE",:,:]
+	
+	## mpl parameter
+	ymin = min( (climc.law_coef - qcoefc.loc["BE",:,:]).min() , (clim.law_coef - qcoefc.loc["BE",:,:]).min() )
+	ymax = max( (climc.law_coef - qcoefc.loc["BE",:,:]).max() , (clim.law_coef - qcoefc.loc["BE",:,:]).max() )
+	delta = 0.1 * (ymax-ymin)
+	ylim = (ymin-delta,ymax+delta)
+	
+	kwargs = { "positions" : range(climc.n_coef) , "showmeans" : False , "showextrema" : False , "showmedians" : False }
+	pdf = mpdf.PdfPages( ofile )
+	for m in climc.model:
+		fig = plt.figure( figsize = ( 14 , 10 ) )
+		ax = fig.add_subplot(1,1,1)
+		
+		## violin plot
+		vplotc = ax.violinplot( (climc.law_coef - qcoefc.loc["BE",:,:])[:,1:,:].loc[:,:,m].values.T , **kwargs )
+		vplot  = ax.violinplot( (clim.law_coef - qcoefc.loc["BE",:,:])[:,1:,:].loc[:,:,m].values.T , **kwargs )
+		
+		## Change color
+		for pc in vplotc["bodies"]:
+			pc.set_facecolor("red")
+			pc.set_edgecolor("red")
+			pc.set_alpha(0.5)
+		
+		for pc in vplot["bodies"]:
+			pc.set_facecolor("blue")
+			pc.set_edgecolor("blue")
+			pc.set_alpha(0.3)
+		
+		## add quantiles
+		for i in range(climc.n_coef):
+			for q in ["ql","qu"]:
+				ax.hlines( qcoefc[:,i,:].loc[q,m] , i - 0.3 , i + 0.3 , color = "red" )
+			for q in ["ql","qu","BE"]:
+				ax.hlines( qcoef[:,i,:].loc[q,m] , i - 0.3 , i + 0.3 , color = "blue" )
+		ax.hlines( 0 , -0.5 , climc.n_coef-0.5 , color = "black" )
+		for i in range(climc.n_coef-1):
+			ax.vlines( i + 0.5 , ylim[0] , ylim[1] , color = "grey" )
+		
+		## some params
+		ax.set_xlim((-0.5,climc.n_coef-0.5))
+		ax.set_xticks(range(climc.n_coef))
+		xticks = [ "{}".format(p) + "{}".format( "-" if np.sign(q) < 0 else "+" ) + r"${}$".format(float(np.sign(q)) * round(float(q),2)) for p,q in zip(climc.ns_law.get_params_names(True),qcoefc.loc["BE",:,m]) ]
+		ax.set_xticklabels( xticks , fontsize = 15 )
+		for item in ax.get_yticklabels():
+			item.set_fontsize(15)
+		ax.set_ylim(ylim)
+		
+		ax.set_title( " ".join(m.split("_")) , fontsize = 20 )
+		
+		fig.set_tight_layout(True)
+		pdf.savefig( fig )
+		plt.close(fig)
+		pb.print()
+	
+	pdf.close()
+	
+	pb.end()
 
+
+##}}}
 
