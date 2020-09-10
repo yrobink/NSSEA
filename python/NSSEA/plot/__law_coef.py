@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 
 ##################################################################################
 ##################################################################################
@@ -85,26 +84,19 @@
 ##################################################################################
 ##################################################################################
 
+###############
+## Libraries ##
+###############
+
+import numpy  as np
+import sys
+
+
 #############
-## Imports ##
+## Classes ##
 #############
 
-from .__stats_event      import stats_event
-from .__stats_event      import stats_relative
-from .__ns_params        import ns_params
-from .__ns_params        import ns_params_comparison
-from .__ns_params        import ns_params_time
-from .__classic_packages import plot_classic_packages
+def law_coef():
+	pass
 
-from .__linkParams       import LinkPR
-from .__linkParams       import Linkp
-from .__probabilities    import probabilities
-from .__intensities      import intensities
-from .__law_coef         import law_coef
-
-from .__print_stats      import summary_table
-from .__print_stats      import summary_event
-
-from .__covariates       import GAM_decomposition
-from .__covariates       import constraint_covariate
 
