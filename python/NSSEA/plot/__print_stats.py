@@ -143,7 +143,7 @@ def summary_table( clim , t0 , model = "Multi_Synthesis" , t1 = None , digit = 3
 		A tabular of statistics
 	"""
 	
-	pb = ProgressBar( 2 , "summary_table" , verbose = verbose )
+	pb = ProgressBar( 2 , "plot.summary_table" , verbose = verbose )
 	
 	## Add FAR and Rt
 	if "FAR" not in clim.statistics.stats:
@@ -229,7 +229,7 @@ def summary_event( clim , event , model = "Multi_Synthesis" , t1 = None , digit 
 		A tabular of statistics
 	"""
 	
-	pb = ProgressBar( 1 , "summary_event" , verbose = verbose )
+	pb = ProgressBar( 1 , "plot.summary_event" , verbose = verbose )
 	
 	out = str(event)
 	out = out + "\n" + summary_table( clim , event.time , model , t1 , digit , ci )

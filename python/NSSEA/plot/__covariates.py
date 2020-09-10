@@ -126,7 +126,7 @@ def GAM_decomposition( clim , lX , event , ofile , ci = 0.05 , verbose = False )
 		Print (or not) state of execution
 	"""
 	
-	pb = ProgressBar( clim.n_model , "GAM_decomposition" , verbose )
+	pb = ProgressBar( clim.n_model , "plot.GAM_decomposition" , verbose )
 	
 	X = clim.X.copy()
 	XA = ( X.loc[:,:,"F",:] - X.loc[:,:,"C",:] ).assign_coords( forcing = "A" )
@@ -269,7 +269,7 @@ def constraint_covariate( clim , climCX , Xo , ofile , ci = 0.05 , verbose = Fal
 		Print (or not) state of execution
 	"""
 	
-	pb = ProgressBar( 3 , "constraint_covariate" , verbose )
+	pb = ProgressBar( 5 , "plot.constraint_covariate" , verbose )
 	
 	X   = clim.X.loc[:,:,:,"Multi_Synthesis"]
 	cX = climCX.X.loc[:,:,:,"Multi_Synthesis"]
@@ -288,20 +288,39 @@ def constraint_covariate( clim , climCX , Xo , ofile , ci = 0.05 , verbose = Fal
 	
 	pb.print()
 	
-	fig = plt.figure( figsize = (10,10) )
+	fig = plt.figure( figsize = (12,10) )
 	color = ["red","blue"]
 	
 	for i,f in enumerate(["F","C"]):
-		ax = fig.add_subplot(2,1,i+1)
-		ax.plot( X.time   , X.loc[:,"BE",f]  , color = "grey"  , linestyle = "-" , marker = ""  )
-		ax.plot( cX.time  , cX.loc[:,"BE",f] , color = "black" , linestyle = "-" , marker = ""  )
+		ax = fig.add_subplot(2,2,2*i+1)
+		ax.plot( X.time   , X.loc[:,"BE",f]  , color = color[i] , linestyle = "--" , marker = ""  )
+		ax.plot( cX.time  , cX.loc[:,"BE",f] , color = color[i] , linestyle = "-"  , marker = ""  )
 		ax.plot( Xo.index , Xo.values        , color = "black" , linestyle = ""  , marker=  "." )
-		ax.fill_between( X.time  , Xl.loc[:,f]  , Xu.loc[:,f]  , color = color[i] , alpha = 0.2 )
-		ax.fill_between( cX.time , cXl.loc[:,f] , cXu.loc[:,f] , color = color[i] , alpha = 0.5 )
+		ax.fill_between( X.time  , Xl.loc[:,f]  , Xu.loc[:,f]  , color = color[i] , alpha = 0.2 , label = f )
+		ax.fill_between( cX.time , cXl.loc[:,f] , cXu.loc[:,f] , color = color[i] , alpha = 0.5 , label = "{}, constrain".format(f) )
+		ax.legend()
 		ax.set_ylim((ymin,ymax))
 		if i == 0:
 			ax.set_xticks([])
+		xlim = ax.get_xlim()
+		ax.hlines( 0 , xlim[0] , xlim[1] , color = "grey" )
+		ax.set_xlim(xlim)
 		pb.print()
+	
+	n_draw = max( int(0.1 * clim.n_sample) , 5 )
+	for i,f in enumerate(["F","C"]):
+		ax = fig.add_subplot(2,2,2*i+2)
+		idx = np.random.choice( clim.n_sample , n_draw , replace = False ) + 1
+		ax.plot(  X.time ,  X[:,idx,:].loc[:,:,f] , color = color[i] , linestyle = "--" , marker = "" )
+		ax.plot( cX.time , cX[:,idx,:].loc[:,:,f] , color = color[i] , linestyle = "-"  , marker = "" )
+		ax.set_ylim((ymin,ymax))
+		if i == 0:
+			ax.set_xticks([])
+		xlim = ax.get_xlim()
+		ax.hlines( 0 , xlim[0] , xlim[1] , color = "grey" )
+		ax.set_xlim(xlim)
+		pb.print()
+	
 	
 	fig.set_tight_layout(True)
 	plt.savefig( ofile )
