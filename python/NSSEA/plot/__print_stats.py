@@ -102,7 +102,7 @@ from ..__nsstats import add_return_time
 ## Functions ##
 ###############
 
-def summary_table( clim , t0 , model = "Multi_Synthesis" , t1 = None , digit = 3 , ci = 0.05 , output = None , verbose = False ):##{{{
+def summary_table( clim , t0 , model = "Multi_Synthesis" , t1 = None , digit = 3 , ci = 0.05 , ofile = None , verbose = False ):##{{{
 	"""
 	NSSEA.plot.summary_table
 	========================
@@ -132,8 +132,8 @@ def summary_table( clim , t0 , model = "Multi_Synthesis" , t1 = None , digit = 3
 		number of digits (default is 3)
 	ci      : float
 		Level of confidence interval, default is 0.05 (95%)
-	output  : string or None
-		If None, the table is returned, else the table is written in the file output.
+	ofile  : string or None
+		If None, the table is returned, else the table is written in the file ofile.
 	verbose : bool
 		Print begin / end of execution
 	
@@ -191,15 +191,15 @@ def summary_table( clim , t0 , model = "Multi_Synthesis" , t1 = None , digit = 3
 	pb.end()
 	
 	## Output
-	if output is None:
+	if ofile is None:
 		return tab.draw() + "\n"
 	
-	with open( output , "w" ) as f:
+	with open( ofile , "w" ) as f:
 		f.write( tab.draw() + "\n" )
 	
 ##}}}
 
-def summary_event( clim , event = None , model = "Multi_Synthesis" , t1 = None , digit = 3 , ci = 0.05 , output = None , verbose = False ): ##{{{
+def summary_event( clim , event = None , model = "Multi_Synthesis" , t1 = None , digit = 3 , ci = 0.05 , ofile = None , verbose = False ): ##{{{
 	"""
 	NSSEA.plot.summary_event
 	========================
@@ -224,7 +224,7 @@ def summary_event( clim , event = None , model = "Multi_Synthesis" , t1 = None ,
 		number of digits (default is 3)
 	ci      : float
 		Level of confidence interval, default is 0.05 (95%)
-	output  : string or None
+	ofile  : string or None
 		If None, the table is returned, else the table is written in the file output.
 	verbose : bool
 		Print begin / end of execution
@@ -249,10 +249,10 @@ def summary_event( clim , event = None , model = "Multi_Synthesis" , t1 = None ,
 	out = out + "\n"
 	
 	pb.end()
-	if output is None:
+	if ofile is None:
 		return out
 	
-	with open( output , "w" ) as f:
+	with open( ofile , "w" ) as f:
 		f.write(out)
 ##}}}
 
