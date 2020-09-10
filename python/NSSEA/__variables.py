@@ -270,7 +270,7 @@ class Climatology2: ##{{{
 	
 	def copy(self): ##{{{
 		clim = Climatology2( self.event , self.time , self.model , self.n_sample , self.ns_law )
-		clim.data = self.data.copy()
+		clim.data = self.data.copy(deep=True)
 		try:
 			clim.synthesis = self.synthesis.copy()
 		except:
