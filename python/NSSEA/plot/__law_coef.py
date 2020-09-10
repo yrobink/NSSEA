@@ -88,15 +88,94 @@
 ## Libraries ##
 ###############
 
-import numpy  as np
 import sys
+import numpy  as np
+import pandas as pd
+import xarray as xr
 
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.backends.backend_pdf as mpdf
+
+from ..__tools import ProgressBar
 
 #############
 ## Classes ##
 #############
 
-def law_coef():
-	pass
+def law_coef( clim , ofile , ci = 0.05 , verbose = False ):##{{{
+	"""
+	NSSEA.plot.law_coef
+	====================
+	
+	Plot a violin plot of the coefficients 
+	
+	Arguments
+	---------
+	clim      : [NSSEA.Climatology] Climatology
+	ofile     : [str] output file
+	ci        : [float] Size of confidence interval, default is 0.05 (95% confidence)
+	verbose   : [bool] Print (or not) state of execution
+	"""
+	
+	pb = ProgressBar( clim.n_model , "plot.law_coef" , verbose )
+	
+	## Quantile
+	
+	qcoef = clim.law_coef[:,1:,:].quantile( [ci/2,1-ci/2,0.5] , dim = "sample" ).assign_coords( quantile = ["ql","qu","BE"] )
+	if not clim.BE_is_median:
+		qcoef.loc["BE",:,:] = clim.law_coef.loc[:,"BE",:]
+	qcoef.loc[["ql","qu"],:,:] = qcoef.loc[["ql","qu"],:,:] - qcoef.loc["BE",:,:]
+	
+	## mpl parameter
+	ymin = float( (clim.law_coef - qcoef.loc["BE",:,:]).min())
+	ymax = float( (clim.law_coef - qcoef.loc["BE",:,:]).max())
+	delta = 0.1 * (ymax-ymin)
+	ylim = (ymin-delta,ymax+delta)
+	
+	kwargs = { "positions" : range(clim.n_coef) , "showmeans" : False , "showextrema" : False , "showmedians" : False }
+	pdf = mpdf.PdfPages( ofile )
+	for m in clim.model:
+		fig = plt.figure( figsize = ( 14 , 10 ) )
+		ax = fig.add_subplot(1,1,1)
+		
+		## violin plot
+		vplot = ax.violinplot( (clim.law_coef - qcoef.loc["BE",:,:])[:,1:,:].loc[:,:,m].values.T , **kwargs )
+		
+		## Change color
+		for pc in vplot["bodies"]:
+			pc.set_facecolor("red")
+			pc.set_edgecolor("red")
+			pc.set_alpha(0.5)
+		
+		## add quantiles
+		for i in range(clim.n_coef):
+			for q in ["ql","qu"]:
+				ax.hlines( qcoef[:,i,:].loc[q,m] , i - 0.3 , i + 0.3 , color = "red" )
+		ax.hlines( 0 , -0.5 , clim.n_coef-0.5 , color = "black" )
+		for i in range(clim.n_coef-1):
+			ax.vlines( i + 0.5 , ylim[0] , ylim[1] , color = "grey" )
+		
+		## some params
+		ax.set_xlim((-0.5,clim.n_coef-0.5))
+		ax.set_xticks(range(clim.n_coef))
+		xticks = [ "{}".format(p) + "{}".format( "-" if np.sign(q) < 0 else "+" ) + r"${}$".format(float(np.sign(q)) * round(float(q),2)) for p,q in zip(clim.ns_law.get_params_names(True),qcoef.loc["BE",:,m]) ]
+		ax.set_xticklabels( xticks , fontsize = 15 )
+		for item in ax.get_yticklabels():
+			item.set_fontsize(15)
+		ax.set_ylim(ylim)
+		
+		ax.set_title( " ".join(m.split("_")) , fontsize = 20 )
+		
+		fig.set_tight_layout(True)
+		pdf.savefig( fig )
+		plt.close(fig)
+		pb.print()
+	
+	pdf.close()
+	
+	pb.end()
+##}}}
+
 
 

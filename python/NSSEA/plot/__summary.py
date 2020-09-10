@@ -88,9 +88,11 @@
 ## Libraries ##
 ###############
 
+import os
 from .__probabilities import probabilities
 from .__intensities   import intensities
 from .__print_stats   import summary_event
+from .__law_coef      import law_coef
 #from .__stats_event   import stats_event
 #from .__stats_event   import stats_relative
 #from .__ns_params     import ns_params
@@ -108,8 +110,8 @@ def summary( clim , path , suffix = None , event = None , t1 = None , ci = 0.05 
 	Just a function which call:
 		- NSSEA.plot.probabilities
 		- NSSEA.plot.intensities
-		- NSSEA.plot.summary_event
-		- NSSEA.plot.ns_params
+		- NSSEA.plot.law_coef
+		- NSSEA.plot.summary_event (if the model Multi_Synthesis is given)
 		- NSSEA.plot.stats_event
 		- NSSEA.plot.stats_relative
 	
@@ -130,7 +132,8 @@ def summary( clim , path , suffix = None , event = None , t1 = None , ci = 0.05 
 	
 	kwargs = { "verbose" : verbose , "ci" : ci }
 	probabilities( clim , ofile = os.path.join( path , "Probabilities{}.pdf".format(suffix) ) , event = event , **kwargs )
-	intensities( clim , ofile = os.path.join( path , "Intensities{}.pdf".format(suffix) ) , event = event , **kwargs )
+	intensities(   clim , ofile = os.path.join( path , "Intensities{}.pdf".format(suffix)   ) , event = event , **kwargs )
+	law_coef(      clim , ofile = os.path.join( path , "Coefs{}.pdf".format(suffix)         )                 , **kwargs )
 	if "Multi_Synthesis" in clim.model:
 		summary_event( clim , event = event , t1 = t1 , ofile = os.path.join( path , "Summary{}.txt".format(suffix) ) , **kwargs )
 	
