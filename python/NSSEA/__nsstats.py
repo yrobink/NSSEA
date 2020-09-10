@@ -99,7 +99,7 @@ from .__tools import ProgressBar
 ## Functions ##
 ###############
 
-def extreme_statistics( clim , event , verbose = False , tol = sys.float_info.epsilon ):##{{{
+def extreme_statistics( clim , event = None , verbose = False , tol = sys.float_info.epsilon ):##{{{
 	"""
 	NSSEA.extreme_statistics
 	========================
@@ -109,8 +109,8 @@ def extreme_statistics( clim , event , verbose = False , tol = sys.float_info.ep
 	---------
 	clim : NSSEA.Climatology
 		A clim variable
-	event  : NSSEA.Event
-		An event variable
+	event : NSSEA.Event
+		If None, clim.event is used.
 	verbose: bool
 		Print state of execution or not
 	tol    : float
@@ -125,15 +125,17 @@ def extreme_statistics( clim , event , verbose = False , tol = sys.float_info.ep
 	-------------------
 	The variable clim.stats is an xarray with dimensions (n_time,n_sample+1,n_stats,n_models), stats available are:
 	
-	pF: Probability of event.anom at time event.time in factual world
-	pC: Probability of event.anom at time event.time in counter factual world
+	pF: Probability of event.anomaly at time event.time in factual world
+	pC: Probability of event.anomaly at time event.time in counter factual world
 	PR: Probability ratio (pF / pC)
-	IF: Event with same probability than the probability of event.anom at each time in factual world
-	IC: Event with same probability than the probability of event.anom at each time in counter factual world
+	IF: Event with same probability than the probability of event.anomaly at each time in factual world
+	IC: Event with same probability than the probability of event.anomaly at each time in counter factual world
 	dI: IF - IC
 	
 	"""
 	## Usefull variables
+	if event is None:
+		event = clim.event
 	time           = clim.time
 	n_time         = clim.n_time
 	models         = clim.model
@@ -159,7 +161,7 @@ def extreme_statistics( clim , event , verbose = False , tol = sys.float_info.ep
 			
 			## Find threshold
 			law.set_covariable( clim.X.loc[:,s,"F",m].values , time )
-			if event.type_event == "threshold":
+			if event.type == "threshold":
 				threshold = np.zeros(n_time) + np.mean( law.meant(event.reference) ) + event.anomaly
 			else:
 				threshold = np.zeros(n_time) + event.anomaly

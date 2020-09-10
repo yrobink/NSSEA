@@ -103,7 +103,7 @@ from NSSEA.__tools import ProgressBar
 ## Functions ##
 ###############
 
-def GAM_decomposition( clim , lX , event , ofile , ci = 0.05 , verbose = False ): ##{{{
+def GAM_decomposition( clim , lX , ofile , ci = 0.05 , verbose = False ): ##{{{
 	"""
 	NSSEA.plot.GAM_decomposition
 	============================
@@ -116,8 +116,6 @@ def GAM_decomposition( clim , lX , event , ofile , ci = 0.05 , verbose = False )
 		Covariates before decomposition
 	X         : xarray
 		Covariates afer decomposition (NSSEA.Climatology.X)
-	event     : NSSEA.Event
-		Event variable
 	ofile     : str
 		output file
 	ci        : float
@@ -148,7 +146,7 @@ def GAM_decomposition( clim , lX , event , ofile , ci = 0.05 , verbose = False )
 	yminAnt = float(X.loc[:,:,"A",:].min())
 	ymaxAnt = float(X.loc[:,:,"A",:].max())
 	
-	ylabel = r"${}$".format( "\mathrm{" + event.name_variable +"}\ \mathrm{(" + event.unit_variable + ")}" )
+	ylabel = "Forcing"
 	
 	## Loop
 	for i,m in enumerate(models):

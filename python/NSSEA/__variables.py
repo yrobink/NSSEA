@@ -111,46 +111,38 @@ class Event: ##{{{
 	Event variable containing information about event considered
 	"""
 	
-	def __init__( self , name_event , time , anomaly , reference , type_event = "threshold" , side = "upper" , name_variable = "variable" , unit_variable = "U" ):
+	def __init__( self , name , time , reference , anomaly = None , type_ = "threshold" , side = "upper" , variable = "variable" , unit = "U" ):
 		"""
 		Constructor of Event
 		
 		Arguments
 		---------
 		
-		name_event    : str
-			Name of event
-		time          : time_index
-			Time when event occured
-		anomaly       : double
-			Anomaly of event
-		reference     : array
-			Time period to considered as reference for anomaly
-		type_event    : "threshold" or "hard"
-			If we compute probabilities as a threshold beyond mean, or anomaly is used as a hard value.
-		side          : str
-			"upper" or "lower" extremes event
-		name_variable : str
-			Name of variable (temperature, precipitation, etc)
-		unit_variable : str
-			Unit of the variable
+		name          : [str] Name of event
+		time          : [time_index] Time when event occured
+		reference     : [array] Time period to considered as reference for anomaly
+		anomaly       : [float] Anomaly of event
+		type          : ["threshold" or "hard"] If we compute probabilities as a threshold beyond mean, or anomaly is used as a hard value.
+		side          : [str] "upper" or "lower" extremes event
+		name_variable : [str] Name of variable (temperature, precipitation, etc)
+		unit          : [str] Unit of the variable
 		"""
-		self.name_event    = name_event
-		self.time          = time
-		self.anomaly       = anomaly
-		self.reference     = reference
-		self.type_event    = type_event if type_event in ["threshold","hard"] else "threshold"
-		self.side          = side if side in ["upper","lower"] else "upper"
-		self.name_variable = name_variable
-		self.unit_variable = unit_variable
+		self.name      = name
+		self.time      = time
+		self.anomaly   = anomaly
+		self.reference = reference
+		self.type      = type_ if type_ in ["threshold","hard"] else "threshold"
+		self.side      = side if side in ["upper","lower"] else "upper"
+		self.variable  = variable
+		self.unit      = unit
 	
 	def __repr__(self):
 		return self.__str__()
 	
 	def __str__(self):
 		out = ""
-		out += "Event     : {},\n".format(self.name_event)
-		out += "variable  : {} ({}),\n".format(self.name_variable,self.unit_variable)
+		out += "Event     : {},\n".format(self.name)
+		out += "variable  : {} ({}),\n".format(self.variable,self.unit)
 		out += "time      : {},\n".format(self.time)
 		out += "anomaly   : {},\n".format(self.anomaly)
 		out += "reference : {}-{},\n".format(self.reference.min(),self.reference.max())
@@ -261,8 +253,9 @@ class Climatology: ##{{{
 
 class Climatology2: ##{{{
 	
-	def __init__( self , time , models , n_sample , ns_law ): ##{{{
+	def __init__( self , event , time , models , n_sample , ns_law ): ##{{{
 		samples = ["BE"] + [ 'S{0:{fill}{align}{n}}'.format(i,fill="0",align=">",n=int(np.floor(np.log10(n_sample))+1)) for i in range(n_sample)]
+		self.event  = event
 		self.data   = xr.Dataset( { "time" : time , "model" : models , "sample" : samples } )
 		self.ns_law = ns_law
 		self.be_is_median = False
@@ -276,7 +269,7 @@ class Climatology2: ##{{{
 	##}}}
 	
 	def copy(self): ##{{{
-		clim = Climatology2( self.time , self.model , self.n_sample , self.ns_law )
+		clim = Climatology2( self.event , self.time , self.model , self.n_sample , self.ns_law )
 		clim.data = self.data.copy()
 		try:
 			clim.synthesis = self.synthesis.copy()

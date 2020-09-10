@@ -103,7 +103,7 @@ from NSSEA.__tools import ProgressBar
 ## Functions ##
 ###############
 
-def intensities( clim , event , ofile , ci = 0.05 , verbose = False ): ##{{{
+def intensities( clim , ofile , event = None , ci = 0.05 , verbose = False ): ##{{{
 	"""
 	NSSEA.plot.intensities
 	======================
@@ -114,10 +114,10 @@ def intensities( clim , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 	---------
 	clim      : NSSEA.Climatology
 		Climatology with stats computed
-	event     : NSSEA.Event
-		Event variable
 	ofile     : str
 		output file
+	event     : NSSEA.Event
+		If event is None, clim.event is used
 	ci        : float
 		Size of confidence interval, default is 0.05 (95% confidence)
 	verbose   : bool
@@ -126,6 +126,9 @@ def intensities( clim , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 	
 	pb = ProgressBar( clim.n_model , "plot.intensities" , verbose = verbose )
 #	["pC","pF","IC","IF","PR","dI"]
+	
+	if event is None:
+		event = clim.event
 	
 	## Find quantile and best estimate
 	qstats = clim.statistics[:,1:,:,:].loc[:,:,["IC","IF","dI"],:].quantile( [ ci / 2. , 0.5 , 1 - ci / 2] , dim = "sample" ).assign_coords( quantile = ["ql","BE","qu"] )
@@ -139,7 +142,7 @@ def intensities( clim , event , ofile , ci = 0.05 , verbose = False ): ##{{{
 	ymindI = float(qstats.loc[:,:,"dI",:].min())
 	ymaxdI = float(qstats.loc[:,:,"dI",:].max())
 	
-	ylabel = "\mathrm{(" + event.unit_variable + ")}"
+	ylabel = "\mathrm{(" + event.unit + ")}"
 	
 	for m in clim.model:
 		nrow,ncol = 3,1

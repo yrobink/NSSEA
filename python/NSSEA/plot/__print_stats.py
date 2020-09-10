@@ -195,7 +195,7 @@ def summary_table( clim , t0 , model = "Multi_Synthesis" , t1 = None , digit = 3
 	
 ##}}}
 
-def summary_event( clim , event , model = "Multi_Synthesis" , t1 = None , digit = 3 , ci = 0.05 , output = None , verbose = False ): ##{{{
+def summary_event( clim , event = None , model = "Multi_Synthesis" , t1 = None , digit = 3 , ci = 0.05 , output = None , verbose = False ): ##{{{
 	"""
 	NSSEA.plot.summary_event
 	========================
@@ -208,6 +208,8 @@ def summary_event( clim , event , model = "Multi_Synthesis" , t1 = None , digit 
 	----------
 	clim    : NSSEA.Climatology
 		Climatology fitted
+	event   : NSSEA.Event
+		If event is None, clim.event is used.
 	t0      : time type
 		The time to print the statistics
 	model   : string
@@ -231,6 +233,8 @@ def summary_event( clim , event , model = "Multi_Synthesis" , t1 = None , digit 
 	
 	pb = ProgressBar( 1 , "plot.summary_event" , verbose = verbose )
 	
+	if event is None:
+		event = clim.event
 	out = str(event)
 	out = out + "\n" + summary_table( clim , event.time , model , t1 , digit , ci )
 	pb.print()
