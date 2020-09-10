@@ -124,7 +124,7 @@ def intensities( clim , ofile , event = None , ci = 0.05 , verbose = False ): ##
 		Print (or not) state of execution
 	"""
 	
-	pb = ProgressBar( clim.n_model , "plot.intensities" , verbose = verbose )
+	pb = ProgressBar( clim.n_model + 1 , "plot.intensities" , verbose = verbose )
 #	["pC","pF","IC","IF","PR","dI"]
 	
 	if event is None:
@@ -134,6 +134,7 @@ def intensities( clim , ofile , event = None , ci = 0.05 , verbose = False ): ##
 	qstats = clim.statistics[:,1:,:,:].loc[:,:,["IC","IF","dI"],:].quantile( [ ci / 2. , 0.5 , 1 - ci / 2] , dim = "sample" ).assign_coords( quantile = ["ql","BE","qu"] )
 	if not clim.BE_is_median:
 		qstats.loc["BE",:,:,:] = clim.statistics.loc[:,"BE",["IC","IF","dI"],:]
+	pb.print()
 	
 	pdf = mpdf.PdfPages( ofile )
 	
