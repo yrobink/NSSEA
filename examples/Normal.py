@@ -314,13 +314,12 @@ if __name__ == "__main__":
 	## Plot
 	##=====
 	pltkwargs = { "verbose" : verbose , "ci" : ci }
-#	nsp.summary_event( clim     , t1 = 2040 , output = os.path.join( pathOut , "summary.txt"     ) , **pltkwargs )
-#	nsp.summary_event( climCXCB , t1 = 2040 , output = os.path.join( pathOut , "summaryCXCB.txt" ) , **pltkwargs )
-#	nsp.summary_event( climCXC0 , t1 = 2040 , output = os.path.join( pathOut , "summaryCXCO.txt" ) , **pltkwargs )
 #	nsp.GAM_decomposition( clim , lX , os.path.join( pathOut , "GAM_decomposition.pdf" ) , **pltkwargs )
 #	nsp.constraint_covariate( clim , climCXCB , Xo , os.path.join( pathOut , "constraint_covariate.pdf" )  , **pltkwargs )
-#	nsp.intensities( clim , os.path.join( pathOut , "intensities.pdf" ) , **pltkwargs )
-#	nsp.probabilities( clim , os.path.join( pathOut , "probabilities.pdf" ) , **pltkwargs )
+#	nsp.summary( clim , pathOut , t1 = 2040 ,  **pltkwargs )
+#	nsp.summary( climCXC0 , pathOut , t1 = 2040 ,  suffix = "CXC0" , **pltkwargs )
+#	nsp.summary( climCXCB , pathOut , t1 = 2040 ,  suffix = "CXCB" , **pltkwargs )
+	nsp.constraint_law( climMM , climCXCB , ofile = os.path.join( pathOut , "constraint_law.pdf" ) , **pltkwargs )
 	
 #	nsp.plot_classic_packages( clim     , event , path = pathOut , suffix = "MM"     , ci = ci , verbose = verbose )
 #	nsp.plot_classic_packages( climCX   , event , path = pathOut , suffix = "CX"     , ci = ci , verbose = verbose )
