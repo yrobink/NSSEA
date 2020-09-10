@@ -98,8 +98,8 @@ import matplotlib.gridspec as mplgrid
 import matplotlib.backends.backend_pdf as mpdf
 
 from ..__tools import ProgressBar
-from .__linkParams import LinkPR
-from .__linkParams import Linkp
+from .__link import LinkPR
+from .__link import Linkp
 
 ###############
 ## Functions ##
