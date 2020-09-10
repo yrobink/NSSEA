@@ -97,7 +97,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as mpdf
 
-from .__linkParams    import LinkParams
+#from .__linkParams    import LinkParams
 from .__probabilities import probabilities
 from .__ns_params     import ns_params
 from .__intensities   import intensities

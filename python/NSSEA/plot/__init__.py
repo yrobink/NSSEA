@@ -89,10 +89,9 @@
 ## Imports ##
 #############
 
-from .__linkParams       import LinkParams
+from .__linkParams       import LinkPR
+from .__linkParams       import Linkp
 from .__probabilities    import probabilities
-from .__probabilities    import probabilities_not_zero
-from .__probabilities    import return_time
 from .__intensities      import intensities
 from .__stats_event      import stats_event
 from .__stats_event      import stats_relative

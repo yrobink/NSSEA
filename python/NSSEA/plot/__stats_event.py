@@ -97,7 +97,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as mpdf
 
-from .__linkParams   import LinkParams
+#from .__linkParams   import LinkParams
 #from NSSEA.__nsstats import stats_relative_event
 
 
