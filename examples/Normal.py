@@ -230,7 +230,7 @@ if __name__ == "__main__":
 	min_rate_accept  = 0.05
 	n_sample    = 1000 if not is_test else 10
 	ns_law      = nsm.Normal( l_scale = sdt.ExpLink() )
-	event       = ns.Event( "HW03" , 2003 , None , time_reference , name_variable = "T" , unit_variable = "K" )
+	event       = ns.Event( "HW03" , 2003 , time_reference , variable = "T" , unit = "K" )
 	verbose     = True
 	ci          = 0.05 if not is_test else 0.1
 	
@@ -257,46 +257,46 @@ if __name__ == "__main__":
 	
 	## Define clim variable from input
 	##================================
-	clim = ns.Climatology2( time_period , models , n_sample , ns_law )
+#	clim = ns.Climatology2( event , time_period , models , n_sample , ns_law )
+#	
+#	
+#	## Decomposition of covariates
+#	##============================
+#	Xebm   = ns.EBM().draw_sample( clim.time , n_sample + 1 , fix_first = 0 )
+#	clim   = ns.covariates_FC_GAM( clim , lX , Xebm , verbose = verbose )
+#	
+#	
+#	## Fit distribution
+#	##=================
+#	clim = ns.nslaw_fit( lY , clim , verbose = verbose )
+#	
+#	
+#	## Multi-model
+#	##============
+#	clim = ns.infer_multi_model( clim , verbose = verbose )
+#	climMM = clim.copy()
+#	climMM.keep_models( "Multi_Synthesis" )
+#	
+#	
+#	## Apply constraints
+#	##==================
+#	climCX = ns.constrain_covariate( climMM , Xo , time_reference , verbose = verbose )
+#	climCXCB   = ns.constrain_law( climCX , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , min_rate_accept = min_rate_accept , verbose = verbose )
+#	climC0     = ns.constraints_C0( climMM , Yo , verbose = verbose )
+#	climCXC0   = ns.constraints_C0( climCX , Yo , verbose = verbose )
+#	
+#	
+#	## Compute stats
+#	##==============
+#	clim       = ns.extreme_statistics( clim     , verbose = verbose )
+#	climCX     = ns.extreme_statistics( climCX   , verbose = verbose )
+#	climCXCB   = ns.extreme_statistics( climCXCB , verbose = verbose )
+#	climCXC0   = ns.extreme_statistics( climCXC0 , verbose = verbose )
 	
-	
-	## Decomposition of covariates
-	##============================
-	Xebm   = ns.EBM().draw_sample( clim.time , n_sample + 1 , fix_first = 0 )
-	clim   = ns.covariates_FC_GAM( clim , lX , Xebm , verbose = verbose )
-	
-	
-	## Fit distribution
-	##=================
-	clim = ns.nslaw_fit( lY , clim , verbose = verbose )
-	
-	
-	## Multi-model
-	##============
-	clim = ns.infer_multi_model( clim , verbose = verbose )
-	climMM = clim.copy()
-	climMM.keep_models( "Multi_Synthesis" )
-	
-	
-	## Apply constraints
-	##==================
-	climCX = ns.constrain_covariate( climMM , Xo , time_reference , verbose = verbose )
-	climCXCB   = ns.constrain_law( climCX , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , min_rate_accept = min_rate_accept , verbose = verbose )
-	climC0     = ns.constraints_C0( climMM , Yo , verbose = verbose )
-	climCXC0   = ns.constraints_C0( climCX , Yo , verbose = verbose )
-	
-	
-	## Compute stats
-	##==============
-	clim       = ns.extreme_statistics( clim     , event , verbose = verbose )
-	climCX     = ns.extreme_statistics( climCX   , event , verbose = verbose )
-	climCXCB   = ns.extreme_statistics( climCXCB , event , verbose = verbose )
-	climCXC0   = ns.extreme_statistics( climCXC0 , event , verbose = verbose )
-	
-	params     = ns.build_params_along_time( clim , verbose = verbose )
-	paramsCX   = ns.build_params_along_time( climCX   , verbose = verbose )
-	paramsCXCB = ns.build_params_along_time( climCXCB , verbose = verbose )
-	paramsCXC0 = ns.build_params_along_time( climCXC0 , verbose = verbose )
+#	params     = ns.build_params_along_time( clim , verbose = verbose )
+#	paramsCX   = ns.build_params_along_time( climCX   , verbose = verbose )
+#	paramsCXCB = ns.build_params_along_time( climCXCB , verbose = verbose )
+#	paramsCXC0 = ns.build_params_along_time( climCXC0 , verbose = verbose )
 	
 	
 	## Save in netcdf
@@ -307,14 +307,21 @@ if __name__ == "__main__":
 #	ns.to_netcdf( climC0   , event , os.path.join( pathOut , "HW03_Normal_climC0.nc"     ) , "C0"     )
 #	ns.to_netcdf( climCXC0 , event , os.path.join( pathOut , "HW03_Normal_climCXC0.nc"   ) , "CXC0"   )
 	
+	## Save in pickle
+#	pk.dump( (clim,climMM,climCX,climCXCB,climCXC0) , open( os.path.join( pathOut , "data.pk" ) , "wb" ) )
+	clim,climMM,climCX,climCXCB,climCXC0 = pk.load( open( os.path.join( pathOut , "data.pk" ) , "rb" ) )
 	
 	## Plot
 	##=====
-	nsp.summary_event( clim     , event , t1 = 2040 , output = os.path.join( pathOut , "summary.txt"     ) , verbose = verbose )
-	nsp.summary_event( climCXCB , event , t1 = 2040 , output = os.path.join( pathOut , "summaryCXCB.txt" ) , verbose = verbose )
-	nsp.summary_event( climCXC0 , event , t1 = 2040 , output = os.path.join( pathOut , "summaryCXCO.txt" ) , verbose = verbose )
-	nsp.GAM_decomposition( clim , lX , event , os.path.join( pathOut , "GAM_decomposition.pdf" ) , verbose = verbose )
-	nsp.constraint_covariate( clim , climCXCB , Xo , os.path.join( pathOut , "constraint_covariate.pdf" )  , verbose = verbose )
+	pltkwargs = { "verbose" : verbose , "ci" : ci }
+#	nsp.summary_event( clim     , t1 = 2040 , output = os.path.join( pathOut , "summary.txt"     ) , **pltkwargs )
+#	nsp.summary_event( climCXCB , t1 = 2040 , output = os.path.join( pathOut , "summaryCXCB.txt" ) , **pltkwargs )
+#	nsp.summary_event( climCXC0 , t1 = 2040 , output = os.path.join( pathOut , "summaryCXCO.txt" ) , **pltkwargs )
+#	nsp.GAM_decomposition( clim , lX , os.path.join( pathOut , "GAM_decomposition.pdf" ) , **pltkwargs )
+#	nsp.constraint_covariate( clim , climCXCB , Xo , os.path.join( pathOut , "constraint_covariate.pdf" )  , **pltkwargs )
+#	nsp.intensities( clim , os.path.join( pathOut , "intensities.pdf" ) , **pltkwargs )
+#	nsp.probabilities( clim , os.path.join( pathOut , "probabilities.pdf" ) , **pltkwargs )
+	
 #	nsp.plot_classic_packages( clim     , event , path = pathOut , suffix = "MM"     , ci = ci , verbose = verbose )
 #	nsp.plot_classic_packages( climCX   , event , path = pathOut , suffix = "CX"     , ci = ci , verbose = verbose )
 #	nsp.plot_classic_packages( climCXCB , event , path = pathOut , suffix = "CXCB"   , ci = ci , verbose = verbose )
