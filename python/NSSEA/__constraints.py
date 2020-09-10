@@ -244,8 +244,8 @@ def constrain_covariate( climIn , Xo , time_reference = None , assume_good_scale
 
 def constrain_law( climIn , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10000 , verbose = False , **kwargs ):##{{{
 	"""
-	NSSEA.constraints_bayesian
-	==========================
+	NSSEA.constraint_law
+	====================
 	Constrain the law_coef of the clim with a MCMC approach.
 	
 	Arguments
