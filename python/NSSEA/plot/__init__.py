@@ -94,7 +94,8 @@ from .__stats_event      import stats_relative
 from .__ns_params        import ns_params
 from .__ns_params        import ns_params_comparison
 from .__ns_params        import ns_params_time
-from .__classic_packages import plot_classic_packages
+
+from .__summary          import summary
 
 from .__linkParams       import LinkPR
 from .__linkParams       import Linkp

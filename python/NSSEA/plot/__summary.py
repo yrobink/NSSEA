@@ -1,3 +1,4 @@
+
 ##################################################################################
 ##################################################################################
 ##                                                                              ##
@@ -87,66 +88,51 @@
 ## Libraries ##
 ###############
 
-import os
-import numpy  as np
-import pandas as pd
-import xarray as xr
-
-import matplotlib as mpl
-#mpl.use("pdf")
-import matplotlib.pyplot as plt
-import matplotlib.backends.backend_pdf as mpdf
-
-#from .__linkParams    import LinkParams
 from .__probabilities import probabilities
-from .__ns_params     import ns_params
 from .__intensities   import intensities
-from .__stats_event   import stats_event
-from .__stats_event   import stats_relative
+from .__print_stats   import summary_event
+#from .__stats_event   import stats_event
+#from .__stats_event   import stats_relative
+#from .__ns_params     import ns_params
 
 
 ###############
 ## Functions ##
 ###############
 
-
-def plot_classic_packages( clim , event , path , suffix = "" , be_is_median = False , ci = 0.05 , verbose = False ):
+def summary( clim , path , suffix = None , event = None , t1 = None , ci = 0.05 , verbose = False ):
 	"""
-	NSSEA.plot.plot_classic_packages
-	================================
+	NSSEA.plot.summary
+	==================
 	
 	Just a function which call:
 		- NSSEA.plot.probabilities
-		- NSSEA.plot.ns_params
 		- NSSEA.plot.intensities
+		- NSSEA.plot.summary_event
+		- NSSEA.plot.ns_params
 		- NSSEA.plot.stats_event
 		- NSSEA.plot.stats_relative
 	
 	
 	Arguments
 	---------
-	clim    : NSSEA.Climatology
-		A clim variable
-	event     : NSSEA.Event
-		Event variable
-	suffix    : str
-		suffix for the name of files
-	ci        : float
-		Size of confidence interval, default is 0.05 (95% confidence)
-	verbose   : bool
-		Print (or not) state of execution
+	clim    : [NSSEA.Climatology] A clim variable
+	path    : [str] The path to write the files
+	suffix  : [str] suffix for the name of files
+	event   : [NSSEA.Event] Use clim.event if None
+	t1      : [time] Can be None, see NSSEA.summary_event.
+	ci      : [float] Size of confidence interval, default is 0.05 (95% confidence)
+	verbose : [bool] Print (or not) state of execution
 	"""
 	
-	if verbose: print( "Plot classic_packages ({}): 0/5".format(suffix) , end = "\r" )
-	probabilities(  clim , event , ofile = os.path.join( path , "Probabilities" + suffix + ".pdf"                       ) , ci = ci , be_is_median = be_is_median , verbose = False )
-	if verbose: print( "Plot classic_packages ({}): 1/5".format(suffix) , end = "\r" )
-	intensities(    clim , event , ofile = os.path.join( path , "Intensities"   + suffix + ".pdf"                       ) , ci = ci , verbose = False )
-	if verbose: print( "Plot classic_packages ({}): 2/5".format(suffix) , end = "\r" )
-	stats_event(    clim , event , ofile = os.path.join( path , "StatsEvent"    + suffix + "_{}.pdf".format(event.time) ) , ci = ci , verbose = False )
-	if verbose: print( "Plot classic_packages ({}): 3/5".format(suffix) , end = "\r" )
-	stats_relative( clim , event , ofile = os.path.join( path , "StatsRelative" + suffix + "_{}.pdf".format(event.time) ) , ci = ci , verbose = False )
-	if verbose: print( "Plot classic_packages ({}): 4/5".format(suffix) , end = "\r" )
-	ns_params(      clim ,         ofile = os.path.join( path , "ns_params"     + suffix + ".pdf"                       ) , ci = ci , verbose = False )
-	if verbose: print( "Plot classic_packages ({}): 5/5".format(suffix) , end = "\n" )
+	if suffix is None: suffix = ""
+	else: suffix = "_{}".format(suffix)
 	
-
+	kwargs = { "verbose" : verbose , "ci" : ci }
+	probabilities( clim , ofile = os.path.join( path , "Probabilities{}.pdf".format(suffix) ) , event = event , **kwargs )
+	intensities( clim , ofile = os.path.join( path , "Intensities{}.pdf".format(suffix) ) , event = event , **kwargs )
+	if "Multi_Synthesis" in clim.model:
+		summary_event( clim , event = event , t1 = t1 , ofile = os.path.join( path , "Summary{}.txt".format(suffix) ) , **kwargs )
+	
+	
+	
