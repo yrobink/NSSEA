@@ -303,8 +303,8 @@ if __name__ == "__main__":
 	for p,s in zip([params,paramsCX,paramsCXC0,paramsCXCB],["","CX","CXC0","CXCB"]):
 		params.to_dataset( name = "params{}".format(s) ).to_netcdf( os.path.join( pathOut , "{}_params{}.nc".format(event.name,s) ) )
 	
-	## Load
-	##=====
+	## Reload
+	##=======
 #	clim,climCX,climCXC0,climCXCB = ( ns.Climatology2.from_netcdf( os.path.join( pathOut , "{}_clim{}.nc".format(event.name,s) ) , ns_law ) for s in ["","CX","CXC0","CXCB"] )
 #	params,paramsCX,paramsCXC0,paramsCXCB = ( xr.open_dataset( os.path.join( pathOut , "{}_params{}.nc".format(event.name,s) ) )["params{}".format(s)] for s in ["","CX","CXC0","CXCB"] )
 	
