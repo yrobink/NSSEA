@@ -162,7 +162,7 @@ def law_coef( clim , ofile , ci = 0.05 , verbose = False ):##{{{
 		## some params
 		ax.set_xlim((-0.5,clim.n_coef-0.5))
 		ax.set_xticks(range(clim.n_coef))
-		xticks = [ "{}".format(p) + "{}".format( "-" if np.sign(q) < 0 else "+" ) + r"${}$".format(float(np.sign(q)) * round(float(q),2)) for p,q in zip(clim.ns_law.get_params_names(True),qcoef.loc["BE",:,m]) ]
+		xticks = [ "{}".format(p) + "{}".format( "-" if np.sign(q) > 0 else "+" ) + r"${}$".format(float(np.sign(q)) * round(float(q),2)) for p,q in zip(clim.ns_law.get_params_names(True),qcoef.loc["BE",:,m]) ]
 		ax.set_xticklabels( xticks , fontsize = 15 )
 		for item in ax.get_yticklabels():
 			item.set_fontsize(15)
@@ -256,7 +256,7 @@ def constraint_law( clim , clim_constrained , ofile , label = ["clim","clim_cons
 		## some params
 		ax.set_xlim((-0.5,climc.n_coef-0.5))
 		ax.set_xticks(range(climc.n_coef))
-		xticks = [ "{}".format(p) + "{}".format( "-" if np.sign(q) < 0 else "+" ) + r"${}$".format(float(np.sign(q)) * round(float(q),2)) for p,q in zip(climc.ns_law.get_params_names(True),qcoefc.loc["BE",:,m]) ]
+		xticks = [ "{}".format(p) + "{}".format( "-" if np.sign(q) > 0 else "+" ) + r"${}$".format(float(np.sign(q)) * round(float(q),2)) for p,q in zip(climc.ns_law.get_params_names(True),qcoefc.loc["BE",:,m]) ]
 		ax.set_xticklabels( xticks , fontsize = 15 )
 		for item in ax.get_yticklabels():
 			item.set_fontsize(15)
