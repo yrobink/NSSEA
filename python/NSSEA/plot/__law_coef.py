@@ -95,6 +95,7 @@ import xarray as xr
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.patches as mplpatch
 import matplotlib.backends.backend_pdf as mpdf
 
 from ..__tools import ProgressBar
@@ -177,7 +178,7 @@ def law_coef( clim , ofile , ci = 0.05 , verbose = False ):##{{{
 	pb.end()
 ##}}}
 
-def constraint_law( clim , clim_constrained , ofile , ci = 0.05 , verbose = False ):##{{{
+def constraint_law( clim , clim_constrained , ofile , label = ["clim","clim_constrained"] , ci = 0.05 , verbose = False ):##{{{
 	"""
 	NSSEA.plot.constraint_law
 	=========================
@@ -213,6 +214,11 @@ def constraint_law( clim , clim_constrained , ofile , ci = 0.05 , verbose = Fals
 	ymax = max( (climc.law_coef - qcoefc.loc["BE",:,:]).max() , (clim.law_coef - qcoefc.loc["BE",:,:]).max() )
 	delta = 0.1 * (ymax-ymin)
 	ylim = (ymin-delta,ymax+delta)
+	
+	legend = [mplpatch.Patch(facecolor = c , edgecolor = c , label = l , alpha = 0.5 ) for c,l in zip(["blue","red"],label)]
+#	legend.append( mplpatch.Patch(facecolor = "red"  , edgecolor = "red"  , label = "clim"       , alpha = 0.5 ) )
+#	legend.append( mplpatch.Patch(facecolor = "blue" , edgecolor = "blue" , label = "clim_const" , alpha = 0.5 ) )
+	
 	
 	kwargs = { "positions" : range(climc.n_coef) , "showmeans" : False , "showextrema" : False , "showmedians" : False }
 	pdf = mpdf.PdfPages( ofile )
@@ -255,6 +261,7 @@ def constraint_law( clim , clim_constrained , ofile , ci = 0.05 , verbose = Fals
 		ax.set_ylim(ylim)
 		
 		ax.set_title( " ".join(m.split("_")) , fontsize = 20 )
+		ax.legend( handles = legend , fontsize = 20 )
 		
 		fig.set_tight_layout(True)
 		pdf.savefig( fig )
