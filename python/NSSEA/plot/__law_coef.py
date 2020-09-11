@@ -331,7 +331,7 @@ def law_coef_along_time( clim , ofile , params = None , time = None , ci = 0.05 
 		
 		for i,p in enumerate(qparams.param):
 		
-			ax = fig.add_subplot( len(l_params) , 2 , i + 1 )
+			ax = fig.add_subplot( 2 , len(l_params) , i + 1 )
 			ax.plot( time , qparams.loc["BE",time,"F",p,m] , color = "red" )
 			ax.fill_between( time , qparams.loc["ql",time,"F",p,m] , qparams.loc["qu",time,"F",p,m] , color = "red" , alpha = 0.5 )
 			ax.set_ylim( (float(ymin.loc[p,m]),float(ymax.loc[p,m])) )
@@ -340,7 +340,7 @@ def law_coef_along_time( clim , ofile , params = None , time = None , ci = 0.05 
 			for item in ax.get_yticklabels():
 				item.set_fontsize(20)
 			
-			ax = fig.add_subplot( len(l_params) , 2 , i + 1 + n_param )
+			ax = fig.add_subplot( 2 , len(l_params) , i + 1 + n_param )
 			ax.plot( time , qparams.loc["BE",time,"C",p,m] , color = "blue" )
 			ax.fill_between( time , qparams.loc["ql",time,"C",p,m] , qparams.loc["qu",time,"C",p,m] , color = "blue" , alpha = 0.5 )
 			ax.set_ylim( (float(ymin.loc[p,m]),float(ymax.loc[p,m])) )
