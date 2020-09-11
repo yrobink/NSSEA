@@ -256,7 +256,7 @@ class Climatology2: ##{{{
 	def __init__( self , event , time , models , n_sample , ns_law ): ##{{{
 		samples = ["BE"] + [ 'S{0:{fill}{align}{n}}'.format(i,fill="0",align=">",n=int(np.floor(np.log10(n_sample))+1)) for i in range(n_sample)]
 		self.event  = event
-		self.data   = xr.Dataset( { "time" : time , "model" : models , "sample" : samples } )
+		self.data   = xr.Dataset( { "time" : time , "model" : models , "sample" : samples , "anomaly_period" : event.reference } )
 		self.ns_law = ns_law
 		self.BE_is_median = False
 	##}}}
@@ -275,6 +275,27 @@ class Climatology2: ##{{{
 			clim.synthesis = self.synthesis.copy()
 		except:
 			pass
+		return clim
+	##}}}
+	
+	def to_netcdf( self , ofile ): ##{{{
+		self.data.attrs["BE_is_median"]   = str(self.BE_is_median)
+		self.data.attrs["event.name"]     = self.event.name
+		self.data.attrs["event.time"]     = self.event.time
+		self.data.attrs["event.anomaly"]  = self.event.anomaly
+		self.data.attrs["event.type"]     = self.event.type
+		self.data.attrs["event.side"]     = self.event.side
+		self.data.attrs["event.variable"] = self.event.variable
+		self.data.attrs["event.unit"]     = self.event.unit
+		self.data.to_netcdf(ofile)
+	
+	##}}}
+	
+	def from_netcdf( ifile , ns_law ):##{{{
+		data = xr.open_dataset(ifile)
+		event = Event( data.attrs["event.name"] , data.attrs["event.time"] , data.anomaly_period.values , data.attrs["event.anomaly"] , data.attrs["event.type"] , data.attrs["event.side"] , data.attrs["event.variable"] , data.attrs["event.unit"] )
+		clim = Climatology2( event , data.time.values , data.model.values , data.sample.size , ns_law )
+		clim.data = data
 		return clim
 	##}}}
 	
@@ -496,5 +517,6 @@ def from_netcdf( ifile , ns_law = None ):##{{{
 	
 	return clim,event
 ##}}}
+
 
 
