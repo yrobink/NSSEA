@@ -257,9 +257,9 @@ def infer_multi_model( clim , verbose = False ):
 	## Add multimodel to xarray, and add to clim
 	##==========================================
 	index = [ "{}F".format(t) for t in clim.time ] + [ "{}C".format(t) for t in clim.time ] + clim.data.coef.values.tolist()
-	dmm_mean = xr.DataArray( mmodel.mean , dims = ["coef"] , coords = [index] )
-	dmm_cov  = xr.DataArray( mmodel.cov  , dims = ["coef","coef"] , coords = [index,index] )
-	clim.synthesis = xr.Dataset( { "mean" : dmm_mean , "cov" : dmm_cov } )
+	dmm_mean  = xr.DataArray( mmodel.mean , dims = ["mm_coef"] , coords = [index] )
+	dmm_cov   = xr.DataArray( mmodel.cov  , dims = ["mm_coef","mm_coef"] , coords = [index,index] )
+	clim.data = clim.data.assign( { "mm_mean" : dmm_mean , "mm_cov" : dmm_cov } )
 	
 	pb.end()
 	

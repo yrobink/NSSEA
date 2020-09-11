@@ -153,7 +153,7 @@ def constrain_covariate( climIn , Xo , time_reference = None , assume_good_scale
 	time_Xo     = Xo.index
 	n_time      = clim.n_time
 	n_time_Xo   = time_Xo.size
-	n_mm_coef   = clim.synthesis["mean"].size
+	n_mm_coef   = clim.data["mm_mean"].size
 	n_coef      = clim.n_coef
 	n_sample    = clim.n_sample
 	samples     = clim.X.sample
@@ -178,8 +178,8 @@ def constrain_covariate( climIn , Xo , time_reference = None , assume_good_scale
 	
 	# Other inputs : x, SX, y, SY
 	##===========================
-	X  = clim.synthesis["mean"].values
-	SX = clim.synthesis["cov"].values
+	X  = clim.data["mm_mean"].values
+	SX = clim.data["mm_cov"].values
 	Y  = np.ravel(centerY @ Xo)
 	SY = centerY @ centerY.T
 	pb.print()
@@ -210,16 +210,16 @@ def constrain_covariate( climIn , Xo , time_reference = None , assume_good_scale
 	
 	Sinv = np.linalg.pinv( H @ SX @ H.T + SY )
 	K	 = SX @ H.T @ Sinv
-	clim.synthesis["mean"].values = X + K @ ( Y - H @ X )
-	clim.synthesis["cov"].values  = SX - SX @ H.T @ Sinv @ H @ SX
+	clim.data["mm_mean"].values = X + K @ ( Y - H @ X )
+	clim.data["mm_cov"].values  = SX - SX @ H.T @ Sinv @ H @ SX
 	pb.print()
 	
 	
 	## Sample from it
 	##===============
 	law       = MultiModel()
-	law.mean  = clim.synthesis["mean"].values
-	law.cov   = clim.synthesis["cov"].values
+	law.mean  = clim.data["mm_mean"].values
+	law.cov   = clim.data["mm_cov"].values
 	cx_sample = xr.DataArray( np.zeros( (n_time,n_sample + 1,2) ) , coords = [ clim.X.time , samples , clim.X.forcing ] , dims = ["time","sample","forcing"] )
 	
 	cx_sample.loc[:,"BE","F"] = law.mean[:n_time]
@@ -270,8 +270,8 @@ def constrain_law( climIn , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10
 	if min_rate_accept is None: min_rate_accept = 0.25
 	
 	## Define prior
-	prior_mean   = clim.synthesis["mean"][-clim.n_coef:].values
-	prior_cov    = clim.synthesis["cov"][-clim.n_coef:,-clim.n_coef:].values
+	prior_mean   = clim.data["mm_mean"][-clim.n_coef:].values
+	prior_cov    = clim.data["mm_cov"][-clim.n_coef:,-clim.n_coef:].values
 	prior_law    = sc.multivariate_normal( mean = prior_mean , cov = prior_cov , allow_singular = True )
 	
 	## And now MCMC loop
