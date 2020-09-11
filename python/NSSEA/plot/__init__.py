@@ -89,19 +89,17 @@
 ## Imports ##
 #############
 
-from .__summary          import summary
-
-from .__linkParams       import LinkPR
-from .__linkParams       import Linkp
-from .__probabilities    import probabilities
-from .__intensities      import intensities
-from .__law_coef         import law_coef
-from .__law_coef         import constraint_law
-from .__law_coef         import law_coef_along_time
-
-from .__print_stats      import summary_table
-from .__print_stats      import summary_event
-
-from .__covariates       import GAM_decomposition
-from .__covariates       import constraint_covariate
+from .__summary       import summary
+from .__linkParams    import LinkPR
+from .__linkParams    import Linkp
+from .__probabilities import probabilities
+from .__intensities   import intensities
+from .__law_coef      import law_coef
+from .__law_coef      import constraint_law
+from .__law_coef      import law_coef_along_time
+from .__cross_model   import statistics_time
+from .__print_stats   import summary_table
+from .__print_stats   import summary_event
+from .__covariates    import GAM_decomposition
+from .__covariates    import constraint_covariate
 
