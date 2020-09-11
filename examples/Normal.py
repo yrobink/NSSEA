@@ -277,7 +277,7 @@ if __name__ == "__main__":
 	
 	## Apply constraints
 	##==================
-	climCX = ns.constrain_covariate( climMM , Xo , time_reference , verbose = verbose )
+	climCX     = ns.constrain_covariate( climMM , Xo , time_reference , verbose = verbose )
 	climCXCB   = ns.constrain_law( climCX , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , min_rate_accept = min_rate_accept , verbose = verbose )
 	climC0     = ns.constraints_C0( climMM , Yo , verbose = verbose )
 	climCXC0   = ns.constraints_C0( climCX , Yo , verbose = verbose )
