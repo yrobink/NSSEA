@@ -86,7 +86,7 @@
 ##################################################################################
 
 
-__version__ = "0.4.0a1"
+__version__ = "0.4.0a2"
 
 #############
 ## Imports ##
@@ -123,7 +123,7 @@ from .__nsstats     import add_FAR
 ## Constraints
 from .__constraints import constrain_covariate
 from .__constraints import constrain_law
-from .__constraints import constraints_C0
+from .__constraints import constraint_C0
 
 
 
