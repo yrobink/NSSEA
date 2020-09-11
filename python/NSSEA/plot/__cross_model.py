@@ -125,11 +125,12 @@ def statistics_time( l_clim , ofile , time = None , labels = None , colors = Non
 	pb.print()
 	
 	## Find lim
-	xmin = l_clim[0].statistics.loc[time,:,:,:].min( dim = ["sample","model"] )
-	xmax = l_clim[0].statistics.loc[time,:,:,:].min( dim = ["sample","model"] )
+	var  = ["pC","pF","IC","IF","PR","dI"]
+	xmin = l_clim[0].statistics.loc[time,:,var,:].min( dim = ["sample","model"] )
+	xmax = l_clim[0].statistics.loc[time,:,var,:].min( dim = ["sample","model"] )
 	for clim in l_clim:
-		nxmin = clim.statistics.loc[time,:,:,:].min( dim = ["sample","model"] )
-		nxmax = clim.statistics.loc[time,:,:,:].max( dim = ["sample","model"] )
+		nxmin = clim.statistics.loc[time,:,var,:].min( dim = ["sample","model"] )
+		nxmax = clim.statistics.loc[time,:,var,:].max( dim = ["sample","model"] )
 		xmin  = xmin.where( xmin < nxmin , nxmin )
 		xmax  = xmax.where( xmax > nxmax , nxmax )
 	delta = 0.1 * (xmax - xmin)
