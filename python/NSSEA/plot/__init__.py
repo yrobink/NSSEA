@@ -97,6 +97,7 @@ from .__probabilities    import probabilities
 from .__intensities      import intensities
 from .__law_coef         import law_coef
 from .__law_coef         import constraint_law
+from .__law_coef         import law_coef_along_time
 
 from .__print_stats      import summary_table
 from .__print_stats      import summary_event

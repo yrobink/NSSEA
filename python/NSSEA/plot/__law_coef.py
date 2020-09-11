@@ -98,7 +98,9 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mplpatch
 import matplotlib.backends.backend_pdf as mpdf
 
-from ..__tools import ProgressBar
+from ..__tools   import ProgressBar
+from ..__nsstats import build_params_along_time
+
 
 #############
 ## Classes ##
@@ -273,5 +275,91 @@ def constraint_law( clim , clim_constrained , ofile , label = ["clim","clim_cons
 	pb.end()
 
 
+##}}}
+
+def law_coef_along_time( clim , ofile , params = None , time = None , ci = 0.05 , verbose = False ):##{{{
+	"""
+	NSSEA.plot.law_coef_along_time
+	==============================
+	
+	Plot non-stationary parameters along time
+	
+	Arguments
+	---------
+	clim      : NSSEA.Climatology
+		Climatology
+	ofile     : str
+		output file
+	params : xr.DataArray or None
+		params along time, if None, computed with function NSSEA.build_params_along_time
+	time      : array
+		Array of time where to plot params
+	ci        : float
+		Size of confidence interval, default is 0.05 (95% confidence)
+	verbose   : bool
+		Print (or not) state of execution
+	"""
+	
+	if time is None:
+		time = clim.time
+	
+	if params is None:
+		params = build_params_along_time( clim , verbose = verbose )
+	
+	pb = ProgressBar( clim.n_model , "plot.law_coef_along_time" , verbose )
+	
+	## Quantile
+	l_params = [k for k in clim.ns_law.lparams]
+	n_param  = len(l_params)
+	qparams  = params[:,1:,:,:,:].quantile( [ ci / 2 , 1 - ci / 2 , 0.5 ] , dim = "sample" ).assign_coords( quantile = ["ql","qu","BE"] )
+	if not clim.BE_is_median:
+		qparams.loc["BE",:,:,:,:] = params.loc[:,"BE",:,:,:]
+	
+	ymin = params.min( dim = ["forcing","time","sample"] )
+	ymax = params.max( dim = ["forcing","time","sample"] )
+	
+	pdf = mpdf.PdfPages( ofile )
+	for m in clim.model:
+		
+		xlim = [time.min(),time.max()]
+		deltax = 0.05 * ( xlim[1] - xlim[0] )
+		xlim[0] -= deltax
+		xlim[1] += deltax
+		
+		fig = plt.figure( figsize = (n_param*10,15) )
+		
+		
+		for i,p in enumerate(qparams.param):
+		
+			ax = fig.add_subplot( len(l_params) , 2 , i + 1 )
+			ax.plot( time , qparams.loc["BE",time,"F",p,m] , color = "red" )
+			ax.fill_between( time , qparams.loc["ql",time,"F",p,m] , qparams.loc["qu",time,"F",p,m] , color = "red" , alpha = 0.5 )
+			ax.set_ylim( (float(ymin.loc[p,m]),float(ymax.loc[p,m])) )
+			ax.set_xticks([])
+			ax.set_ylabel(str(p.values) , fontsize = 20 )
+			for item in ax.get_yticklabels():
+				item.set_fontsize(20)
+			
+			ax = fig.add_subplot( len(l_params) , 2 , i + 1 + n_param )
+			ax.plot( time , qparams.loc["BE",time,"C",p,m] , color = "blue" )
+			ax.fill_between( time , qparams.loc["ql",time,"C",p,m] , qparams.loc["qu",time,"C",p,m] , color = "blue" , alpha = 0.5 )
+			ax.set_ylim( (float(ymin.loc[p,m]),float(ymax.loc[p,m])) )
+			ax.set_ylabel(str(p.values), fontsize = 20 )
+			ax.set_xlabel("Time" , fontsize = 20 )
+			for item in ax.get_yticklabels():
+				item.set_fontsize(20)
+			for item in ax.get_xticklabels():
+				item.set_fontsize(20)
+			
+		fig.suptitle( " ".join(m.split("_")) , fontsize = 25 )
+		
+		
+		fig.set_tight_layout(True)
+		pdf.savefig(fig)
+		plt.close(fig)
+		pb.print()
+	
+	pdf.close()
+	pb.end()
 ##}}}
 
