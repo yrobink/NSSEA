@@ -90,8 +90,8 @@
 #############
 
 from .__summary       import summary
-from .__linkParams    import LinkPR
-from .__linkParams    import Linkp
+from .__link          import LinkPR
+from .__link          import Linkp
 from .__probabilities import probabilities
 from .__intensities   import intensities
 from .__law_coef      import law_coef
