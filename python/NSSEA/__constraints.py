@@ -294,8 +294,8 @@ def constrain_law( climIn , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10
 ## C0 constraints
 ##===============
 
-def constraints_C0_Normal( climIn , Yo , verbose = False ): ##{{{
-	pb = ProgressBar( 4 , "constraints_C0" , verbose )
+def constraint_C0_Normal( climIn , Yo , verbose = False ): ##{{{
+	pb = ProgressBar( 4 , "constraint_C0" , verbose )
 	
 	clim      = climIn.copy()
 	n_model   = clim.n_model
@@ -348,8 +348,8 @@ def constraints_C0_Normal( climIn , Yo , verbose = False ): ##{{{
 	return clim
 ##}}}
 
-def constraints_C0_Normal_exp( climIn , Yo , verbose = False ): ##{{{
-	pb = ProgressBar( 4 , "constraints_C0" , verbose )
+def constraint_C0_Normal_exp( climIn , Yo , verbose = False ): ##{{{
+	pb = ProgressBar( 4 , "constraint_C0" , verbose )
 	
 	clim  = climIn.copy()
 	n_model   = clim.n_model
@@ -401,7 +401,7 @@ def constraints_C0_Normal_exp( climIn , Yo , verbose = False ): ##{{{
 ##}}}
 
 
-def constraints_C0_GEV( climIn , Yo , verbose = False ): ##{{{
+def constraint_C0_GEV( climIn , Yo , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEV)" , end = "\r" )
 	
@@ -451,7 +451,7 @@ def constraints_C0_GEV( climIn , Yo , verbose = False ): ##{{{
 	return clim
 ##}}}
 
-def constraints_C0_GEV_exp( climIn , Yo , verbose = False ): ##{{{
+def constraint_C0_GEV_exp( climIn , Yo , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEVExp)" , end = "\r" )
 	
@@ -499,7 +499,7 @@ def constraints_C0_GEV_exp( climIn , Yo , verbose = False ): ##{{{
 	return clim
 ##}}}
 
-def constraints_C0_GEV_bound_valid( climIn , Yo , verbose = False ): ##{{{
+def constraint_C0_GEV_bound_valid( climIn , Yo , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEV)" , end = "\r" )
 	
@@ -557,7 +557,7 @@ def constraints_C0_GEV_bound_valid( climIn , Yo , verbose = False ): ##{{{
 	return clim
 ##}}}
 
-def constraints_C0_GEV_exp_bound_valid( climIn , Yo , verbose = False ): ##{{{
+def constraint_C0_GEV_exp_bound_valid( climIn , Yo , verbose = False ): ##{{{
 	
 	if verbose: print( "Constraints C0 (GEVExp)" , end = "\r" )
 	
@@ -615,7 +615,7 @@ def constraints_C0_GEV_exp_bound_valid( climIn , Yo , verbose = False ): ##{{{
 ##}}}
 
 
-def constraints_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): ##{{{
+def constraint_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): ##{{{
 	"""
 	NSSEA.constraintsC0
 	===================
@@ -640,32 +640,32 @@ def constraints_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): #
 	
 #	if climIn.ns_law == Normal:
 #		if isinstance(climIn.ns_law_args["link_scale"],IdLink):
-#			return constraints_C0_Normal( climIn , Yo , verbose )
+#			return constraint_C0_Normal( climIn , Yo , verbose )
 #		elif isinstance(climIn.ns_law_args["link_scale"],ExpLink):
-#			return constraints_C0_Normal_exp( climIn , Yo , verbose )
+#			return constraint_C0_Normal_exp( climIn , Yo , verbose )
 #	if climIn.ns_law == GEV:
 #		if isinstance(climIn.ns_law_args["link_scale"],IdLink):
 #			if gev_bound_valid:
-#				return constraints_C0_GEV_bound_valid( climIn , Yo , verbose )
+#				return constraint_C0_GEV_bound_valid( climIn , Yo , verbose )
 #			else:
-#				return constraints_C0_GEV( climIn , Yo , verbose )
+#				return constraint_C0_GEV( climIn , Yo , verbose )
 #		elif isinstance(climIn.ns_law_args["link_scale"],ExpLink):
 #			if gev_bound_valid:
-#				return constraints_C0_GEV_exp_bound_valid( climIn , Yo , verbose )
+#				return constraint_C0_GEV_exp_bound_valid( climIn , Yo , verbose )
 #			else:
-#				return constraints_C0_GEV_exp( climIn , Yo , verbose )
+#				return constraint_C0_GEV_exp( climIn , Yo , verbose )
 	
 	if isinstance(climIn.ns_law,Normal):
 		if isinstance(climIn.ns_law.lparams["scale"].link,IdLink):
-			return constraints_C0_Normal( climIn , Yo , verbose )
+			return constraint_C0_Normal( climIn , Yo , verbose )
 		if isinstance(climIn.ns_law.lparams["scale"].link,ExpLink):
-			return constraints_C0_Normal_exp( climIn , Yo , verbose )
+			return constraint_C0_Normal_exp( climIn , Yo , verbose )
 	
 	if isinstance(climIn.ns_law,GEV):
 		if isinstance(climIn.ns_law.lparams["scale"].link,IdLink):
-			return constraints_C0_GEV( climIn , Yo , verbose )
+			return constraint_C0_GEV( climIn , Yo , verbose )
 		if isinstance(climIn.ns_law.lparams["scale"].link,ExpLink):
-			return constraints_C0_GEV_exp( climIn , Yo , verbose )
+			return constraint_C0_GEV_exp( climIn , Yo , verbose )
 	
 	return climIn.copy()
 ##}}}
