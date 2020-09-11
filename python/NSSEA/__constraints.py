@@ -499,123 +499,7 @@ def constraint_C0_GEV_exp( climIn , Yo , verbose = False ): ##{{{
 	return clim
 ##}}}
 
-def constraint_C0_GEV_bound_valid( climIn , Yo , verbose = False ): ##{{{
-	
-	if verbose: print( "Constraints C0 (GEV)" , end = "\r" )
-	
-	clim  = climIn.copy()
-	n_models  = clim.X.models.size
-	n_sample  = clim.n_sample
-	models    = clim.X.models
-	time      = clim.time
-	time_Yo   = Yo.index
-	n_time_Yo = Yo.size
-	sample = clim.X.sample
-	
-	# New NS_param
-	ns_params = clim.ns_params
-	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] / ns_params.loc["scale0",:,:]
-	
-	
-	gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
-	for m in models:
-		X   = clim.X.loc[time_Yo,"be","all",m].values.squeeze()
-		Ybs = Yo.values.squeeze()
-		ns_params.loc["loc0","be",m] = np.quantile( Ybs - float(ns_params.loc["loc1","be",m]) * X , np.exp(-1) )
-		Yo_sta = ( Ybs - float(ns_params.loc["loc1","be",m]) * X - float(ns_params.loc["loc0","be",m]) ) / ( 1. + float(ns_params.loc["scale1","be",m]) * X )
-		gev.fit( Yo_sta , floc = 0 )
-		ns_params.loc["scale0","be",m] = gev.coef_[0]
-		ns_params.loc["shape","be",m]  = gev.coef_[1]
-		
-		for s in sample[1:]:
-			test = False
-			while not test:
-				idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
-				X   = clim.X.loc[idx,s,"all",m].values.squeeze()
-				Xcont = clim.X.loc[time_Yo,s,"all",m].values.squeeze()
-				Ybs = Yo.loc[idx].values.squeeze()
-				ns_params.loc["loc0",s,m] = np.quantile( Ybs - float(ns_params.loc["loc1",s,m]) * X , np.exp(-1) )
-				Yo_sta  = ( Ybs - float(ns_params.loc["loc1",s,m]) * X     - float(ns_params.loc["loc0",s,m]) ) / ( 1. + float(ns_params.loc["scale1",s,m]) * X )
-				Yo_cont = ( Yo.values.squeeze()  - float(ns_params.loc["loc1",s,m]) * Xcont - float(ns_params.loc["loc0",s,m]) ) / np.exp( float(ns_params.loc["scale1",s,m]) * Xcont )
-				gev.fit( Yo_sta , floc = 0 )
-				
-				## Here I test if the bound from params from bootstrap is compatible with observed values
-				law = clim.ns_law( **clim.ns_law_args )
-				law.set_params( np.array( [ns_params.loc["loc0",s,m],ns_params.loc["loc1",s,m],gev.coef_[0],ns_params.loc["scale1",s,m],gev.coef_[1]] , dtype = np.float ) )
-				law.set_covariable( clim.X.loc[time_Yo,s,"all",m].values , time_Yo )
-#				print( np.all( Yo < law.upper_boundt(time_Yo) ) )
-				test = np.all( np.logical_and( Yo.values.squeeze() > law.lower_boundt(time_Yo) , Yo.values.squeeze() < law.upper_boundt(time_Yo) ) )
-			ns_params.loc["scale0",s,m] = gev.coef_[0]
-			ns_params.loc["shape",s,m]  = gev.coef_[1]
-	
-	## Save
-	ns_params.loc["scale1",:,:] = ns_params.loc["scale1",:,:] * climIn.ns_params.loc["scale0",:,:]
-	clim.ns_params = ns_params
-	
-	if verbose: print( "Constraints C0 (GEV, Done)" )
-	
-	return clim
-##}}}
-
-def constraint_C0_GEV_exp_bound_valid( climIn , Yo , verbose = False ): ##{{{
-	
-	if verbose: print( "Constraints C0 (GEVExp)" , end = "\r" )
-	
-	clim  = climIn.copy()
-	n_models  = clim.X.models.size
-	n_sample  = clim.n_sample
-	models    = clim.X.models
-	time      = clim.time
-	time_Yo   = Yo.index
-	n_time_Yo = Yo.size
-	sample = clim.X.sample
-	
-	# New NS_param
-	ns_params = clim.ns_params
-	
-	
-	gev = sd.GEVLaw(  method = clim.ns_law_args["method"] , link_fct_scale = ExpLink() , link_fct_shape = clim.ns_law_args["link_fct_shape"] )
-	for m in models:
-		X   = clim.X.loc[time_Yo,"be","all",m].values.squeeze()
-		Ybs = Yo.values.squeeze()
-		ns_params.loc["loc0","be",m] = np.quantile( Ybs - float(ns_params.loc["loc1","be",m]) * X , np.exp(-1) )
-		Yo_sta = ( Ybs - float(ns_params.loc["loc1","be",m]) * X - float(ns_params.loc["loc0","be",m]) ) / np.exp( float(ns_params.loc["scale1","be",m]) * X )
-		gev.fit( Yo_sta , floc = 0 )
-		ns_params.loc["scale0","be",m] = gev.coef_[0]
-		ns_params.loc["shape","be",m]  = gev.coef_[1]
-		
-		for s in sample[1:]:
-			test = False
-			while not test:
-				idx = np.random.choice( time_Yo , n_time_Yo , replace = True )
-				X   = clim.X.loc[idx,s,"all",m].values.squeeze()
-				Xcont = clim.X.loc[time_Yo,s,"all",m].values.squeeze()
-				Ybs = Yo.loc[idx].values.squeeze()
-				ns_params.loc["loc0",s,m] = np.quantile( Ybs - float(ns_params.loc["loc1",s,m]) * X , np.exp(-1) )
-				Yo_sta  = ( Ybs - float(ns_params.loc["loc1",s,m]) * X     - float(ns_params.loc["loc0",s,m]) ) / np.exp( float(ns_params.loc["scale1",s,m]) * X )
-				Yo_cont = ( Yo.values.squeeze()  - float(ns_params.loc["loc1",s,m]) * Xcont - float(ns_params.loc["loc0",s,m]) ) / np.exp( float(ns_params.loc["scale1",s,m]) * Xcont )
-				gev.fit( Yo_sta , floc = 0 )
-				
-				## Here I test if the bound from params from bootstrap is compatible with observed values
-				law = clim.ns_law( **clim.ns_law_args )
-				law.set_params( np.array( [ns_params.loc["loc0",s,m],ns_params.loc["loc1",s,m],gev.coef_[0],ns_params.loc["scale1",s,m],gev.coef_[1]] , dtype = np.float ) )
-				test = law.check( Yo.values.squeeze() , clim.X.loc[time_Yo,s,"all",m] , time_Yo )
-#				law.set_covariable( clim.X.loc[time_Yo,s,"all",m].values , time_Yo )
-#				print( np.all( Yo < law.upper_boundt(time_Yo) ) )
-#				test = np.all( np.logical_and( Yo.values.squeeze() > law.lower_boundt(time_Yo) , Yo.values.squeeze() < law.upper_boundt(time_Yo) ) )
-			ns_params.loc["scale0",s,m] = gev.coef_[0]
-			ns_params.loc["shape",s,m]  = gev.coef_[1]
-	
-	## Save
-	clim.ns_params = ns_params
-	
-	if verbose: print( "Constraints C0 (GEVExp, Done)" )
-	
-	return clim
-##}}}
-
-
-def constraint_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): ##{{{
+def constraint_C0( climIn , Yo , verbose = False ): ##{{{
 	"""
 	NSSEA.constraintsC0
 	===================
@@ -627,8 +511,6 @@ def constraint_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): ##
 		clim variable
 	Yo       : pandas.DataFrame
 		Observations
-	gev_bound_valid : bool
-		For GEVLaw, use only bootstrap where observations are between the bound of the GEV.
 	verbose  : bool
 		Print (or not) state of execution
 	
@@ -637,23 +519,6 @@ def constraint_C0( climIn , Yo , gev_bound_valid = False , verbose = False ): ##
 	clim : NSSEA.Climatology
 		A COPY of climIn constrained by Yo. climIn is NOT MODIFIED.
 	"""
-	
-#	if climIn.ns_law == Normal:
-#		if isinstance(climIn.ns_law_args["link_scale"],IdLink):
-#			return constraint_C0_Normal( climIn , Yo , verbose )
-#		elif isinstance(climIn.ns_law_args["link_scale"],ExpLink):
-#			return constraint_C0_Normal_exp( climIn , Yo , verbose )
-#	if climIn.ns_law == GEV:
-#		if isinstance(climIn.ns_law_args["link_scale"],IdLink):
-#			if gev_bound_valid:
-#				return constraint_C0_GEV_bound_valid( climIn , Yo , verbose )
-#			else:
-#				return constraint_C0_GEV( climIn , Yo , verbose )
-#		elif isinstance(climIn.ns_law_args["link_scale"],ExpLink):
-#			if gev_bound_valid:
-#				return constraint_C0_GEV_exp_bound_valid( climIn , Yo , verbose )
-#			else:
-#				return constraint_C0_GEV_exp( climIn , Yo , verbose )
 	
 	if isinstance(climIn.ns_law,Normal):
 		if isinstance(climIn.ns_law.lparams["scale"].link,IdLink):
