@@ -91,6 +91,7 @@
 
 import sys,os
 import pickle as pk
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -237,7 +238,8 @@ if __name__ == "__main__":
 	##=====================================================
 	nplog = NumpyLog()
 	np.seterrcall(nplog)
-	np.seterr( all = "log" )
+	np.seterr( all = "log" , invalid = "log" )
+	warnings.simplefilter("ignore")
 	
 	## Path
 	##=====
