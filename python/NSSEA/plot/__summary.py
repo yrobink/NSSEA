@@ -93,16 +93,14 @@ from .__probabilities import probabilities
 from .__intensities   import intensities
 from .__print_stats   import summary_event
 from .__law_coef      import law_coef
-#from .__stats_event   import stats_event
-#from .__stats_event   import stats_relative
-#from .__ns_params     import ns_params
+from .__law_coef      import law_coef_along_time
 
 
 ###############
 ## Functions ##
 ###############
 
-def summary( clim , path , suffix = None , event = None , t1 = None , ci = 0.05 , verbose = False ):
+def summary( clim , path , suffix = None , event = None , t1 = None , params = None , ci = 0.05 , verbose = False ):
 	"""
 	NSSEA.plot.summary
 	==================
@@ -112,8 +110,7 @@ def summary( clim , path , suffix = None , event = None , t1 = None , ci = 0.05 
 		- NSSEA.plot.intensities
 		- NSSEA.plot.law_coef
 		- NSSEA.plot.summary_event (if the model Multi_Synthesis is given)
-		- NSSEA.plot.stats_event
-		- NSSEA.plot.stats_relative
+		- NSSEA.plot.law_coef_along_time (if params is not None)
 	
 	
 	Arguments
@@ -123,6 +120,7 @@ def summary( clim , path , suffix = None , event = None , t1 = None , ci = 0.05 
 	suffix  : [str] suffix for the name of files
 	event   : [NSSEA.Event] Use clim.event if None
 	t1      : [time] Can be None, see NSSEA.summary_event.
+	params  : [xarray.DataArray] result of NSSEA.build_coef_along_along_time.
 	ci      : [float] Size of confidence interval, default is 0.05 (95% confidence)
 	verbose : [bool] Print (or not) state of execution
 	"""
@@ -136,6 +134,7 @@ def summary( clim , path , suffix = None , event = None , t1 = None , ci = 0.05 
 	law_coef(      clim , ofile = os.path.join( path , "Coefs{}.pdf".format(suffix)         )                 , **kwargs )
 	if "Multi_Synthesis" in clim.model:
 		summary_event( clim , event = event , t1 = t1 , ofile = os.path.join( path , "Summary{}.txt".format(suffix) ) , **kwargs )
-	
+	if params is not None:
+		law_coef_along_time( clim , ofile = os.path.join( path , "Coefs_time{}.pdf".format(suffix) ) , params = params , **kwargs )
 	
 	
