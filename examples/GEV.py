@@ -322,7 +322,7 @@ if __name__ == "__main__":
 	climCXCB   = ns.extreme_statistics( climCXCB , verbose = verbose )
 	climCXC0   = ns.extreme_statistics( climCXC0 , verbose = verbose )
 	
-	params     = ns.build_params_along_time( clim , verbose = verbose )
+	params     = ns.build_params_along_time( clim     , verbose = verbose )
 	paramsCX   = ns.build_params_along_time( climCX   , verbose = verbose )
 	paramsCXCB = ns.build_params_along_time( climCXCB , verbose = verbose )
 	paramsCXC0 = ns.build_params_along_time( climCXC0 , verbose = verbose )
@@ -345,14 +345,11 @@ if __name__ == "__main__":
 	pltkwargs = { "verbose" : verbose , "ci" : ci }
 	nsp.GAM_decomposition( clim , lX , os.path.join( pathOut , "GAM_decomposition.pdf" ) , **pltkwargs )
 	nsp.constraint_covariate( clim , climCXCB , Xo , os.path.join( pathOut , "constraint_covariate.pdf" )  , **pltkwargs )
-	nsp.summary( clim , pathOut , t1 = 2040 ,  **pltkwargs )
-	nsp.summary( climCXC0 , pathOut , t1 = 2040 ,  suffix = "CXC0" , **pltkwargs )
-	nsp.summary( climCXCB , pathOut , t1 = 2040 ,  suffix = "CXCB" , **pltkwargs )
+	nsp.summary( clim     , pathOut , t1 = 2040 , params = params     , **pltkwargs )
+	nsp.summary( climCX   , pathOut , t1 = 2040 , params = paramsCX   , suffix = "CX"   , **pltkwargs )
+	nsp.summary( climCXC0 , pathOut , t1 = 2040 , params = paramsCXC0 , suffix = "CXC0" , **pltkwargs )
+	nsp.summary( climCXCB , pathOut , t1 = 2040 , params = paramsCXCB , suffix = "CXCB" , **pltkwargs )
 	nsp.constraint_law( climCX , climCXCB , ofile = os.path.join( pathOut , "constraint_law.pdf" ) , **pltkwargs )
-	nsp.law_coef_along_time( clim     , os.path.join( pathOut , "Coef_time.pdf"      ) , params = params     , **pltkwargs )
-	nsp.law_coef_along_time( climCX   , os.path.join( pathOut , "Coef_time_CX.pdf"   ) , params = paramsCX   , **pltkwargs )
-	nsp.law_coef_along_time( climCXC0 , os.path.join( pathOut , "Coef_time_CXC0.pdf" ) , params = paramsCXC0 , **pltkwargs )
-	nsp.law_coef_along_time( climCXCB , os.path.join( pathOut , "Coef_time_CXCB.pdf" ) , params = paramsCXCB , **pltkwargs )
 	nsp.statistics_time( [clim,climCX,climCXCB] , os.path.join( pathOut , "Statistics_time.pdf" ) , labels = clim.model.tolist() + ["Multi_CX","Multi_CXCB"] , colors = ["red","blue","green"] , **pltkwargs )
 	
 	
