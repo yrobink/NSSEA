@@ -206,7 +206,7 @@ if __name__ == "__main__":
 	
 	## Test or not
 	##============
-	is_test = True
+	is_test = "--not_test" not in sys.argv
 	if is_test: np.random.seed(42) ## A good seed is always the big answer
 	
 	## Path
@@ -228,7 +228,7 @@ if __name__ == "__main__":
 	n_sample    = 1000 if not is_test else 10
 	ns_law      = nsm.Normal( l_scale = sdt.ExpLink() )
 	event       = ns.Event( "HW03" , 2003 , time_reference , variable = "T" , unit = "K" )
-	verbose     = True
+	verbose     = "--no-verbose" not in sys.argv
 	ci          = 0.05 if not is_test else 0.1
 	
 	
