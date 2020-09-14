@@ -145,8 +145,36 @@ class Event: ##{{{
 ##}}}
 
 class Climatology: ##{{{
+	"""
+	NSSEA.Climatology
+	=================
+	Main variable containing the climatology fitted. All data are stored in a
+	xarray dataset: Climatology.data. This dataset contains:
+	- X : the covariates,
+	- law_coef: the coefficient of the law fitted
+	- statistics: the statistics computed
+	- mm_mean : the multi-model mean
+	- mm_cov : the multi-model covariance matrix
+	
+	"""
 	
 	def __init__( self , event , time , models , n_sample , ns_law ): ##{{{
+		"""
+		Constructor
+		===========
+		
+		Arguments
+		---------
+		event    : [NSSEA.Event] Event variable
+		time     : [array]       Array of time period
+		models   : [array]       List of models
+		n_sample : [int]         Number of sample for bootstrap
+		ns_law   : [NSSEA.models.*] Statistical model
+		
+		Return
+		------
+		clim: [NSSEA.Climatology]
+		"""
 		samples = ["BE"] + [ 'S{0:{fill}{align}{n}}'.format(i,fill="0",align=">",n=int(np.floor(np.log10(n_sample))+1)) for i in range(n_sample)]
 		self.event  = event
 		self.data   = xr.Dataset( { "time" : time , "model" : models , "sample" : samples , "anomaly_period" : event.reference } )
@@ -162,12 +190,28 @@ class Climatology: ##{{{
 	##}}}
 	
 	def copy(self): ##{{{
+		"""
+		Build a copy of the NSSEA.Climatology variable.
+		
+		Return
+		------
+		clim: [NSSEA.Climatology]
+		"""
 		clim = Climatology( self.event , self.time , self.model , self.n_sample , self.ns_law )
 		clim.data = self.data.copy(deep=True)
 		return clim
 	##}}}
 	
 	def to_netcdf( self , ofile ): ##{{{
+		"""
+		Write NSSEA.Climatology to a netcdf file. The ns_law is not written int
+		the file.
+		
+		Arguments
+		---------
+		ofile : [file name] File to write.
+		
+		"""
 		self.data.attrs["BE_is_median"]   = str(self.BE_is_median)
 		self.data.attrs["event.name"]     = self.event.name
 		self.data.attrs["event.time"]     = self.event.time
@@ -181,6 +225,18 @@ class Climatology: ##{{{
 	##}}}
 	
 	def from_netcdf( ifile , ns_law ):##{{{
+		"""
+		Read a NSSEA.Climatology from a netcdf file.
+		
+		Arguments
+		---------
+		ifile : [file name] File to read.
+		ns_law: [NSSEA.models.*] The statistical distribution
+		
+		Return
+		------
+		clim: [NSSEA.Climatology]
+		"""
 		data = xr.open_dataset(ifile)
 		event = Event( data.attrs["event.name"] , data.attrs["event.time"] , data.anomaly_period.values , data.attrs["event.anomaly"] , data.attrs["event.type"] , data.attrs["event.side"] , data.attrs["event.variable"] , data.attrs["event.unit"] )
 		clim = Climatology( event , data.time.values , data.model.values , data.sample.size , ns_law )
@@ -189,6 +245,19 @@ class Climatology: ##{{{
 	##}}}
 	
 	def from_netcdf_v03( ifile , ns_law , BE_is_median ):##{{{
+		"""
+		Read a NSSEA.Climatology from a netcdf file, written with NSSEA 0.3.*.
+		
+		Arguments
+		---------
+		ifile : [file name] File to read.
+		ns_law: [NSSEA.models.*] The statistical distribution
+		BE_is_median: [bool] If the BE is the median or not
+		
+		Return
+		------
+		clim: [NSSEA.Climatology]
+		"""
 		## Load data
 		data = xr.open_dataset( ifile )
 		
@@ -223,11 +292,25 @@ class Climatology: ##{{{
 	##}}}
 	
 	def keep_models( self , models ): ##{{{
+		"""
+		Keep only models from the list models.
+		
+		Arguments
+		---------
+		models: [array] List of models to keep
+		"""
 		if type(models) is not list: models = [models]
 		self.data = self.data.sel( model = models , drop = False )
 	##}}}
 	
 	def remove_models( self , models ):##{{{
+		"""
+		Remove models from the list models.
+		
+		Arguments
+		---------
+		models: [array] List of models to remove
+		"""
 		if type(models) is not list: models = [models]
 		kept = [ m for m in self.model if m not in models ]
 		self.keep_models(keps)
