@@ -120,23 +120,10 @@ import NSSEA.models as nsm
 
 
 ###############
-## Fonctions ##
+## Functions ##
 ###############
 
-####################
-## Plot functions ##
-####################
-
-#############
-## Classes ##
-#############
-
-##########
-## main ##
-##########
-
-if __name__ == "__main__":
-	
+def test_model():##{{{
 	## Define dataset
 	##===============
 	t,X,_,_ = sdt.Dataset.covariates(2000)
@@ -185,5 +172,13 @@ if __name__ == "__main__":
 	fig.set_tight_layout(True)
 	
 	plt.show()
+##}}}
+
+
+##########
+## main ##
+##########
+
+if __name__ == "__main__":
 	
 	print("Done")
