@@ -231,7 +231,7 @@ if __name__ == "__main__":
 	
 	## Test or not
 	##============
-	is_test = "--not_test" not in sys.argv
+	is_test = "--not-test" not in sys.argv
 	if is_test: np.random.seed(42) ## A good seed is always the big answer
 	
 	## Set a log class, the GEV produces sometimes overflow
@@ -260,7 +260,7 @@ if __name__ == "__main__":
 	n_sample    = 1000 if not is_test else 10
 	ns_law      = nsm.GEV()
 	event       = ns.Event( "HW19D3" , 2019 , time_reference , type_ = "hard" , variable = "TX3D" , unit = "K" )
-	verbose     = "--no-verbose" not in sys.argv
+	verbose     = "--not-verbose" not in sys.argv
 	ci          = 0.05 if not is_test else 0.1
 	
 	
