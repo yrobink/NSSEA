@@ -182,6 +182,26 @@ class Climatology: ##{{{
 		self.BE_is_median = False
 	##}}}
 	
+	def __str__( self ):##{{{
+		out = str(self.event)
+		out = out + "Time      : {}-{}\n".format(self.time.min(),self.time.max())
+		out = out + "Models    : "
+		for m in self.model:
+			out = out + m + ", "
+		out = out + "\n"
+		try:
+			out = out + "Coefs     : "
+			for c in self.data.coef.values.tolist():
+				out = out + c + ", "
+		except:
+			pass
+		return out
+	##}}}
+	
+	def __repr( self ):##{{{
+		return self.__str__()
+	##}}}
+	
 	def _add_variable( self , name , variable ):##{{{
 		if name in self.data.variables:
 			self.data[name] = variable
