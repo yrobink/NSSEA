@@ -242,25 +242,7 @@ def constrain_covariate( climIn , Xo , time_reference = None , assume_good_scale
 ## Bayesian constraint
 ##====================
 
-def constrain_law( climIn , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10000 , verbose = False , **kwargs ):##{{{
-	"""
-	NSSEA.constrain_law
-	===================
-	Constrain the law_coef of the clim with a MCMC approach.
-	
-	Arguments
-	---------
-	climIn : [NSSEA.Climatology] clim variable
-	Yo       : [pandas.DataFrame] Observations of ns_law
-	n_mcmc_draw_min: [integer] Minimum number of coef to draw for each covariate
-	n_mcmc_draw_max: [integer] Maximum number of coef to draw for each covariate
-	verbose  : [bool] Print (or not) state of execution
-	
-	Return
-	------
-	clim : [NSSEA.Climatology] A copy is returned
-	"""
-	
+def _constrain_law_all( climIn , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , verbose , **kwargs ):##{{{
 	clim = climIn.copy()
 	
 	pb = ProgressBar( clim.n_sample + 1 , "constrain_law" , verbose )
@@ -288,6 +270,116 @@ def constrain_law( climIn , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10
 	pb.end()
 	
 	return clim
+##}}}
+
+def _constrain_law_keep( climIn , Yo , keep , n_mcmc_drawn_min , n_mcmc_drawn_max , verbose , **kwargs ):##{{{
+	
+	clim = climIn.copy()
+	
+	## Cut indexes
+	n_sample = clim.n_sample + 1
+	n_keep   = int(keep * n_sample)
+	
+	index_keep = np.random.choice( n_sample , n_keep , replace = False )
+	index_supp = np.array( [i for i in range(n_sample) if i not in index_keep] , dtype = np.int )
+	assoc      = np.random.choice( index_keep , n_sample - n_keep )
+	
+	l_index = []
+	for i in index_keep:
+		l_index.append([i])
+		l_index[-1] = l_index[-1] + index_supp[assoc==i].tolist()
+	
+	pb = ProgressBar( n_keep , "constrain_law" , verbose )
+	
+	
+	min_rate_accept = kwargs.get("min_rate_accept")
+	if min_rate_accept is None: min_rate_accept = 0.25
+	
+	## Define prior
+	prior_mean   = clim.data["mm_mean"][-clim.n_coef:].values
+	prior_cov    = clim.data["mm_cov"][-clim.n_coef:,-clim.n_coef:].values
+	prior_law    = sc.multivariate_normal( mean = prior_mean , cov = prior_cov , allow_singular = True )
+	
+	## And now MCMC loop
+	for index in l_index:
+		pb.print()
+		X   = clim.X.loc[Yo.index,clim.sample[index[0]],"F","Multi_Synthesis"].values.squeeze()
+		n_mcmc_drawn = np.random.randint( n_mcmc_drawn_min , n_mcmc_drawn_max )
+		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law , min_rate_accept )
+		draw = draw[n_mcmc_drawn_min:,:]
+		
+		clim.law_coef.loc[:,clim.sample[index],"Multi_Synthesis"] = draw[np.random.choice(draw.shape[0],len(index),False),:].T
+		newX = np.zeros( (clim.time.size,len(index),2) )
+		for i in range(len(index)):
+			newX[:,i,:] = clim.X.loc[:,clim.sample[index[0]],:,"Multi_Synthesis"].values.squeeze()
+		clim.X.loc[:,clim.sample[index],:,"Multi_Synthesis"] = newX
+	
+	clim.law_coef.loc[:,"BE",:] = clim.law_coef[:,1:,:].median( dim = "sample" )
+	clim.BE_is_median = True
+	
+	pb.end()
+	
+	return clim
+	
+	
+	pass
+##}}}
+
+def constrain_law( climIn , Yo , keep = "all" , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10000 , verbose = False , **kwargs ):##{{{
+	"""
+	NSSEA.constrain_law
+	===================
+	Constrain the law_coef of the clim with a MCMC approach.
+	
+	Arguments
+	---------
+	climIn : [NSSEA.Climatology] clim variable
+	Yo       : [pandas.DataFrame] Observations of ns_law
+	keep     : [ "all" or a float between 0 and 1] If keep < 1, only a ratio of 
+	          keep covariates is used, and many coefficients are drawn for the
+	          same covariate. Faster, but can reduce confidence interval
+	          uncertainty.
+	n_mcmc_draw_min: [integer] Minimum number of coef to draw for each covariate
+	n_mcmc_draw_max: [integer] Maximum number of coef to draw for each covariate
+	verbose  : [bool] Print (or not) state of execution
+	
+	Return
+	------
+	clim : [NSSEA.Climatology] A copy is returned
+	"""
+	
+	if keep == "all" or not keep < 1:
+		return _constrain_law_all( climIn , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , verbose , **kwargs )
+	else:
+		return _constrain_law_keep( climIn , Yo , keep , n_mcmc_drawn_min , n_mcmc_drawn_max , verbose , **kwargs )
+	
+#	clim = climIn.copy()
+#	
+#	pb = ProgressBar( clim.n_sample + 1 , "constrain_law" , verbose )
+#	
+#	
+#	min_rate_accept = kwargs.get("min_rate_accept")
+#	if min_rate_accept is None: min_rate_accept = 0.25
+#	
+#	## Define prior
+#	prior_mean   = clim.data["mm_mean"][-clim.n_coef:].values
+#	prior_cov    = clim.data["mm_cov"][-clim.n_coef:,-clim.n_coef:].values
+#	prior_law    = sc.multivariate_normal( mean = prior_mean , cov = prior_cov , allow_singular = True )
+#	
+#	## And now MCMC loop
+#	for s in clim.sample:
+#		pb.print()
+#		X   = clim.X.loc[Yo.index,s,"F","Multi_Synthesis"].values.squeeze()
+#		n_mcmc_drawn = np.random.randint( n_mcmc_drawn_min , n_mcmc_drawn_max )
+#		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law , min_rate_accept )
+#		clim.law_coef.loc[:,s,"Multi_Synthesis"] = draw[-1,:]
+#	
+#	clim.law_coef.loc[:,"BE",:] = clim.law_coef[:,1:,:].median( dim = "sample" )
+#	clim.BE_is_median = True
+#	
+#	pb.end()
+#	
+#	return clim
 ##}}}
 
 
