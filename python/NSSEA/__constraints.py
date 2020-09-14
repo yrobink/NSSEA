@@ -121,8 +121,8 @@ import SDFC as sd
 
 def constrain_covariate( climIn , Xo , time_reference = None , assume_good_scale = False , verbose = False ): ##{{{
 	"""
-	NSSEA.constraint_covariate
-	==========================
+	NSSEA.constrain_covariate
+	=========================
 	Constrain covariates of clim by the observed covariates Xo
 	
 	Arguments
@@ -244,8 +244,8 @@ def constrain_covariate( climIn , Xo , time_reference = None , assume_good_scale
 
 def constrain_law( climIn , Yo , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10000 , verbose = False , **kwargs ):##{{{
 	"""
-	NSSEA.constraint_law
-	====================
+	NSSEA.constrain_law
+	===================
 	Constrain the law_coef of the clim with a MCMC approach.
 	
 	Arguments
