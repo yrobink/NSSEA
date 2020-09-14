@@ -86,7 +86,7 @@
 ##################################################################################
 
 
-__version__ = "0.4.0a2"
+__version__ = "0.4.0a3"
 
 #############
 ## Imports ##
@@ -99,9 +99,6 @@ from .__tools import ProgressBar
 ## Variables
 from .__variables import Event
 from .__variables import Climatology
-from .__variables import Climatology2
-from .__variables import to_netcdf
-from .__variables import from_netcdf
 
 
 ## Covariate split
