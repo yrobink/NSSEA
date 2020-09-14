@@ -222,9 +222,7 @@ if __name__ == "__main__":
 	##=======================
 	time_period    = np.arange( 1850 , 2101 , 1 , dtype = np.int )
 	time_reference = np.arange( 1961 , 1991 , 1 , dtype = np.int )
-	n_mcmc_drawn_min = 2500 if is_test else  5000
-	n_mcmc_drawn_max = 5000 if is_test else 10000
-	min_rate_accept  = 0.05
+	bayes_kwargs = { "n_mcmc_drawn_min" : 2500 if is_test else  5000 , "n_mcmc_drawn_max" : 5000 if is_test else 10000 , "min_rate_accept" : 0.05 , "keep" : "all" if is_test else 0.2 }
 	n_sample    = 1000 if not is_test else 10
 	ns_law      = nsm.Normal( l_scale = sdt.ExpLink() )
 	event       = ns.Event( "HW03" , 2003 , time_reference , variable = "T" , unit = "K" )
@@ -278,7 +276,7 @@ if __name__ == "__main__":
 	## Apply constraints
 	##==================
 	climCX     = ns.constrain_covariate( climMM , Xo , time_reference , verbose = verbose )
-	climCXCB   = ns.constrain_law( climCX , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , min_rate_accept = min_rate_accept , verbose = verbose )
+	climCXCB   = ns.constrain_law( climCX , Yo , verbose = verbose , **bayes_kwargs )
 	climC0     = ns.constraint_C0( climMM , Yo , verbose = verbose )
 	climCXC0   = ns.constraint_C0( climCX , Yo , verbose = verbose )
 	
