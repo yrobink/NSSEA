@@ -254,7 +254,7 @@ if __name__ == "__main__":
 	
 	## Define clim variable from input
 	##================================
-	clim = ns.Climatology2( event , time_period , models , n_sample , ns_law )
+	clim = ns.Climatology( event , time_period , models , n_sample , ns_law )
 	
 	
 	## Decomposition of covariates
@@ -305,7 +305,7 @@ if __name__ == "__main__":
 	
 	## Reload
 	##=======
-#	clim,climCX,climCXC0,climCXCB = ( ns.Climatology2.from_netcdf( os.path.join( pathOut , "{}_clim{}.nc".format(event.name,s) ) , ns_law ) for s in ["","CX","CXC0","CXCB"] )
+#	clim,climCX,climCXC0,climCXCB = ( ns.Climatology.from_netcdf( os.path.join( pathOut , "{}_clim{}.nc".format(event.name,s) ) , ns_law ) for s in ["","CX","CXC0","CXCB"] )
 #	params,paramsCX,paramsCXC0,paramsCXCB = ( xr.open_dataset( os.path.join( pathOut , "{}_params{}.nc".format(event.name,s) ) )["params{}".format(s)] for s in ["","CX","CXC0","CXCB"] )
 	
 	## Plot
