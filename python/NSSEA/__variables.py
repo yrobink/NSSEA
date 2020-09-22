@@ -261,6 +261,7 @@ class Climatology: ##{{{
 		event = Event( data.attrs["event.name"] , data.attrs["event.time"] , data.anomaly_period.values , data.attrs["event.anomaly"] , data.attrs["event.type"] , data.attrs["event.side"] , data.attrs["event.variable"] , data.attrs["event.unit"] )
 		clim = Climatology( event , data.time.values , data.model.values , data.sample.size , ns_law )
 		clim.data = data
+		clim.BE_is_median = bool(data.attrs["BE_is_median"])
 		return clim
 	##}}}
 	
