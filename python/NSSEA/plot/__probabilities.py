@@ -197,7 +197,7 @@ def probabilities( clim , ofile , event = None , ci = 0.05 , verbose = False ):#
 		nrow,ncol = 3,1
 		fs = 10
 		fig = plt.figure( figsize = ( fs * ncol , 0.4 * fs * nrow ) )
-		grid = mplgrid.GridSpec( nrows = 3 , ncols = 1 , figure = fig , height_ratios = [1,0.4,1] )
+		grid = mplgrid.GridSpec( nrows = 3 , ncols = 1 , height_ratios = [1,0.4,1] )
 		
 		ax = fig.add_subplot(grid[0,0])
 		ax.plot( stats.time , lp.transform(qstats.loc["BE",:,"pF",m]) , color = "red"  , linestyle = "-" , marker = "" , label = r"$p^\mathrm{F}_t$" )
