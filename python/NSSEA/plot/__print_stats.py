@@ -102,7 +102,7 @@ from ..__nsstats import add_return_time
 ## Functions ##
 ###############
 
-def summary_table( clim , t0 , model = "Multi_Synthesis" , t1 = None , digit = 3 , ci = 0.05 , ofile = None , verbose = False ):##{{{
+def summary_table( clim , model = "Multi_Synthesis" , t0 = None , t1 = None , digit = 3 , ci = 0.05 , ofile = None , verbose = False ):##{{{
 	"""
 	NSSEA.plot.summary_table
 	========================
@@ -122,10 +122,10 @@ def summary_table( clim , t0 , model = "Multi_Synthesis" , t1 = None , digit = 3
 	----------
 	clim    : NSSEA.Climatology
 		Climatology fitted
-	t0      : time type
-		The time to print the statistics
 	model   : string
 		The model chosen (default is Multi_Synthesis)
+	t0      : time type
+		The time to print the statistics. If None, use clim.event.time
 	t1      : time type or None
 		If t1 is not None, two lines are added containing the statitstics PR(t1) / PR(t0) and dI(t1) - dI(t0)
 	digit   : float
@@ -197,6 +197,87 @@ def summary_table( clim , t0 , model = "Multi_Synthesis" , t1 = None , digit = 3
 	with open( ofile , "w" ) as f:
 		f.write( tab.draw() + "\n" )
 	
+##}}}
+
+def summary_excel( clim , ofile , model = "Multi_Synthesis" , t0 = None , t1 = None , ci = 0.05 , verbose = False ): ##{{{
+	"""
+	NSSEA.plot.summary_excel
+	========================
+	Same as summary_table, but in an excel file.
+	
+	Parameters
+	----------
+	clim    : NSSEA.Climatology
+		Climatology fitted
+	ofile  : string or None
+		Output file.
+	model   : string
+		The model chosen (default is Multi_Synthesis)
+	t0      : time type
+		The time to print the statistics. If None, use clim.event.time
+	t1      : time type or None
+		If t1 is not None, two lines are added containing the statitstics PR(t1) / PR(t0) and dI(t1) - dI(t0)
+	ci      : float
+		Level of confidence interval, default is 0.05 (95%)
+	verbose : bool
+		Print begin / end of execution
+	
+	Return
+	------
+	tab : string
+		A tabular of statistics
+	"""
+	
+	pb = ProgressBar( 2 , "plot.summary_excel" , verbose = verbose )
+	
+	if t0 is None: t0 = clim.event.time
+	
+	## Add FAR and Rt
+	if "FAR" not in clim.statistics.stats:
+		clim = add_FAR( clim , verbose = False )
+	if "RtF" not in clim.statistics.stats:
+		clim = add_return_time( clim , verbose = False )
+	
+	pb.print()
+	
+	## Statistics
+	S = clim.statistics.loc[t0,:,:,model]
+	if t1 is not None:
+		S1 = xr.zeros_like(S.loc[:,["PR","dI"]])
+		S1.loc[:,"PR"] = clim.statistics.loc[t1,:,"PR",model] / S.loc[:,"PR"]
+		S1.loc[:,"dI"] = clim.statistics.loc[t1,:,"dI",model] - S.loc[:,"dI"]
+	
+	pb.print()
+	
+	## Find quantile
+	ql = ci /2
+	qm = 0.5
+	qu = 1 - ci / 2
+	qS = S[1:,:].quantile( [ ql,qm,qm,qu ] , dim = "sample" ).assign_coords( quantile = ["ql","qm","BE","qu"] )
+	if not clim.BE_is_median:
+		qS.loc["BE",:] = S[0,:]
+	index = ["FAR","PR","dI","RtF","RtC","pF","pC","IF","IC"]
+	
+	if t1 is not None:
+		qS1 = S1[1:,:].quantile( [ql,qm,qm,qu] , dim = "sample" ).assign_coords( quantile = ["ql","qm","BE","qu"] )
+		if not clim.BE_is_median:
+			qS1.loc["BE",:] = S1[0,:]
+		index.append( "PR {}/{}".format(t1,t0) )
+		index.append( "dI {}/{}".format(t1,t0) )
+	
+	##
+	out = pd.DataFrame( index = index , columns = ["Best estimate","Quantile {}".format(ql),"Median","Quantile {}".format(qu)] )
+	arr = []
+	for s in ["FAR","PR","dI","RtF","RtC","pF","pC","IF","IC"]:
+		arr.append( [ float(qS.loc["BE",s]) , float(qS.loc["ql",s]) , float(qS.loc["qm",s]), float(qS.loc["qu",s]) ] )
+	if t1 is not None:
+		for s in ["PR","dI"]:
+			arr.append( [ float(qS1.loc["BE",s]) , float(qS1.loc["ql",s]) , float(qS1.loc["qm",s]) , float(qS1.loc["qu",s]) ] )
+	
+	out[:][:] = arr
+	out.to_excel(ofile)
+	
+	pb.end()
 ##}}}
 
 def summary_event( clim , event = None , model = "Multi_Synthesis" , t1 = None , digit = 3 , ci = 0.05 , ofile = None , verbose = False ): ##{{{
