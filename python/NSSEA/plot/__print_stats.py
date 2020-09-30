@@ -321,11 +321,11 @@ def summary_event( clim , event = None , model = "Multi_Synthesis" , t1 = None ,
 	if event is None:
 		event = clim.event
 	out = str(event)
-	out = out + "\n" + summary_table( clim , event.time , model , t1 , digit , ci )
+	out = out + "\n" + summary_table( clim , model , event.time , t1 , digit , ci )
 	pb.print()
 	
 	if t1 is not None:
-		out = out + "\n" + summary_table( clim , t1 , model , digit = digit , ci = ci )
+		out = out + "\n" + summary_table( clim , model , t1 , digit = digit , ci = ci )
 	
 	out = out + "\n"
 	
