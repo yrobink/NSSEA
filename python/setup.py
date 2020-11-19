@@ -106,13 +106,13 @@ list_packages = [
 
 setup(
 	name = "NSSEA" ,
-	version = "0.4.0a5" ,
+	version = "0.4.0a6" ,
 	description = "",
 	author = "Yoann Robin" ,
 	author_email = "yoann.robin.k@gmail.com" ,
 	license = "CeCILL-C" ,
 	platforms = [ "linux" , "macosx" ] ,
-	requires = [ "numpy(>=1.15.0)" , "scipy(>=0.19)" , "xarray" , "pandas" , "matplotlib" , "pygam(>=0.8.0)" , "netCDF4" , "SDFC(>=0.5.0a0)" , "texttable" ],
+	requires = [ "numpy(>=1.15.0)" , "scipy(>=0.19)" , "xarray" , "pandas" , "matplotlib" , "pygam(>=0.8.0)" , "netCDF4" , "SDFC(>=0.5.0a0)" , "statsmodels(>=0.12.0)" , "texttable" ],
 	packages = list_packages,
 	package_dir = { "NSSEA" : "NSSEA" },
 	include_package_data = True
