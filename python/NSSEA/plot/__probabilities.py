@@ -218,6 +218,7 @@ def probabilities( clim , ofile , event = None , ci = 0.05 , verbose = False ):#
 		ax2.set_yticklabels( lp.Rtlabels )
 		ax2.yaxis.set_label_position( "right" )
 		ax2.set_ylabel( "Return Time" , rotation = 270 )
+		ax2.set_ylim( (lp.min,lp.max) )
 		
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()

@@ -97,22 +97,61 @@ import sys
 #############
 
 class LinkPR:
-	def __init__(self):
-		self.true_ticks = np.array([1e-300, 1/100,1/10, 1/3, 1/2, 2/3, 1, 1.5, 2, 3, 10, 100, 1e300])
-		self.labels     = [ r"${}$".format(s) for s in ["0", "10^{-2}","10^{-1}", "1/3", "1/2", "2/3", "1", "1.5", "2", "3", "10", "10^2", "\infty"] ]
-		self.FARlabels  = [ r"${}$".format(s) for s in ["-\infty","-99","-9", "-2" , "-1" , "-0.5" , "0" , "1/3" , "1/2" , "2/3" , "0.9" , "0.99" , "1"] ]
+	"""
+	NSSEA.plot.Linkp
+	================
+	
+	Link function to plot Probability Ratio and FAR. The transformation used is:
+	y_tmp = arctan(log(PR)) / (pi / 2)
+	y     = sign(y) * (abs(y))**e
+	"""
+	def __init__( self , e = 3. ):
+		"""
+		Constructor
+		===========
+		
+		Parameters
+		----------
+		e : [float] exponent in the transformation. An exponent lower than 1
+		            focuses on values close to 1, an exponent larger than 1 on
+		            values far of 1.
+		"""
+		self.e          = e
+		self.true_ticks = np.array([0,1e-6, 1/1000, 1/100,1/10, 1/5, 1, 5, 10, 100, 1000,1e6,np.Inf])
+		self.labels     = [ r"${}$".format(s) for s in ["0", "10^{-6}","10^{-3}","10^{-2}","10^{-1}", "1/5", "1", "5", "10", "10^2", "10^3" , "10^6", "\infty"] ]
+		self.FARlabels  = [ r"${}$".format(s) for s in ["-\infty","~","-999" ,"-99","-9", "-4" , "0" , "0.8" , "0.9" , "0.99" , "0.999" , "~","1"] ]
 		self.ticks      = self.transform(self.true_ticks)
 		self.min        = self.ticks.min()
 		self.max        = self.ticks.max()
 		
 	def transform( self , x ):
 		x = np.array([x]).squeeze()
-		return np.arctan( np.log(np.where( x > 0 , x , sys.float_info.epsilon ) ) ) / (np.pi/2)
+		y = np.arctan( np.log(np.where( x > 0 , x , sys.float_info.epsilon ) ) ) / (np.pi/2)
+		return np.sign(y) * np.power( np.abs(y) , self.e )
 
 
 class Linkp:
-	def __init__(self):
-		self.true_ticks = np.array( [ 1e-300 , 1e-6 , 1e-3	  ,  1e-2   ,   1e-1  , 1/5 , 1/3 , 1/2 , 1 ] )
+	"""
+	NSSEA.plot.Linkp
+	================
+	
+	Link function to plot probabilities and return time. The transformation used
+	is:
+	( 1 + arctan( log(p) ) / (pi / 2) )**e
+	"""
+	def __init__( self , e = 2. / 3. ):
+		"""
+		Constructor
+		===========
+		
+		Parameters
+		----------
+		e : [float] exponent in the transformation. An exponent lower than 1
+		            focuses on low values, an exponent larger than 1 on large
+		            values.
+		"""
+		self.e          = e
+		self.true_ticks = np.array( [ 0 , 1e-6 , 1e-3	  ,  1e-2   ,   1e-1  , 1/5 , 1/3 , 1/2 , 1 ] )
 		self.labels     = [ r"${}$".format(s) for s in ["0","10^{-6}","10^{-3}","10^{-2}","10^{-1}","1/5","1/3","1/2","1"] ]
 		self.Rtlabels   = [ r"${}$".format(s) for s in ["\infty","10^6","10^3","10^2","10","5","3","2","1"] ]
 		self.ticks      = self.transform(self.true_ticks)
@@ -122,4 +161,6 @@ class Linkp:
 	def transform( self , x ):
 		x = np.array([x]).squeeze()
 		y = np.arctan( np.log(np.where( x > 0 , x , sys.float_info.epsilon ) ) ) / (np.pi/2)
-		return np.power( 1. + y , 1. / 1.2 )
+		return np.power( 1. + y , self.e )
+
+
