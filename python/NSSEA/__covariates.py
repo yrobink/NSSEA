@@ -95,6 +95,7 @@ import xarray as xr
 import scipy.stats as sc
 import netCDF4 as nc4
 import pygam as pg
+import statsmodels.gam.api as gamapi
 
 from .__tools import ProgressBar
 
@@ -260,7 +261,7 @@ class GAM_FC:##{{{
 
 ##}}}
 
-def covariates_FC_GAM( clim , lX , XN , dof = 7 , verbose = False ):##{{{
+def covariates_FC_GAM( clim , lX , XN , dof = 7 , method = "statsmodels" , verbose = False ):##{{{
 	"""
 	NSSEA.covariates_FC_GAM
 	=======================
@@ -284,7 +285,23 @@ def covariates_FC_GAM( clim , lX , XN , dof = 7 , verbose = False ):##{{{
 	       name of the model, and defined in the climatology.
 	XN   : [pandas.DataFrame] Natural forcing.
 	dof  : [integer] Degree of freedom
+	method : [str] "statsmodels" or "pygam", select the package used to solve
+	         GAM model
 	verbose : [bool] If we print the progress of the fit or not.
+	
+	"""
+	if method == "pygam":
+		return _covariates_FC_GAM_pygam( clim , lX , XN , dof , verbose )
+	else:
+		return _covariates_FC_GAM_statsmodels( clim , lX , XN , dof , verbose )
+##}}}
+
+def _covariates_FC_GAM_pygam( clim , lX , XN , dof = 7 , verbose = False ):##{{{
+	"""
+	NSSEA.covariates_FC_GAM_pygam
+	=============================
+	
+	Same parameters that NSSEA.covariates_FC_GAM, use pygam package.
 	
 	"""
 	## Parameters
@@ -341,6 +358,63 @@ def covariates_FC_GAM( clim , lX , XN , dof = 7 , verbose = False ):##{{{
 	clim.X = dX
 	pb.end()
 	return clim
-##}}}}
+##}}}
+
+def _covariates_FC_GAM_statsmodels( clim , lX , XN , dof = 7 , verbose = False ):##{{{
+	"""
+	NSSEA.covariates_FC_GAM_statsmodels
+	===================================
+	
+	Same parameters that NSSEA.covariates_FC_GAM, use statsmodels package.
+	
+	"""
+	## Parameters
+	models   = clim.model
+	time     = clim.time
+	n_model  = clim.n_model
+	n_time   = clim.n_time
+	samples  = clim.sample
+	n_sample = clim.n_sample
+	
+	## verbose
+	pb = ProgressBar( n_model , "covariates_FC_GAM" , verbose )
+	
+	## Define output
+	dX = xr.DataArray( np.zeros( (n_time,n_sample + 1,2,n_model) ) , coords = [time , samples , ["F","C"] , models ] , dims = ["time","sample","forcing","model"] )
+	
+	## Main loop
+	for X in lX:
+		pb.print()
+		
+		## All data in a dataframe
+		model = X.columns[0]
+		Xg    = X.groupby(np.int).aggregate(np.mean)
+		dataf = pd.DataFrame( np.array([Xg.index,np.repeat(Xg.index[0],Xg.size),XN.loc[Xg.index,0].values.squeeze(),Xg.values.squeeze()]).T , columns = ["timeF","timeC","XN","X"] )
+		
+		## Define GAM model and fit
+		bs      = gamapi.BSplines( dataf["timeF"] , df = dof - 1 , degree = 3 )
+		gam_bs  = gamapi.GLMGam.from_formula( "X ~ 1 + XN" , data = dataf , smoother = bs )
+		#res_fit = gam_bs.fit()
+		#alpha,_,_ = gam_bs.select_penweight()
+		#gam_bs  = gamapi.GLMGam.from_formula( 'X ~ 1 + ebm' , data = dataf , smoother = bs , alpha = alpha )
+		res_fit = gam_bs.fit()
+		
+		## Build design matrices and coefs
+		timeF   = np.unique(dataf.timeF.values)
+		timeC   = np.repeat( timeF[0] , timeF.size )
+		designF = np.hstack( (np.ones((timeF.size,1)),dataf["XN"].values.reshape(-1,1),gam_bs.smoother.transform(timeF)) )
+		designC = np.hstack( (np.ones((timeF.size,1)),dataf["XN"].values.reshape(-1,1),gam_bs.smoother.transform(timeC)) )
+		coef_   = res_fit.params.values
+		cov_    = res_fit.cov_params().values
+		coefs   = np.vstack( ( coef_ , np.random.multivariate_normal( mean = coef_ , cov = cov_ , size = n_sample ) ) )
+		
+		dX.loc[:,:,"F",model] = designF @ coefs.T
+		dX.loc[:,:,"C",model] = designC @ coefs.T
+		
+	
+	clim.X = dX
+	pb.end()
+	return clim
+##}}}
 
 
