@@ -95,7 +95,6 @@ import scipy.interpolate as sci
 import scipy.optimize as sco
 import scipy.special     as scs
 import SDFC              as sd
-import SDFC.tools        as sdt
 
 
 #############
@@ -111,18 +110,18 @@ class GEVPr:
 		self.lparams = ["loc","scale","shape","alpha"]
 	##}}}
 	
-	def to_netcdf( self ):##{{{
-		ncargs = { "ns_law_name" : "GEVPr" }
-		ncargs[ "ns_law_param_loc_cst" ]  = False
-		ncargs[ "ns_law_param_loc_link" ] = sdt.IdLink()
-		ncargs[ "ns_law_param_scale_cst" ]  = False
-		ncargs[ "ns_law_param_scale_link" ] = sdt.IdLink()
-		ncargs[ "ns_law_param_shape_cst" ]  = False
-		ncargs[ "ns_law_param_shape_link" ] = sdt.IdLink()
-		ncargs[ "ns_law_param_alpha_cst" ]  = False
-		ncargs[ "ns_law_param_alpha_link" ] = sdt.IdLink()
-		return ncargs
-	##}}}
+#	def to_netcdf( self ):##{{{
+#		ncargs = { "ns_law_name" : "GEVPr" }
+#		ncargs[ "ns_law_param_loc_cst" ]  = False
+#		ncargs[ "ns_law_param_loc_link" ] = sdt.IdLink()
+#		ncargs[ "ns_law_param_scale_cst" ]  = False
+#		ncargs[ "ns_law_param_scale_link" ] = sdt.IdLink()
+#		ncargs[ "ns_law_param_shape_cst" ]  = False
+#		ncargs[ "ns_law_param_shape_link" ] = sdt.IdLink()
+#		ncargs[ "ns_law_param_alpha_cst" ]  = False
+#		ncargs[ "ns_law_param_alpha_link" ] = sdt.IdLink()
+#		return ncargs
+#	##}}}
 	
 	
 	## Methods

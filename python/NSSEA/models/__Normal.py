@@ -93,7 +93,7 @@ import numpy             as np
 import scipy.stats       as sc
 import scipy.interpolate as sci
 import SDFC              as sd
-import SDFC.tools        as sdt
+import SDFC.link         as sdl
 
 from .__AbstractModel import AbstractModel
 
@@ -105,7 +105,7 @@ from .__AbstractModel import AbstractModel
 class Normal(AbstractModel):
 	def __init__( self , loc_cst = False , scale_cst = False , **kwargs ):
 		l_scale = kwargs.get("l_scale")
-		if l_scale is None: l_scale = sdt.ExpLink()
+		if l_scale is None: l_scale = sdt.ULExponential()
 		lparams = []
 		lparams.append( { "name" : "loc"   , "is_cst" :   loc_cst , "link" : kwargs.get("l_loc") , "name_tex" : r"\mu"    } )
 		lparams.append( { "name" : "scale" , "is_cst" : scale_cst , "link" : l_scale             , "name_tex" : r"\sigma" } )

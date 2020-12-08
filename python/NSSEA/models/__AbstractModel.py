@@ -93,7 +93,7 @@ import numpy             as np
 import scipy.stats       as sc
 import scipy.interpolate as sci
 import SDFC              as sd
-import SDFC.tools        as sdt
+import SDFC.link         as sdl
 
 
 #############
@@ -104,7 +104,7 @@ class Params:##{{{
 	
 	def __init__( self , name , is_cst , link , name_tex = None ):##{{{
 		self.name     = name
-		self.link     = link if link is not None else sdt.IdLink()
+		self.link     = link if link is not None else sdl.ULIdentity()
 		self.is_cst   = is_cst
 		self.n_params = 1 if self.is_cst else 2
 		self.coef_    = None
@@ -180,8 +180,7 @@ class AbstractModel:
 		sdkwargs = self._get_sdkwargs(X)
 		sdlaw = self.sdlaw( method = "MLE" )
 		sdlaw.fit( Y , **sdkwargs )
-		for p in self.lparams:
-			self.lparams[p].coef_ = sdlaw.params._dparams[p].coef_
+		self.set_params(sdlaw.coef_)
 	##}}}
 	
 	def drawn_bayesian( self , Y , X  , n_mcmc_drawn , prior , min_rate_accept = 0.25 ):##{{{
@@ -190,8 +189,8 @@ class AbstractModel:
 		test_rate = False
 		while not test_rate:
 			sdlaw.fit( Y , n_mcmc_drawn = n_mcmc_drawn , prior = prior , **sdkwargs )
-			test_rate = sdlaw._info.rate_accept > min_rate_accept
-		return sdlaw._info.draw
+			test_rate = sdlaw.info_.rate_accept > min_rate_accept
+		return sdlaw.info_.draw
 	##}}}
 	
 	def check( self , Y , X , t = None ):##{{{

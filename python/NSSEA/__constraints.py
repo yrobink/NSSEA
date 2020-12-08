@@ -102,8 +102,8 @@ from .__tools import ProgressBar
 from .models.__Normal import Normal
 from .models.__GEV    import GEV
 
-from SDFC.tools import IdLink
-from SDFC.tools import ExpLink
+from SDFC.link import ULIdentity
+from SDFC.link import ULExponential
 
 import SDFC as sd
 
@@ -608,15 +608,15 @@ def constraint_C0( climIn , Yo , verbose = False ): ##{{{
 	"""
 	
 	if isinstance(climIn.ns_law,Normal):
-		if isinstance(climIn.ns_law.lparams["scale"].link,IdLink):
+		if isinstance(climIn.ns_law.lparams["scale"].link,ULIdentity):
 			return constraint_C0_Normal( climIn , Yo , verbose )
-		if isinstance(climIn.ns_law.lparams["scale"].link,ExpLink):
+		if isinstance(climIn.ns_law.lparams["scale"].link,ULExponential):
 			return constraint_C0_Normal_exp( climIn , Yo , verbose )
 	
 	if isinstance(climIn.ns_law,GEV):
-		if isinstance(climIn.ns_law.lparams["scale"].link,IdLink):
+		if isinstance(climIn.ns_law.lparams["scale"].link,ULIdentity):
 			return constraint_C0_GEV( climIn , Yo , verbose )
-		if isinstance(climIn.ns_law.lparams["scale"].link,ExpLink):
+		if isinstance(climIn.ns_law.lparams["scale"].link,ULExponential):
 			return constraint_C0_GEV_exp( climIn , Yo , verbose )
 	
 	return climIn.copy()
