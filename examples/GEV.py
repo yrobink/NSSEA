@@ -309,46 +309,46 @@ if __name__ == "__main__":
 	##==================
 	climCX     = ns.constrain_covariate( climMM , Xo , time_reference , verbose = verbose )
 	climCXCB   = ns.constrain_law( climCX , Yo , verbose = verbose , **bayes_kwargs )
-#	climC0     = ns.constraint_C0( climMM , Yo , verbose = verbose )
+	climC0     = ns.constraint_C0( climMM , Yo , verbose = verbose )
 	climCXC0   = ns.constraint_C0( climCX , Yo , verbose = verbose )
 	
 	
 	## Compute stats
 	##==============
 	clim       = ns.extreme_statistics( clim     , verbose = verbose )
-#	climCX     = ns.extreme_statistics( climCX   , verbose = verbose )
+	climCX     = ns.extreme_statistics( climCX   , verbose = verbose )
 	climCXCB   = ns.extreme_statistics( climCXCB , verbose = verbose )
 	climCXC0   = ns.extreme_statistics( climCXC0 , verbose = verbose )
 	
 	params     = ns.build_params_along_time( clim     , verbose = verbose )
-#	paramsCX   = ns.build_params_along_time( climCX   , verbose = verbose )
+	paramsCX   = ns.build_params_along_time( climCX   , verbose = verbose )
 	paramsCXCB = ns.build_params_along_time( climCXCB , verbose = verbose )
 	paramsCXC0 = ns.build_params_along_time( climCXC0 , verbose = verbose )
 	
 	
 	## Save in netcdf
 	##===============
-#	for c,s in zip([clim,climCX,climCXC0,climCXCB],["","CX","CXC0","CXCB"]):
-#		c.to_netcdf( os.path.join( pathOut , "{}_clim{}.nc".format(event.name,s) ) )
-#	for p,s in zip([params,paramsCX,paramsCXC0,paramsCXCB],["","CX","CXC0","CXCB"]):
-#		params.to_dataset( name = "params{}".format(s) ).to_netcdf( os.path.join( pathOut , "{}_params{}.nc".format(event.name,s) ) )
+	for c,s in zip([clim,climCX,climCXC0,climCXCB],["","CX","CXC0","CXCB"]):
+		c.to_netcdf( os.path.join( pathOut , "{}_clim{}.nc".format(event.name,s) ) )
+	for p,s in zip([params,paramsCX,paramsCXC0,paramsCXCB],["","CX","CXC0","CXCB"]):
+		params.to_dataset( name = "params{}".format(s) ).to_netcdf( os.path.join( pathOut , "{}_params{}.nc".format(event.name,s) ) )
 	
 	## Reload
 	##=======
-#	clim,climCX,climCXC0,climCXCB = ( ns.Climatology.from_netcdf( os.path.join( pathOut , "{}_clim{}.nc".format(event.name,s) ) , ns_law ) for s in ["","CX","CXC0","CXCB"] )
-#	params,paramsCX,paramsCXC0,paramsCXCB = ( xr.open_dataset( os.path.join( pathOut , "{}_params{}.nc".format(event.name,s) ) )["params{}".format(s)] for s in ["","CX","CXC0","CXCB"] )
+	clim,climCX,climCXC0,climCXCB = ( ns.Climatology.from_netcdf( os.path.join( pathOut , "{}_clim{}.nc".format(event.name,s) ) , ns_law ) for s in ["","CX","CXC0","CXCB"] )
+	params,paramsCX,paramsCXC0,paramsCXCB = ( xr.open_dataset( os.path.join( pathOut , "{}_params{}.nc".format(event.name,s) ) )["params{}".format(s)] for s in ["","CX","CXC0","CXCB"] )
 	
 	## Plot
 	##=====
 	pltkwargs = { "verbose" : verbose , "ci" : ci }
-#	nsp.GAM_decomposition( clim , lX , os.path.join( pathOut , "GAM_decomposition.pdf" ) , **pltkwargs )
-#	nsp.constraint_covariate( clim , climCXCB , Xo , os.path.join( pathOut , "constraint_covariate.pdf" )  , **pltkwargs )
+	nsp.GAM_decomposition( clim , lX , os.path.join( pathOut , "GAM_decomposition.pdf" ) , **pltkwargs )
+	nsp.constraint_covariate( clim , climCXCB , Xo , os.path.join( pathOut , "constraint_covariate.pdf" )  , **pltkwargs )
 	nsp.summary( clim     , pathOut , t1 = 2040 , params = params     , **pltkwargs )
-#	nsp.summary( climCX   , pathOut , t1 = 2040 , params = paramsCX   , suffix = "CX"   , **pltkwargs )
+	nsp.summary( climCX   , pathOut , t1 = 2040 , params = paramsCX   , suffix = "CX"   , **pltkwargs )
 	nsp.summary( climCXC0 , pathOut , t1 = 2040 , params = paramsCXC0 , suffix = "CXC0" , **pltkwargs )
 	nsp.summary( climCXCB , pathOut , t1 = 2040 , params = paramsCXCB , suffix = "CXCB" , **pltkwargs )
-#	nsp.constraint_law( climCX , climCXCB , ofile = os.path.join( pathOut , "constraint_law.pdf" ) , **pltkwargs )
-#	nsp.statistics_time( [clim,climCX,climCXCB] , os.path.join( pathOut , "Statistics_time.pdf" ) , labels = clim.model.tolist() + ["Multi_CX","Multi_CXCB"] , colors = ["red","blue","green"] , **pltkwargs )
+	nsp.constraint_law( climCX , climCXCB , ofile = os.path.join( pathOut , "constraint_law.pdf" ) , **pltkwargs )
+	nsp.statistics_time( [clim,climCX,climCXCB] , os.path.join( pathOut , "Statistics_time.pdf" ) , labels = clim.model.tolist() + ["Multi_CX","Multi_CXCB"] , colors = ["red","blue","green"] , **pltkwargs )
 	
 	
 	print("Done")
