@@ -85,13 +85,305 @@
 ##################################################################################
 ##################################################################################
 
-#############
-## Imports ##
-#############
+###############
+## Libraries ##
+###############
+
+import numpy             as np
+import scipy.stats       as sc
+import scipy.interpolate as sci
+import scipy.special     as scs
+import SDFC              as sd
+import SDFC.link         as sdl
 
 from .__AbstractModel import AbstractModel
-from .__Normal        import Normal
-from .__GEV           import GEV
-from .__GEVMin        import GEVMin
-from .__GEVPr         import GEVPr
-from .__GEVRLSC       import GEVRLSC
+
+
+#############
+## Classes ##
+#############
+
+class GEVRLSC(AbstractModel):
+	
+	def __init__( self , mle_with_bayesian = False , **kwargs ):##{{{
+		self._coefs = np.zeros(4)
+		self._mle_with_bayesian = mle_with_bayesian
+		self.n_ns_params = 4
+		self.lparams = {
+			"loc"   : self.loct ,
+			"scale" : self.scalet ,
+			"shape" : self.shapet ,
+			"alpha" : self.alphat }
+	##}}}
+	
+#	def to_netcdf( self ):##{{{
+#		ncargs = { "ns_law_name" : "GEVPr" }
+#		ncargs[ "ns_law_param_loc_cst" ]  = False
+#		ncargs[ "ns_law_param_loc_link" ] = sdt.IdLink()
+#		ncargs[ "ns_law_param_scale_cst" ]  = False
+#		ncargs[ "ns_law_param_scale_link" ] = sdt.IdLink()
+#		ncargs[ "ns_law_param_shape_cst" ]  = False
+#		ncargs[ "ns_law_param_shape_link" ] = sdt.IdLink()
+#		ncargs[ "ns_law_param_alpha_cst" ]  = False
+#		ncargs[ "ns_law_param_alpha_link" ] = sdt.IdLink()
+#		return ncargs
+#	##}}}
+	
+	
+	## Methods
+	##{{{
+	
+	def meant( self , t ):##{{{
+		shapet = self.shapet(t)
+		idx = np.abs(shapet) > 1e-8
+		cst = np.zeros(shapet) + np.euler_gamma
+		cst[idx] = ( scs.gamma( 1 - shapet[idx] ) - 1 ) / shapet[idx]
+		return self._loct(t) + self._scalet(t) * cst
+	##}}}
+	
+	def mediant( self , t ):##{{{
+		return self.loct(t) + self.scalet(t) * ( np.pow( np.log(2) , - self.shapet(t) ) - 1. ) / self.shapet(t)
+	##}}}
+	
+	def upper_boundt( self , t ):##{{{
+		"""
+		Upper bound of GEV model (can be infinite)
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		bound : np.array
+			bound at time t
+		"""
+		loc   = self.loct(t)
+		scale = self.scalet(t)
+		shape = self.shapet(t)
+		bound = loc - scale / shape
+		idx   = np.logical_not( shape < 0 )
+		bound[idx] = np.inf
+		return bound
+	##}}}
+	
+	def lower_boundt( self , t ):##{{{
+		"""
+		Lower bound of GEV model (can be -infinite)
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Results
+		-------
+		bound : np.array
+			bound at time t
+		"""
+		loc   = self.loct(t)
+		scale = self.scalet(t)
+		shape = self.shapet(t)
+		bound = loc - scale / shape
+		idx   = shape < 0
+		bound[idx] = - np.inf
+		return bound
+	##}}}
+	
+	##}}}
+	##========
+	
+	## Accessors
+	##{{{
+	
+	def get_params( self ):
+		return self._coefs
+	
+	def get_params_names( self , tex = False ): ##{{{
+		if not tex:
+			return ["loc","scale","shape","alpha"]
+		else:
+			return [r"$\mu$",r"$\sigma$",r"$\xi$",r"$\alpha$"]
+	##}}}
+	
+	def set_params( self , coefs ):##{{{
+		self._coefs = coefs
+	##}}}
+	
+	def set_covariable( self , X , t ):##{{{
+		ratio = self._coefs[3] / self._coefs[0]
+		loc   = np.squeeze( self._coefs[0] * np.exp( ratio * X ) )
+		scale = np.squeeze( self._coefs[1] * np.exp( ratio * X ) )
+		shape = np.zeros_like(X.squeeze()) + self._coefs[2]
+		alpha = np.zeros_like(X.squeeze()) + self._coefs[3]
+		self._loct   = sci.interp1d( t , loc   )
+		self._scalet = sci.interp1d( t , scale )
+		self._shapet = sci.interp1d( t , shape )
+		self._alphat = sci.interp1d( t , alpha )
+	##}}}
+	
+	def loct( self , t ):##{{{
+		return self._loct(t)
+	##}}}
+	
+	def scalet( self , t ):##{{{
+		return self._scalet(t)
+	##}}}
+	
+	def shapet( self , t ):##{{{
+		return self._shapet(t)
+	##}}}
+	
+	def alphat( self , t ):##{{{
+		return self._alphat(t)
+	##}}}
+	
+	##}}}
+	##==========
+	
+	## Fit methods
+	##{{{
+	
+	def fit( self , Y , X ):##{{{
+		X = X.reshape(-1,1)
+		Y = Y.reshape(-1,1)
+		
+		gev = sd.GEV( method = "MLE" )
+		gev.fit( Y , c_global = [X] , l_global = sdl.GEVRatioLocScaleConstant(Y.size) )
+		
+		self.set_params( gev.coef_ )
+		
+	##}}}
+	
+	def drawn_bayesian( self , Y , X  , n_mcmc_drawn , prior , min_rate_accept = 0.25 ):##{{{
+		X = X.reshape(-1,1)
+		Y = Y.reshape(-1,1)
+		
+		kwargs = {}
+		kwargs["n_mcmc_drawn"]    = n_mcmc_drawn
+		kwargs["prior"]           = prior
+		kwargs["min_rate_accept"] = min_rate_accept
+		
+		test_rate = False
+		while not test_rate:
+			gev = sd.GEV( method = "bayesian" )
+			gev.fit( Y , c_global = [X] , l_global = sdl.GEVRatioLocScaleConstant(Y.size) , **kwargs )
+			draw        = gev.info_.draw
+			rate_accept = gev.info_.rate_accept
+			test_rate = rate_accept > min_rate_accept
+		
+		return draw
+	##}}}
+	
+	##}}}
+	##============
+	
+	## Statistical methods
+	##{{{
+	
+	def check(self,*args,**kwargs):
+		return True
+	
+	def rvs( self , t ):##{{{
+		"""
+		Random value generator
+		
+		Parameters
+		----------
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		Y : np.array
+			A time series following the NS law
+		"""
+		kwargs = { "loc" : self.loct(t) , "scale" : self.scalet(t) , "c" : - self.shapet(t) }
+		return sc.genextreme.rvs( size = t.size , **kwargs )
+	##}}}
+	
+	def cdf( self , Y , t ):##{{{
+		"""
+		Cumulative Distribution Function (inverse of quantile function)
+		
+		Parameters
+		----------
+		Y : np.array
+			Value to estimate the CDF
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		q : np.array
+			CDF value
+		"""
+		kwargs = { "loc" : self.loct(t) , "scale" : self.scalet(t) , "c" : - self.shapet(t) }
+		return sc.genextreme.cdf( Y , **kwargs )
+	##}}}
+	
+	def icdf( self , q , t ):##{{{
+		"""
+		inverse of Cumulative Distribution Function 
+		
+		Parameters
+		----------
+		q : np.array
+			Values to estimate the quantile
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		Y : np.array
+			Quantile
+		"""
+		kwargs = { "loc" : self.loct(t) , "scale" : self.scalet(t) , "c" : - self.shapet(t) }
+		return sc.genextreme.ppf( q , **kwargs )
+	##}}}
+	
+	def sf( self , Y , t ):##{{{
+		"""
+		Survival Function (1-CDF)
+		
+		Parameters
+		----------
+		Y : np.array
+			Value to estimate the survival function
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		q : np.array
+			survival value
+		"""
+		kwargs = { "loc" : self.loct(t) , "scale" : self.scalet(t) , "c" : - self.shapet(t) }
+		return sc.genextreme.sf( Y , **kwargs )
+	##}}}
+	
+	def isf( self , q , t ):##{{{
+		"""
+		inverse of Survival Function
+		
+		Parameters
+		----------
+		q : np.array
+			Values to estimate the quantile
+		t : np.array
+			Time
+		
+		Returns
+		-------
+		Y : np.array
+			values
+		"""
+		kwargs = { "loc" : self.loct(t) , "scale" : self.scalet(t) , "c" : - self.shapet(t) }
+		return sc.genextreme.isf( q , **kwargs )
+	##}}}
+	
+	##}}}
+	##====================
+	
+

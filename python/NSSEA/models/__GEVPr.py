@@ -107,7 +107,11 @@ class GEVPr:
 		self._coefs = np.zeros(4)
 		self._mle_with_bayesian = mle_with_bayesian
 		self.n_ns_params = 4
-		self.lparams = ["loc","scale","shape","alpha"]
+		self.lparams = {
+			"loc"   : self.loct ,
+			"scale" : self.scalet ,
+			"shape" : self.shapet ,
+			"alpha" : self.alphat }
 	##}}}
 	
 #	def to_netcdf( self ):##{{{
@@ -210,9 +214,11 @@ class GEVPr:
 		loc   = np.squeeze( self._coefs[0] * np.exp( ratio * X ) )
 		scale = np.squeeze( self._coefs[1] * np.exp( ratio * X ) )
 		shape = np.zeros_like(X.squeeze()) + self._coefs[2]
+		alpha = np.zeros_like(X.squeeze()) + self._coefs[3]
 		self._loct   = sci.interp1d( t , loc   )
 		self._scalet = sci.interp1d( t , scale )
 		self._shapet = sci.interp1d( t , shape )
+		self._alphat = sci.interp1d( t , alpha )
 	##}}}
 	
 	def loct( self , t ):##{{{
@@ -225,6 +231,10 @@ class GEVPr:
 	
 	def shapet( self , t ):##{{{
 		return self._shapet(t)
+	##}}}
+	
+	def alphat( self , t ):##{{{
+		return self._alphat(t)
 	##}}}
 	
 	##}}}
