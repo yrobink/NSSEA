@@ -93,5 +93,8 @@ from .__AbstractModel import AbstractModel
 from .__Normal        import Normal
 from .__GEV           import GEV
 from .__GEVMin        import GEVMin
-from .__GEVPr         import GEVPr
 from .__GEVRLSC       import GEVRLSC
+
+
+
+

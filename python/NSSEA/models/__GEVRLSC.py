@@ -212,11 +212,11 @@ class GEVRLSC(AbstractModel):
 	##}}}
 	
 	def set_covariable( self , X , t ):##{{{
-		ratio = self._coefs[3] / self._coefs[0]
+		ratio = self._coefs[2] / self._coefs[0]
 		loc   = np.squeeze( self._coefs[0] * np.exp( ratio * X ) )
 		scale = np.squeeze( self._coefs[1] * np.exp( ratio * X ) )
-		shape = np.zeros_like(X.squeeze()) + self._coefs[2]
-		alpha = np.zeros_like(X.squeeze()) + self._coefs[3]
+		alpha = np.zeros_like(X.squeeze()) + self._coefs[2]
+		shape = np.zeros_like(X.squeeze()) + self._coefs[3]
 		self._loct   = sci.interp1d( t , loc   )
 		self._scalet = sci.interp1d( t , scale )
 		self._shapet = sci.interp1d( t , shape )

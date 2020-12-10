@@ -124,10 +124,10 @@ def load_models_obs( path ):##{{{
 	
 	## And finally load observations
 	##==============================
-	dXo = xr.open_dataset( os.path.join( path , "Xo/Xo.nc" ) )
+	dXo = xr.open_dataset( os.path.join( path , "Xo.nc" ) )
 	Xo  = pd.DataFrame( dXo.temperature_anomaly.values.squeeze() , columns = ["Xo"] , index = np.arange( 1850 , 2019 , 1 , dtype = np.int ) )
 	
-	dYo = xr.open_dataset( os.path.join( path , "Yo/Yo.nc" ) )
+	dYo = xr.open_dataset( os.path.join( path , "Yo.nc" ) )
 	Yo  = pd.DataFrame( dYo.rr.values.squeeze() , columns = ["Yo"] , index = np.arange( 1950 , 2019 , 1 , dtype = np.int ) )
 	
 	return models,lX,lY,Xo,Yo
