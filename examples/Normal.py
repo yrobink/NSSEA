@@ -207,7 +207,8 @@ if __name__ == "__main__":
 	## Test or not
 	##============
 	is_test = "--not-test" not in sys.argv
-	if is_test: np.random.seed(42) ## A good seed is always the big answer
+	set_seed = ~("--no-seed" in sys.argv)
+	if set_seed: np.random.seed(42) ## A good seed is always the big answer
 	
 	## Path
 	##=====
