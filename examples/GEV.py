@@ -246,7 +246,7 @@ if __name__ == "__main__":
 	##=====
 	basepath = os.path.dirname(os.path.abspath(__file__))
 	pathInp  = os.path.join( basepath , "input/GEV"  )
-	pathOut  = os.path.join( basepath , "output/GEV" )
+	pathOut  = os.path.join( basepath , "output/GEV/sm_full" )
 	assert(os.path.exists(pathInp))
 	assert(os.path.exists(pathOut))
 	
@@ -255,10 +255,11 @@ if __name__ == "__main__":
 	##=======================
 	time_period    = np.arange( 1850 , 2101 , 1 , dtype = np.int )
 	time_reference = np.arange( 1961 , 1991 , 1 , dtype = np.int )
-	bayes_kwargs = { "n_mcmc_drawn_min" : 2500 if is_test else  5000 , "n_mcmc_drawn_max" : 5000 if is_test else 10000 , "min_rate_accept" : 0.05 , "keep" : "all" if is_test else 0.2 }
+	bayes_kwargs = { "n_mcmc_drawn_min" : 2500 if is_test else  5000 , "n_mcmc_drawn_max" : 5000 if is_test else 10000 , "min_rate_accept" : 0.05 , "keep" : "all" }
+#	bayes_kwargs = { "n_mcmc_drawn_min" : 2500 if is_test else  5000 , "n_mcmc_drawn_max" : 5000 if is_test else 10000 , "min_rate_accept" : 0.05 , "keep" : "all" if is_test else 0.2 }
 	n_sample    = 1000 if not is_test else 10
 	ns_law      = nsm.GEV()
-	event       = ns.Event( "HW19D3" , 2019 , time_reference , type_ = "hard" , variable = "TX3D" , unit = "K" )
+	event       = ns.Event( "HW19" , 2019 , time_reference , type_ = "hard" , variable = "TX3X" , unit = "K" )
 	verbose     = "--not-verbose" not in sys.argv
 	ci          = 0.05 if not is_test else 0.1
 	
@@ -321,6 +322,7 @@ if __name__ == "__main__":
 	climCXCB   = ns.extreme_statistics( climCXCB , verbose = verbose )
 	climCXC0   = ns.extreme_statistics( climCXC0 , verbose = verbose )
 	
+	clim,climCX,climCXC0,climCXCB = ( ns.Climatology.from_netcdf( os.path.join( pathOut , "{}_clim{}.nc".format(event.name,s) ) , ns_law ) for s in ["","CX","CXC0","CXCB"] )
 	params     = ns.build_params_along_time( clim     , verbose = verbose )
 	paramsCX   = ns.build_params_along_time( climCX   , verbose = verbose )
 	paramsCXCB = ns.build_params_along_time( climCXCB , verbose = verbose )
@@ -332,7 +334,7 @@ if __name__ == "__main__":
 	for c,s in zip([clim,climCX,climCXC0,climCXCB],["","CX","CXC0","CXCB"]):
 		c.to_netcdf( os.path.join( pathOut , "{}_clim{}.nc".format(event.name,s) ) )
 	for p,s in zip([params,paramsCX,paramsCXC0,paramsCXCB],["","CX","CXC0","CXCB"]):
-		params.to_dataset( name = "params{}".format(s) ).to_netcdf( os.path.join( pathOut , "{}_params{}.nc".format(event.name,s) ) )
+		p.to_dataset( name = "params{}".format(s) ).to_netcdf( os.path.join( pathOut , "{}_params{}.nc".format(event.name,s) ) )
 	
 	## Reload
 	##=======
