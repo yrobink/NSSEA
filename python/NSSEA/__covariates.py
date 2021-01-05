@@ -261,7 +261,7 @@ class GAM_FC:##{{{
 
 ##}}}
 
-def covariates_FC_GAM( clim , lX , XN , dof = 7 , method = "statsmodels" , verbose = False ):##{{{
+def covariates_FC_GAM( clim , lX , XN , dof = 7 , method = "pygam" , verbose = False ):##{{{
 	"""
 	NSSEA.covariates_FC_GAM
 	=======================
