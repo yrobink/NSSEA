@@ -336,7 +336,7 @@ if __name__ == "__main__":
 	for c,s in zip([clim,climCX,climCXC0,climCXCB],["","CX","CXC0","CXCB"]):
 		c.to_netcdf( os.path.join( pathOut , "{}_clim{}.nc".format(event.name,s) ) )
 	for p,s in zip([params,paramsCX,paramsCXC0,paramsCXCB],["","CX","CXC0","CXCB"]):
-		params.to_dataset( name = "params{}".format(s) ).to_netcdf( os.path.join( pathOut , "{}_params{}.nc".format(event.name,s) ) )
+		p.to_dataset( name = "params{}".format(s) ).to_netcdf( os.path.join( pathOut , "{}_params{}.nc".format(event.name,s) ) )
 	
 	## Reload
 	##=======
