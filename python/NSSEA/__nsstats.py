@@ -157,27 +157,30 @@ def extreme_statistics( clim , event = None , verbose = False , tol = sys.float_
 		for s in samples:
 			pb.print()
 			
+			## Start with params
 			law.set_params( clim.law_coef.loc[:,s,m].values )
 			
-			## Find threshold
+			## Go to factual world
 			law.set_covariable( clim.X.loc[:,s,"F",m].values , time )
+			
+			## Find value of event definition
 			if event.type == "anomaly":
-				threshold = np.zeros(n_time) + np.mean( law.meant(event.reference) ) + event.value
+				value = np.zeros(n_time) + np.mean( law.meant(event.reference) ) + event.value
 			elif event.type == "value":
-				threshold = np.zeros(n_time) + event.value
+				value = np.zeros(n_time) + event.value
 			
 			## Find pF
-			stats.loc[:,s,"pF",m] = law.sf( threshold , time ) if upper_side else law.cdf( threshold , time )
+			stats.loc[:,s,"pF",m] = law.sf( value , time ) if upper_side else law.cdf( value , time )
 			
 			## Find probability of the event in factual world
-			pf = np.zeros(n_time) + ( law.sf( np.array([threshold[0]]) , np.array([event.time]) ) if upper_side else law.cdf( np.array([threshold[0]]) , np.array([event.time]) ) )
+			pf = np.zeros(n_time) + ( law.sf( np.array([value[0]]) , np.array([event.time]) ) if upper_side else law.cdf( np.array([value[0]]) , np.array([event.time]) ) )
 			
 			## I1
 			stats.loc[:,s,"IF",m] = law.isf( pf , time ) if upper_side else law.icdf( pf , time )
 			
 			## Find pC
 			law.set_covariable( clim.X.loc[:,s,"C",m].values , time )
-			stats.loc[:,s,"pC",m] = law.sf( threshold , time ) if upper_side else law.cdf( threshold , time )
+			stats.loc[:,s,"pC",m] = law.sf( value , time ) if upper_side else law.cdf( value , time )
 			
 			## I0
 			stats.loc[:,s,"IC",m] = law.isf( pf , time ) if upper_side else law.icdf( pf , time )
