@@ -260,7 +260,7 @@ if __name__ == "__main__":
 	min_rate_accept  = 0.05
 	n_sample    = 1000 if not is_test else 10
 	ns_law      = nsm.GEVMin()
-	event       = ns.Event( "HW19D3_min" , 2019 , time_reference , type_ = "hard" , side = "lower" , variable = "minus_TX3D" , unit = "K" )
+	event       = ns.Event( "HW19D3_min" , 2019 , time_reference , type_ = "value" , side = "lower" , variable = "minus_TX3D" , unit = "K" )
 	verbose     = "--not-verbose" not in sys.argv
 	ci          = 0.05 if not is_test else 0.1
 	
@@ -274,7 +274,7 @@ if __name__ == "__main__":
 	##==========================
 	Yo -= Yo.loc[event.reference].mean()
 	Yo = -Yo
-	event.anomaly = float(Yo.loc[event.time])
+	event.value = float(Yo.loc[event.time])
 	
 	
 	## Models in anomaly

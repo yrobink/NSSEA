@@ -182,7 +182,7 @@ if __name__ == "__main__":
 	bayes_kwargs = { "n_mcmc_drawn_min" : 2500 if is_test else  5000 , "n_mcmc_drawn_max" : 5000 if is_test else 10000 , "min_rate_accept" : 0.05 , "keep" : "all" if is_test else 0.2 }
 	n_sample    = 1000 if not is_test else 10
 	ns_law      = nsm.GEVRLSC()
-	event       = ns.Event( "FL13D4" , 2013 , time_reference , type_ = "hard" , variable = "PR4X" , unit = "mm" )
+	event       = ns.Event( "FL13D4" , 2013 , time_reference , type_ = "value" , variable = "PR4X" , unit = "mm" )
 	verbose     = True
 	ci          = 0.05 if not is_test else 0.1
 	
@@ -203,7 +203,7 @@ if __name__ == "__main__":
 	
 	## Anomaly from observations
 	##==========================
-	event.anomaly = float(Yo.loc[event.time])
+	event.value = float(Yo.loc[event.time])
 	
 	
 	## Models in anomaly

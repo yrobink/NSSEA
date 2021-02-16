@@ -239,7 +239,7 @@ if __name__ == "__main__":
 	## Anomaly from observations
 	##==========================
 	Yo -= Yo.loc[event.reference].mean()
-	event.anomaly = float(Yo.loc[event.time])
+	event.value = float(Yo.loc[event.time])
 	
 	
 	## Models in anomaly

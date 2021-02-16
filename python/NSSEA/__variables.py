@@ -105,7 +105,7 @@ class Event: ##{{{
 	Event variable containing information about event considered
 	"""
 	
-	def __init__( self , name , time , reference , anomaly = None , type_ = "threshold" , side = "upper" , variable = "variable" , unit = "U" ):
+	def __init__( self , name , time , reference , value = None , type_ = "anomaly" , side = "upper" , variable = "variable" , unit = "U" ):
 		"""
 		Constructor of Event
 		
@@ -115,17 +115,17 @@ class Event: ##{{{
 		name          : [str] Name of event
 		time          : [time_index] Time when event occured
 		reference     : [array] Time period to considered as reference for anomaly
-		anomaly       : [float] Anomaly of event
-		type          : ["threshold" or "hard"] If we compute probabilities as a threshold beyond mean, or anomaly is used as a hard value.
+		value         : [float] Value defining the event. See type.
+		type          : "anomaly" (anomaly beyond the mean), "value" (value is used) , "return_time" (event is defined by a fixed return time).
 		side          : [str] "upper" or "lower" extremes event
 		name_variable : [str] Name of variable (temperature, precipitation, etc)
 		unit          : [str] Unit of the variable
 		"""
 		self.name      = name
 		self.time      = time
-		self.anomaly   = anomaly
+		self.value     = value
 		self.reference = reference
-		self.type      = type_ if type_ in ["threshold","hard"] else "threshold"
+		self.type      = type_ if type_ in ["anomaly","value","return_time"] else "anomaly"
 		self.side      = side if side in ["upper","lower"] else "upper"
 		self.variable  = variable
 		self.unit      = unit
@@ -138,7 +138,7 @@ class Event: ##{{{
 		out += "Event     : {},\n".format(self.name)
 		out += "variable  : {} ({}),\n".format(self.variable,self.unit)
 		out += "time      : {},\n".format(self.time)
-		out += "anomaly   : {},\n".format(self.anomaly)
+		out += "value     : {},\n".format(self.value)
 		out += "reference : {}-{},\n".format(self.reference.min(),self.reference.max())
 		out += "side      : {}\n".format(self.side)
 		return out
@@ -235,7 +235,7 @@ class Climatology: ##{{{
 		self.data.attrs["BE_is_median"]   = str(self.BE_is_median)
 		self.data.attrs["event.name"]     = self.event.name
 		self.data.attrs["event.time"]     = self.event.time
-		self.data.attrs["event.anomaly"]  = self.event.anomaly
+		self.data.attrs["event.value"]    = self.event.value
 		self.data.attrs["event.type"]     = self.event.type
 		self.data.attrs["event.side"]     = self.event.side
 		self.data.attrs["event.variable"] = self.event.variable
@@ -258,7 +258,13 @@ class Climatology: ##{{{
 		clim: [NSSEA.Climatology]
 		"""
 		data = xr.open_dataset(ifile)
-		event = Event( data.attrs["event.name"] , data.attrs["event.time"] , data.anomaly_period.values , data.attrs["event.anomaly"] , data.attrs["event.type"] , data.attrs["event.side"] , data.attrs["event.variable"] , data.attrs["event.unit"] )
+		args = (data.attrs["event.name"] , data.attrs["event.time"] , data.anomaly_period.values)
+		try:
+			args = args + (data.attrs["event.value"],)
+		except:
+			args = args + (data.attrs["event.anomaly"],)
+		args = args + (data.attrs["event.type"] , data.attrs["event.side"] , data.attrs["event.variable"] , data.attrs["event.unit"])
+		event = Event(*args)
 		clim = Climatology( event , data.time.values , data.model.values , data.sample.size , ns_law )
 		clim.data = data
 		clim.BE_is_median = bool(data.attrs["BE_is_median"])

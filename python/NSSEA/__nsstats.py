@@ -161,10 +161,10 @@ def extreme_statistics( clim , event = None , verbose = False , tol = sys.float_
 			
 			## Find threshold
 			law.set_covariable( clim.X.loc[:,s,"F",m].values , time )
-			if event.type == "threshold":
-				threshold = np.zeros(n_time) + np.mean( law.meant(event.reference) ) + event.anomaly
-			else:
-				threshold = np.zeros(n_time) + event.anomaly
+			if event.type == "anomaly":
+				threshold = np.zeros(n_time) + np.mean( law.meant(event.reference) ) + event.value
+			elif event.type == "value":
+				threshold = np.zeros(n_time) + event.value
 			
 			## Find pF
 			stats.loc[:,s,"pF",m] = law.sf( threshold , time ) if upper_side else law.cdf( threshold , time )

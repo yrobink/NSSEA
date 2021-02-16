@@ -246,7 +246,7 @@ if __name__ == "__main__":
 	##=====
 	basepath = os.path.dirname(os.path.abspath(__file__))
 	pathInp  = os.path.join( basepath , "input/GEV"  )
-	pathOut  = os.path.join( basepath , "output/GEV/sm_full" )
+	pathOut  = os.path.join( basepath , "output/GEV" )
 	assert(os.path.exists(pathInp))
 	assert(os.path.exists(pathOut))
 	
@@ -259,7 +259,7 @@ if __name__ == "__main__":
 #	bayes_kwargs = { "n_mcmc_drawn_min" : 2500 if is_test else  5000 , "n_mcmc_drawn_max" : 5000 if is_test else 10000 , "min_rate_accept" : 0.05 , "keep" : "all" if is_test else 0.2 }
 	n_sample    = 1000 if not is_test else 10
 	ns_law      = nsm.GEV()
-	event       = ns.Event( "HW19" , 2019 , time_reference , type_ = "hard" , variable = "TX3X" , unit = "K" )
+	event       = ns.Event( "HW19" , 2019 , time_reference , type_ = "value" , variable = "TX3X" , unit = "K" )
 	verbose     = "--not-verbose" not in sys.argv
 	ci          = 0.05 if not is_test else 0.1
 	
@@ -272,7 +272,7 @@ if __name__ == "__main__":
 	## Anomaly from observations
 	##==========================
 	Yo -= Yo.loc[event.reference].mean()
-	event.anomaly = float(Yo.loc[event.time])
+	event.value = float(Yo.loc[event.time])
 	
 	
 	## Models in anomaly
@@ -322,7 +322,6 @@ if __name__ == "__main__":
 	climCXCB   = ns.extreme_statistics( climCXCB , verbose = verbose )
 	climCXC0   = ns.extreme_statistics( climCXC0 , verbose = verbose )
 	
-	clim,climCX,climCXC0,climCXCB = ( ns.Climatology.from_netcdf( os.path.join( pathOut , "{}_clim{}.nc".format(event.name,s) ) , ns_law ) for s in ["","CX","CXC0","CXCB"] )
 	params     = ns.build_params_along_time( clim     , verbose = verbose )
 	paramsCX   = ns.build_params_along_time( climCX   , verbose = verbose )
 	paramsCXCB = ns.build_params_along_time( climCXCB , verbose = verbose )
