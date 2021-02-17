@@ -227,7 +227,7 @@ if __name__ == "__main__":
 	bayes_kwargs = { "n_mcmc_drawn_min" : 2500 if is_test else  5000 , "n_mcmc_drawn_max" : 5000 if is_test else 10000 }
 	n_sample    = 1000 if not is_test else 10
 	ns_law      = nsm.Normal( l_scale = sdl.ULExponential() )
-	event       = ns.Event( "HW03" , 2003 , time_reference , variable = "T" , unit = "K" )
+	event       = ns.Event( "HW03" , 2003 , time_reference , type_ = "Rt" , variable = "T" , unit = "K" )
 	verbose     = "--not-verbose" not in sys.argv
 	ci          = 0.05 if not is_test else 0.1
 	
@@ -240,7 +240,7 @@ if __name__ == "__main__":
 	## Anomaly from observations
 	##==========================
 	Yo -= Yo.loc[event.reference].mean()
-	event.value = float(Yo.loc[event.time])
+	event.value = 1000. #float(Yo.loc[event.time])
 	
 	
 	## Models in anomaly
@@ -285,10 +285,10 @@ if __name__ == "__main__":
 	
 	## Compute stats
 	##==============
-	clim       = ns.extreme_statistics( clim     , verbose = verbose )
-	climCX     = ns.extreme_statistics( climCX   , verbose = verbose )
-	climCXCB   = ns.extreme_statistics( climCXCB , verbose = verbose )
-	climCXC0   = ns.extreme_statistics( climCXC0 , verbose = verbose )
+	clim       = ns.statistics_attribution( clim     , verbose = verbose )
+	climCX     = ns.statistics_attribution( climCX   , verbose = verbose )
+	climCXCB   = ns.statistics_attribution( climCXCB , verbose = verbose )
+	climCXC0   = ns.statistics_attribution( climCXC0 , verbose = verbose )
 	
 	params     = ns.build_params_along_time( clim     , verbose = verbose )
 	paramsCX   = ns.build_params_along_time( climCX   , verbose = verbose )

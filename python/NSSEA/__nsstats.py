@@ -99,10 +99,10 @@ from .__tools import ProgressBar
 ## Functions ##
 ###############
 
-def extreme_statistics( clim , event = None , verbose = False , tol = sys.float_info.epsilon ):##{{{
+def statistics_attribution( clim , event = None , verbose = False ):##{{{
 	"""
-	NSSEA.extreme_statistics
-	========================
+	NSSEA.statistics_attribution
+	============================
 	Compute extremes statistics and add it to a Climatology.
 	
 	Arguments
@@ -113,8 +113,6 @@ def extreme_statistics( clim , event = None , verbose = False , tol = sys.float_
 		If None, clim.event is used.
 	verbose: bool
 		Print state of execution or not
-	tol    : float
-		Numerical tolerance, default is sys.float_info.epsilon
 	
 	Return
 	------
@@ -125,11 +123,11 @@ def extreme_statistics( clim , event = None , verbose = False , tol = sys.float_
 	-------------------
 	The variable clim.stats is an xarray with dimensions (n_time,n_sample+1,n_stats,n_models), stats available are:
 	
-	pF: Probability of event.anomaly at time event.time in factual world
-	pC: Probability of event.anomaly at time event.time in counter factual world
+	pF: Probability of event.value at time event.time in factual world
+	pC: Probability of event.value at time event.time in counter factual world
 	PR: Probability ratio (pF / pC)
-	IF: Event with same probability than the probability of event.anomaly at each time in factual world
-	IC: Event with same probability than the probability of event.anomaly at each time in counter factual world
+	IF: Event with same probability than the probability of event.value at each time in factual world
+	IC: Event with same probability than the probability of event.value at each time in counter factual world
 	dI: IF - IC
 	
 	"""
@@ -168,22 +166,26 @@ def extreme_statistics( clim , event = None , verbose = False , tol = sys.float_
 				value = np.zeros(n_time) + np.mean( law.meant(event.reference) ) + event.value
 			elif event.type == "value":
 				value = np.zeros(n_time) + event.value
+			elif event.type == "Rt":
+				value = np.zeros(n_time) + ( law.isf( 1. / event.value , event.time ) if upper_side else law.icdf( 1. / event.value , event.time ) )
+			elif event.type == "p":
+				value = np.zeros(n_time) + ( law.isf( event.value , event.time ) if upper_side else law.icdf( event.value , event.time ) )
 			
 			## Find pF
 			stats.loc[:,s,"pF",m] = law.sf( value , time ) if upper_side else law.cdf( value , time )
 			
 			## Find probability of the event in factual world
-			pf = np.zeros(n_time) + ( law.sf( np.array([value[0]]) , np.array([event.time]) ) if upper_side else law.cdf( np.array([value[0]]) , np.array([event.time]) ) )
+			pF = np.zeros(n_time) + float(stats.loc[event.time,s,"pF",m])
 			
 			## I1
-			stats.loc[:,s,"IF",m] = law.isf( pf , time ) if upper_side else law.icdf( pf , time )
+			stats.loc[:,s,"IF",m] = law.isf( pF , time ) if upper_side else law.icdf( pF , time )
 			
 			## Find pC
 			law.set_covariable( clim.X.loc[:,s,"C",m].values , time )
 			stats.loc[:,s,"pC",m] = law.sf( value , time ) if upper_side else law.cdf( value , time )
 			
 			## I0
-			stats.loc[:,s,"IC",m] = law.isf( pf , time ) if upper_side else law.icdf( pf , time )
+			stats.loc[:,s,"IC",m] = law.isf( pF , time ) if upper_side else law.icdf( pF , time )
 	
 	
 	## PR

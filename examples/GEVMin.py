@@ -320,10 +320,10 @@ if __name__ == "__main__":
 	
 	## Compute stats
 	##==============
-	clim       = ns.extreme_statistics( clim     , verbose = verbose )
-	climCX     = ns.extreme_statistics( climCX   , verbose = verbose )
-	climCXCB   = ns.extreme_statistics( climCXCB , verbose = verbose )
-	climCXC0   = ns.extreme_statistics( climCXC0 , verbose = verbose )
+	clim       = ns.statistics_attribution( clim     , verbose = verbose )
+	climCX     = ns.statistics_attribution( climCX   , verbose = verbose )
+	climCXCB   = ns.statistics_attribution( climCXCB , verbose = verbose )
+	climCXC0   = ns.statistics_attribution( climCXC0 , verbose = verbose )
 	
 	params     = ns.build_params_along_time( clim     , verbose = verbose )
 	paramsCX   = ns.build_params_along_time( climCX   , verbose = verbose )

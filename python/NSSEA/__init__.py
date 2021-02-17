@@ -110,7 +110,7 @@ from .__covariates import covariates_FC_GAM
 from .__nsfit       import nslaw_fit
 from .__multi_model import infer_multi_model
 from .__multi_model import MultiModel
-from .__nsstats     import extreme_statistics
+from .__nsstats     import statistics_attribution
 
 from .__nsstats     import build_params_along_time
 from .__nsstats     import add_return_time

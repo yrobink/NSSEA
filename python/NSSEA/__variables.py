@@ -116,7 +116,11 @@ class Event: ##{{{
 		time          : [time_index] Time when event occured
 		reference     : [array] Time period to considered as reference for anomaly
 		value         : [float] Value defining the event. See type.
-		type          : "anomaly" (anomaly beyond the mean), "value" (value is used) , "return_time" (event is defined by a fixed return time).
+		type          : Type of event:
+		                * "anomaly" (anomaly beyond the mean)
+		                * "value" (value is used)
+		                * "Rt" (event is defined by a fixed return time)
+		                * "p" (event is defined by a probability).
 		side          : [str] "upper" or "lower" extremes event
 		name_variable : [str] Name of variable (temperature, precipitation, etc)
 		unit          : [str] Unit of the variable
@@ -125,7 +129,7 @@ class Event: ##{{{
 		self.time      = time
 		self.value     = value
 		self.reference = reference
-		self.type      = type_ if type_ in ["anomaly","value","return_time"] else "anomaly"
+		self.type      = type_ if type_ in ["anomaly","value","Rt","p"] else "value"
 		self.side      = side if side in ["upper","lower"] else "upper"
 		self.variable  = variable
 		self.unit      = unit
