@@ -12,8 +12,3 @@ rm -rf tests/output/Normal/*
 rm -rf tests/output/GEV/*
 rm -rf tests/output/GEVMin/*
 
-
-## Delete R temporary files
-rm -f R/NSSEA/NAMESPACE
-rm -f R/NSSEA/man/*.Rd
-rm -f R/*.tar.gz
