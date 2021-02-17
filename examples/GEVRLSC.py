@@ -180,32 +180,21 @@ if __name__ == "__main__":
 	##=======================
 	time_period    = np.arange( 1850 , 2101 , 1 , dtype = np.int )
 	time_reference = np.arange( 1961 , 1991 , 1 , dtype = np.int )
-	bayes_kwargs = { "n_mcmc_drawn_min" : 2500 if is_test else  5000 , "n_mcmc_drawn_max" : 5000 if is_test else 10000 , "min_rate_accept" : 0.05 , "keep" : "all" if is_test else 0.2 }
+	bayes_kwargs = { "n_mcmc_drawn_min" : 2500 if is_test else  5000 , "n_mcmc_drawn_max" : 5000 if is_test else 10000 }
 	n_sample    = 1000 if not is_test else 10
 	ns_law      = nsm.GEVRLSC()
-	event       = ns.Event( "FL13D4" , 2013 , time_reference , type_ = "value" , variable = "PR4X" , unit = "mm" )
+	event       = ns.Event( "FL13" , 2013 , time_reference , type_ = "value" , variable = "PR4X" , unit = "mm" )
 	verbose     = True
 	ci          = 0.05 if not is_test else 0.1
-	
 	
 	## Load models and observations
 	##=============================
 	models,lX,lY,Xo,Yo = load_models_obs( pathInp )
 	
 	
-	## Remove models with problems
-	##============================
-#	for i in [3,-5,-5,-1,2]:
-#		print(models[i])
-#		del lY[i]
-#		del lX[i]
-#		del models[i]
-	
-	
 	## Anomaly from observations
 	##==========================
 	event.value = float(Yo.loc[event.time])
-	
 	
 	## Models in anomaly
 	##==================
@@ -213,7 +202,6 @@ if __name__ == "__main__":
 		X -= X.loc[event.reference].mean()
 	for Y in lY:
 		Y *= 86400
-	
 	
 	## Define clim variable from input
 	##================================

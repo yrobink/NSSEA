@@ -249,7 +249,7 @@ def _constrain_law_all( climIn , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , verb
 	
 	
 	min_rate_accept = kwargs.get("min_rate_accept")
-	if min_rate_accept is None: min_rate_accept = 0.25
+	if min_rate_accept is None: min_rate_accept = 0.05
 	
 	## Define prior
 	prior_mean   = clim.data["mm_mean"][-clim.n_coef:].values
@@ -293,7 +293,7 @@ def _constrain_law_keep( climIn , Yo , keep , n_mcmc_drawn_min , n_mcmc_drawn_ma
 	
 	
 	min_rate_accept = kwargs.get("min_rate_accept")
-	if min_rate_accept is None: min_rate_accept = 0.25
+	if min_rate_accept is None: min_rate_accept = 0.05
 	
 	## Define prior
 	prior_mean   = clim.data["mm_mean"][-clim.n_coef:].values

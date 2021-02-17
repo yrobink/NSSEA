@@ -224,7 +224,7 @@ if __name__ == "__main__":
 	##=======================
 	time_period    = np.arange( 1850 , 2101 , 1 , dtype = np.int )
 	time_reference = np.arange( 1961 , 1991 , 1 , dtype = np.int )
-	bayes_kwargs = { "n_mcmc_drawn_min" : 2500 if is_test else  5000 , "n_mcmc_drawn_max" : 5000 if is_test else 10000 , "min_rate_accept" : 0.05 , "keep" : "all" if is_test else 0.2 }
+	bayes_kwargs = { "n_mcmc_drawn_min" : 2500 if is_test else  5000 , "n_mcmc_drawn_max" : 5000 if is_test else 10000 }
 	n_sample    = 1000 if not is_test else 10
 	ns_law      = nsm.Normal( l_scale = sdl.ULExponential() )
 	event       = ns.Event( "HW03" , 2003 , time_reference , variable = "T" , unit = "K" )

@@ -258,10 +258,9 @@ if __name__ == "__main__":
 	time_reference = np.arange( 1961 , 1991 , 1 , dtype = np.int )
 	n_mcmc_drawn_min = 500  if is_test else  5000
 	n_mcmc_drawn_max = 1000 if is_test else 10000
-	min_rate_accept  = 0.05
 	n_sample    = 1000 if not is_test else 10
 	ns_law      = nsm.GEVMin()
-	event       = ns.Event( "HW19D3_min" , 2019 , time_reference , type_ = "value" , side = "lower" , variable = "minus_TX3D" , unit = "K" )
+	event       = ns.Event( "HW19_min" , 2019 , time_reference , type_ = "value" , side = "lower" , variable = "mTX3X" , unit = "K" )
 	verbose     = "--not-verbose" not in sys.argv
 	ci          = 0.05 if not is_test else 0.1
 	
@@ -314,7 +313,7 @@ if __name__ == "__main__":
 	## Apply constraints
 	##==================
 	climCX     = ns.constrain_covariate( climMM , Xo , time_reference , verbose = verbose )
-	climCXCB   = ns.constrain_law( climCX , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , min_rate_accept = min_rate_accept , verbose = verbose )
+	climCXCB   = ns.constrain_law( climCX , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , verbose = verbose )
 	climC0     = ns.constraint_C0( climMM , Yo , verbose = verbose )
 	climCXC0   = ns.constraint_C0( climCX , Yo , verbose = verbose )
 	
