@@ -1,7 +1,5 @@
 # NSSEA (Non-Stationary Statistics for Extreme Attribution)
 
-Warning : the R version does not work
-
 ## Python instruction
 
 Requires:
