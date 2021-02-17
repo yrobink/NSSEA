@@ -276,4 +276,51 @@ def probabilities( clim , ofile , event = None , ci = 0.05 , verbose = False ):#
 	pb.end()
 ##}}}
 
+def KStest_model( KS , ofile , verbose = False ):##{{{
+	"""
+	NSSEA.plot.KStest_model
+	=======================
+	Plot results of KS test of models.
+	
+	Arguments
+	---------
+	KS        : xarray
+		KS test values, from NSSEA.KStest_model
+	ofile     : str
+		output file
+	verbose   : bool
+		Print (or not) state of execution
+	"""
+	pb = ProgressBar( 1 , "plot.KStest_model" , verbose )
+	
+	## Figure
+	pdf = mpdf.PdfPages( ofile )
+	fs = 1.5
+	font_size = mpl.rcParams["font.size"]
+	mpl.rcParams["font.size"] = 15
+	fig = plt.figure( figsize = (fs * 12,fs * 8) )
+	ax  = fig.add_subplot(1,1,1)
+	colors = [c for c in plt.cm.jet( np.linspace(0,1,KS.model.size) )]
+	
+	## Loop
+	for i,m in enumerate(KS.model):
+		ax.plot( KS[:,1:,:].loc[m,:,"ks_stats"] , KS[:,1:,:].loc[m,:,"pvalue"] , linestyle = "" , marker = "." , color = colors[i] )
+		ax.plot( KS.loc[m,"BE","ks_stats"] , KS.loc[m,"BE","pvalue"] , linestyle = "" , marker = "x" , markersize = 10 , color = colors[i] , label = str(m.values) )
+	pb.print()
+	
+	## Add labels
+	ax.legend( ncol = 2 )
+	ax.set_xlabel( "KS statistics" )
+	ax.set_ylabel( r"$p$-value" )
+	
+	## And now end
+	plt.tight_layout()
+	pdf.savefig( fig )
+	plt.close(fig)
+	pdf.close()
+	mpl.rcParams["font.size"] = font_size
+	
+	pb.end()
+##}}}
+
 
