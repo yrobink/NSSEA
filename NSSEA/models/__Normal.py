@@ -90,6 +90,7 @@
 ###############
 
 import numpy             as np
+import pandas            as pd
 import scipy.stats       as sc
 import scipy.interpolate as sci
 import SDFC              as sd
@@ -122,6 +123,12 @@ class Normal(AbstractModel):
 	
 	def mediant( self , t ):
 		return self.loct(t)
-
+	
+	def kstest( self , Y ):
+		
+		loc   = self.loct(Y.index).squeeze()
+		scale = self.scalet(Y.index).squeeze()
+		Z = ( Y.values.squeeze() - loc ) / scale
+		return list(sc.kstest( Z , lambda x : sc.norm.cdf( x , loc = 0 , scale = 1 ) ) )
 
 
