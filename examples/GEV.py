@@ -337,6 +337,7 @@ if __name__ == "__main__":
 	
 	## Save in netcdf
 	##===============
+	KS.to_dataset( name = "KSresults" ).to_netcdf(os.path.join(pathOut,"KSresults.nc"))
 	for c,s in zip([clim,climCX,climCXC0,climCXCB],["","CX","CXC0","CXCB"]):
 		c.to_netcdf( os.path.join( pathOut , "{}_clim{}.nc".format(event.name,s) ) )
 	for p,s in zip([params,paramsCX,paramsCXC0,paramsCXCB],["","CX","CXC0","CXCB"]):
