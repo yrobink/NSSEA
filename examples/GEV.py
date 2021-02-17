@@ -289,17 +289,18 @@ if __name__ == "__main__":
 	##================================
 	clim = ns.Climatology( event , time_period , models , n_sample , ns_law )
 	
-	
 	## Decomposition of covariates
 	##============================
 	Xebm   = ns.EBM().draw_sample( clim.time , n_sample + 1 , fix_first = 0 )
 	clim   = ns.covariates_FC_GAM( clim , lX , Xebm , verbose = verbose )
 	
-	
 	## Fit distribution
 	##=================
 	clim = ns.nslaw_fit( lY , clim , verbose = verbose )
 	
+	## KS-Test
+	##========
+	KS = ns.KStest_model( clim , lY , verbose = verbose )
 	
 	## Multi-model
 	##============
@@ -350,6 +351,7 @@ if __name__ == "__main__":
 	##=====
 	pltkwargs = { "verbose" : verbose , "ci" : ci }
 	nsp.GAM_decomposition( clim , lX , os.path.join( pathOut , "GAM_decomposition.pdf" ) , **pltkwargs )
+	nsp.KStest_model( KS , ofile = os.path.join( pathOut , "KStest_model.pdf" ) , verbose = verbose )
 	nsp.constraint_covariate( clim , climCXCB , Xo , os.path.join( pathOut , "constraint_covariate.pdf" )  , **pltkwargs )
 	nsp.summary( clim     , pathOut , t1 = 2040 , params = params     , **pltkwargs )
 	nsp.summary( climCX   , pathOut , t1 = 2040 , params = paramsCX   , suffix = "CX"   , **pltkwargs )
