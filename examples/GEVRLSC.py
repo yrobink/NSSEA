@@ -173,7 +173,8 @@ if __name__ == "__main__":
 	pathInp  = os.path.join( basepath , "input/GEVRLSC"  )
 	pathOut  = os.path.join( basepath , "output/GEVRLSC" )
 	assert(os.path.exists(pathInp))
-	assert(os.path.exists(pathOut))
+	if not os.path.exists(pathOut):
+		os.makedirs(pathOut)
 	
 	## Some global parameters
 	##=======================
