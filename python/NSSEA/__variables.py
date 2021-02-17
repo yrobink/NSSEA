@@ -138,7 +138,7 @@ class Event: ##{{{
 		out += "Event     : {},\n".format(self.name)
 		out += "variable  : {} ({}),\n".format(self.variable,self.unit)
 		out += "time      : {},\n".format(self.time)
-		out += "value     : {},\n".format(self.value)
+		out += "value     : {} ({}),\n".format(self.value,self.type)
 		out += "reference : {}-{},\n".format(self.reference.min(),self.reference.max())
 		out += "side      : {}\n".format(self.side)
 		return out
