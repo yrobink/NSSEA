@@ -407,12 +407,11 @@ def add_return_time( clim , verbose = False ):##{{{
 	"""
 	NSSEA.add_return_time
 	=====================
-	Add return time to statistics computed (require that NSSEA.extremes_stats has been previously called)
-	A copy is returned.
+	Add return time to statistics computed (require that NSSEA.statistics_* has been previously called)
 	
 	Arguments
 	---------
-	climIn : NSSEA.Climatology
+	clim : NSSEA.Climatology
 		A clim variable
 	
 	Return
@@ -442,12 +441,11 @@ def add_FAR( clim , verbose = False ):##{{{
 	"""
 	NSSEA.add_FAR
 	=============
-	Add FAR (Fraction of Attribuable Risk = 1 - 1 / PR) to statistics computed (require that NSSEA.extremes_stats has been previously called)
-	A copy is returned.
+	Add FAR (Fraction of Attribuable Risk = 1 - 1 / PR) to statistics computed (require that NSSEA.statistics_* has been previously called)
 	
 	Arguments
 	---------
-	climIn : NSSEA.Climatology
+	clim : NSSEA.Climatology
 		A clim variable
 	
 	Return
@@ -467,6 +465,40 @@ def add_FAR( clim , verbose = False ):##{{{
 	data = xr.Dataset( { "X" : None , "law_coef" : None , "statistics" : FAR } )
 	clim.data = xr.concat( [clim.data,data] , dim = "stats" , data_vars = ["statistics"] , coords = "minimal" , compat = "override" )
 	
+	pb.end()
+	
+	return clim
+##}}}
+
+def add_bias( clim , bias , verbose = False ):##{{{
+	"""
+	NSSEA.add_bias
+	==============
+	Add a bias to IF and IC for each model.
+	
+	
+	Arguments
+	---------
+	clim : NSSEA.Climatology
+		A clim variable
+	bias : dict = { "model_name" : bias_value ,...}
+		Bias to add at each model
+	
+	Return
+	------
+	clim : NSSEA.Climatology
+		A clim variable
+	
+	"""
+	
+	pb = ProgressBar( clim.n_model , "add_bias" , verbose )
+	
+	stats = clim.statistics
+	for m in clim.model:
+		stats.loc[:,:,"IF",m] += bias[m]
+		stats.loc[:,:,"IC",m] += bias[m]
+		pb.print()
+	clim.statistics = stats
 	pb.end()
 	
 	return clim

@@ -117,6 +117,7 @@ from .__nsstats     import statistics_fixed_IF
 from .__nsstats     import build_params_along_time
 from .__nsstats     import add_return_time
 from .__nsstats     import add_FAR
+from .__nsstats     import add_bias
 
 
 ## Constraints

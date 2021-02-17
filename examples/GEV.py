@@ -271,16 +271,17 @@ if __name__ == "__main__":
 	
 	## Anomaly from observations
 	##==========================
-	Yo -= Yo.loc[event.reference].mean()
+	bias = { "Multi_Synthesis" : Yo.loc[event.reference].mean() }
+	Yo -= bias["Multi_Synthesis"]
 	event.value = float(Yo.loc[event.time])
 	
 	
 	## Models in anomaly
 	##==================
-	
 	for X in lX:
 		X -= X.loc[event.reference].mean()
 	for Y in lY:
+		bias[str(Y.columns[0])] = Y.loc[event.reference].mean() - 273.15
 		Y -= Y.loc[event.reference].mean()
 	
 	
@@ -321,6 +322,11 @@ if __name__ == "__main__":
 	climCX     = ns.statistics_attribution( climCX   , verbose = verbose )
 	climCXCB   = ns.statistics_attribution( climCXCB , verbose = verbose )
 	climCXC0   = ns.statistics_attribution( climCXC0 , verbose = verbose )
+	
+	clim     = ns.add_bias( clim     , bias , verbose = verbose )
+	climCX   = ns.add_bias( climCX   , bias , verbose = verbose )
+	climCXCB = ns.add_bias( climCXCB , bias , verbose = verbose )
+	climCXC0 = ns.add_bias( climCXC0 , bias , verbose = verbose )
 	
 	params     = ns.build_params_along_time( clim     , verbose = verbose )
 	paramsCX   = ns.build_params_along_time( climCX   , verbose = verbose )
