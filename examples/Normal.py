@@ -293,11 +293,6 @@ if __name__ == "__main__":
 	climCXCB   = ns.statistics_attribution( climCXCB , verbose = verbose )
 	climCXC0   = ns.statistics_attribution( climCXC0 , verbose = verbose )
 	
-	clim     = ns.add_bias( clim     , bias , verbose = verbose )
-	climCX   = ns.add_bias( climCX   , bias , verbose = verbose )
-	climCXCB = ns.add_bias( climCXCB , bias , verbose = verbose )
-	climCXC0 = ns.add_bias( climCXC0 , bias , verbose = verbose )
-	
 	params     = ns.build_params_along_time( clim     , verbose = verbose )
 	paramsCX   = ns.build_params_along_time( climCX   , verbose = verbose )
 	paramsCXCB = ns.build_params_along_time( climCXCB , verbose = verbose )
@@ -306,6 +301,7 @@ if __name__ == "__main__":
 	
 	## Save in netcdf
 	##===============
+	KS.to_dataset( name = "KS" ).to_netcdf(os.path.join(pathOut,"KSresults.nc"))
 	for c,s in zip([clim,climCX,climCXC0,climCXCB],["","CX","CXC0","CXCB"]):
 		c.to_netcdf( os.path.join( pathOut , "{}_clim{}.nc".format(event.name,s) ) )
 	for p,s in zip([params,paramsCX,paramsCXC0,paramsCXCB],["","CX","CXC0","CXCB"]):
