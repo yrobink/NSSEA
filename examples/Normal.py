@@ -227,7 +227,7 @@ if __name__ == "__main__":
 	bayes_kwargs = { "n_mcmc_drawn_min" : 2500 if is_test else  5000 , "n_mcmc_drawn_max" : 5000 if is_test else 10000 }
 	n_sample    = 1000 if not is_test else 10
 	ns_law      = nsm.Normal( l_scale = sdl.ULExponential() )
-	event       = ns.Event( "HW03" , 2003 , time_reference , type_ = "Rt" , variable = "T" , unit = "K" )
+	event       = ns.Event( "HW03" , 2003 , time_reference , type_ = "anomaly" , variable = "T" , unit = "K" )
 	verbose     = "--not-verbose" not in sys.argv
 	ci          = 0.05 if not is_test else 0.1
 	
@@ -240,7 +240,7 @@ if __name__ == "__main__":
 	## Anomaly from observations
 	##==========================
 	Yo -= Yo.loc[event.reference].mean()
-	event.value = 1000. #float(Yo.loc[event.time])
+	event.value = float(Yo.loc[event.time])
 	
 	
 	## Models in anomaly

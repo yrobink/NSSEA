@@ -99,11 +99,213 @@ from .__tools import ProgressBar
 ## Functions ##
 ###############
 
+def statistics_fixed_IF( clim , event = None , verbose = False ):##{{{
+	"""
+	NSSEA.statistics_fixed_IF
+	=========================
+	Compute statistics where pF is given and add it to a Climatology.
+	
+	Arguments
+	---------
+	clim : NSSEA.Climatology
+		A clim variable
+	event : NSSEA.Event
+		If None, clim.event is used.
+	verbose: bool
+		Print state of execution or not
+	
+	Return
+	------
+	clim : NSSEA.Climatology
+		A clim variable with clim.stats set
+	
+	Statistics computed
+	-------------------
+	The variable clim.stats is an xarray with dimensions (n_time,n_sample+1,n_stats,n_models), stats available are:
+	
+	pF: Probability in factual world of IF.
+	pC: Probability in counterfactual world of IF.
+	PR: Probability ratio (pF / pC)
+	IF: Intensity in factual world, given by event.value. If event.type is "Rt" or "p", IF is inferred at event.time.
+	IC: Intensity in counterfactual world of the event with probability pF at each time.
+	dI: IF - IC
+	
+	"""
+	## Usefull variables
+	if event is None:
+		event = clim.event
+	time           = clim.time
+	n_time         = clim.n_time
+	models         = clim.model
+	n_model        = clim.n_model
+	n_sample       = clim.n_sample
+	samples        = clim.sample
+	n_stat         = 6
+	upper_side     = event.side == "upper"
+	event_time     = event.time
+	
+	
+	## Output
+	stats = xr.DataArray( np.zeros( (n_time,n_sample + 1,n_stat,n_model) ) , coords = [clim.X.time , clim.X.sample , ["pC","pF","IC","IF","PR","dI"] , models ] , dims = ["time","sample","stats","model"] )
+	
+	## 
+	law = clim.ns_law
+	pb = ProgressBar( n_model * (n_sample + 1) , "statistics_fixed_IF" , verbose = verbose )
+	for m in models:
+		for s in samples:
+			pb.print()
+			
+			## Start with params
+			law.set_params( clim.law_coef.loc[:,s,m].values )
+			
+			## Go to factual world
+			law.set_covariable( clim.X.loc[:,s,"F",m].values , time )
+			
+			## Find value of event definition
+			if event.type in ["anomaly","value"]:
+				IF = np.zeros(n_time) + event.value
+			elif event.type == "Rt":
+				pF = np.zeros(n_time) + 1. / event.value
+				IF = np.zeros(n_time) + ( law.isf( pF , event.time ) if upper_side else law.icdf( pF , event.time ) )
+			elif event.type == "p":
+				pF = np.zeros(n_time) + event.value
+				IF = np.zeros(n_time) + ( law.isf( pF , event.time ) if upper_side else law.icdf( pF , event.time ) )
+			
+			## Set IF
+			stats.loc[:,s,"IF",m] = IF
+			
+			## pF
+			stats.loc[:,s,"pF",m] = law.sf( IF , time ) if upper_side else law.icdf( IF , time )
+			pF = stats.loc[:,s,"pF",m].values.squeeze()
+			
+			## Find pC
+			law.set_covariable( clim.X.loc[:,s,"C",m].values , time )
+			stats.loc[:,s,"pC",m] = law.sf( IF , time ) if upper_side else law.cdf( IF , time )
+			
+			## IC
+			stats.loc[:,s,"IC",m] = law.isf( pF , time ) if upper_side else law.icdf( pF , time )
+	
+	
+	## PR
+	stats.loc[:,:,"PR",:] = stats.loc[:,:,"pF",:] / stats.loc[:,:,"pC",:]
+	
+	## deltaI
+	stats.loc[:,:,"dI",:] = stats.loc[:,:,"IF",:] - stats.loc[:,:,"IC",:]
+	
+	clim.statistics = stats
+	
+	pb.end()
+	
+	return clim
+##}}}
+
+def statistics_fixed_pF( clim , event = None , verbose = False ):##{{{
+	"""
+	NSSEA.statistics_fixed_pF
+	=========================
+	Compute statistics where pF is given and add it to a Climatology.
+	
+	Arguments
+	---------
+	clim : NSSEA.Climatology
+		A clim variable
+	event : NSSEA.Event
+		If None, clim.event is used.
+	verbose: bool
+		Print state of execution or not
+	
+	Return
+	------
+	clim : NSSEA.Climatology
+		A clim variable with clim.stats set
+	
+	Statistics computed
+	-------------------
+	The variable clim.stats is an xarray with dimensions (n_time,n_sample+1,n_stats,n_models), stats available are:
+	
+	pF: Probability in factual world at each time, given by event.value. If event.type is "value" or "anomaly", pF is inferred at event.time.
+	pC: Probability in counterfactual world of the intensity which has probability pF in factual world.
+	PR: Probability ratio (pF / pC)
+	IF: Intensity in factual world of the event with probability pF at each time.
+	IC: Intensity in counterfactual world of the event with probability pF at each time.
+	dI: IF - IC
+	
+	"""
+	## Usefull variables
+	if event is None:
+		event = clim.event
+	time           = clim.time
+	n_time         = clim.n_time
+	models         = clim.model
+	n_model        = clim.n_model
+	n_sample       = clim.n_sample
+	samples        = clim.sample
+	n_stat         = 6
+	upper_side     = event.side == "upper"
+	event_time     = event.time
+	
+	
+	## Output
+	stats = xr.DataArray( np.zeros( (n_time,n_sample + 1,n_stat,n_model) ) , coords = [clim.X.time , clim.X.sample , ["pC","pF","IC","IF","PR","dI"] , models ] , dims = ["time","sample","stats","model"] )
+	
+	## 
+	law = clim.ns_law
+	pb = ProgressBar( n_model * (n_sample + 1) , "statistics_fixed_pF" , verbose = verbose )
+	for m in models:
+		for s in samples:
+			pb.print()
+			
+			## Start with params
+			law.set_params( clim.law_coef.loc[:,s,m].values )
+			
+			## Go to factual world
+			law.set_covariable( clim.X.loc[:,s,"F",m].values , time )
+			
+			## Find value of event definition
+			if event.type == "anomaly":
+				value = np.mean( law.meant(event.reference) ) + event.value
+				pF = np.zeros(n_time) + ( law.sf( value , event.time ) if upper_side else law.cdf( value , event.time ) )
+			elif event.type == "value":
+				value = event.value
+				pF = np.zeros(n_time) + ( law.sf( value , event.time ) if upper_side else law.cdf( value , event.time ) )
+			elif event.type == "Rt":
+				pF = np.zeros(n_time) + 1. / event.value
+			elif event.type == "p":
+				pF = np.zeros(n_time) + event.value
+			
+			## Set pF
+			stats.loc[:,s,"pF",m] = pF
+			
+			## IF
+			stats.loc[:,s,"IF",m] = law.isf( pF , time ) if upper_side else law.icdf( pF , time )
+			value = stats.loc[:,s,"IF",m].values.squeeze()
+			
+			## Find pC
+			law.set_covariable( clim.X.loc[:,s,"C",m].values , time )
+			stats.loc[:,s,"pC",m] = law.sf( value , time ) if upper_side else law.cdf( value , time )
+			
+			## IC
+			stats.loc[:,s,"IC",m] = law.isf( pF , time ) if upper_side else law.icdf( pF , time )
+	
+	
+	## PR
+	stats.loc[:,:,"PR",:] = stats.loc[:,:,"pF",:] / stats.loc[:,:,"pC",:]
+	
+	## deltaI
+	stats.loc[:,:,"dI",:] = stats.loc[:,:,"IF",:] - stats.loc[:,:,"IC",:]
+	
+	clim.statistics = stats
+	
+	pb.end()
+	
+	return clim
+##}}}
+
 def statistics_attribution( clim , event = None , verbose = False ):##{{{
 	"""
 	NSSEA.statistics_attribution
 	============================
-	Compute extremes statistics and add it to a Climatology.
+	Compute statistics of attribution and add it to a Climatology.
 	
 	Arguments
 	---------
@@ -150,7 +352,7 @@ def statistics_attribution( clim , event = None , verbose = False ):##{{{
 	
 	## 
 	law = clim.ns_law
-	pb = ProgressBar( n_model * (n_sample + 1) , "extreme_statistics" , verbose = verbose )
+	pb = ProgressBar( n_model * (n_sample + 1) , "statistics_attribution" , verbose = verbose )
 	for m in models:
 		for s in samples:
 			pb.print()
@@ -177,14 +379,14 @@ def statistics_attribution( clim , event = None , verbose = False ):##{{{
 			## Find probability of the event in factual world
 			pF = np.zeros(n_time) + float(stats.loc[event.time,s,"pF",m])
 			
-			## I1
+			## IF
 			stats.loc[:,s,"IF",m] = law.isf( pF , time ) if upper_side else law.icdf( pF , time )
 			
 			## Find pC
 			law.set_covariable( clim.X.loc[:,s,"C",m].values , time )
 			stats.loc[:,s,"pC",m] = law.sf( value , time ) if upper_side else law.cdf( value , time )
 			
-			## I0
+			## IC
 			stats.loc[:,s,"IC",m] = law.isf( pF , time ) if upper_side else law.icdf( pF , time )
 	
 	
