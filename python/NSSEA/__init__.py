@@ -86,7 +86,7 @@
 ##################################################################################
 
 
-__version__ = "0.4.0a8"
+__version__ = "0.4.0a9"
 
 #############
 ## Imports ##
@@ -111,6 +111,8 @@ from .__nsfit       import nslaw_fit
 from .__multi_model import infer_multi_model
 from .__multi_model import MultiModel
 from .__nsstats     import statistics_attribution
+from .__nsstats     import statistics_fixed_pF
+from .__nsstats     import statistics_fixed_IF
 
 from .__nsstats     import build_params_along_time
 from .__nsstats     import add_return_time
