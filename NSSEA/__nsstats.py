@@ -91,6 +91,7 @@
 import sys
 import numpy as np
 import xarray as xr
+import scipy.stats as sc
 
 from .__tools import ProgressBar
 
@@ -98,6 +99,52 @@ from .__tools import ProgressBar
 ###############
 ## Functions ##
 ###############
+
+def KStest_model( clim , lY , verbose = False ):##{{{
+	"""
+	NSSEA.KStest_model
+	==================
+	Compute KS statistics between law fitted and values.
+	
+	Arguments
+	---------
+	clim : NSSEA.Climatology
+		A clim variable
+	lY   : list(pd.DataFrame)
+		List of models
+	verbose: bool
+		Print state of execution or not
+	
+	Return
+	------
+	KS : xarray
+		KS test computed.
+	"""
+	
+	pb = ProgressBar( clim.n_model * (clim.n_sample + 1) , "KStest_model" , verbose = verbose )
+	## Parameters
+	ns_law = clim.ns_law
+	
+	## Output
+	xrdims   = ["model","sample","KS"]
+	xrcoords = [clim.model,clim.sample,["ks_stats","pvalue"]]
+	KS = xr.DataArray( np.zeros((len(lY),clim.n_sample+1,2)) , dims = xrdims , coords = xrcoords )
+	
+	## Loop on models
+	for Y in lY:
+		m = str(Y.columns[0])
+		
+		## Loop on samples
+		for s in clim.sample:
+			pb.print()
+			ns_law.set_params( clim.law_coef.loc[:,s,m].values )
+			ns_law.set_covariable( clim.X.loc[:,s,"F",m].values , clim.time )
+			KS.loc[m,s,:] = ns_law.kstest(Y)
+	
+	pb.end()
+	
+	return KS
+##}}}
 
 def statistics_fixed_IF( clim , event = None , verbose = False ):##{{{
 	"""
