@@ -90,7 +90,6 @@
 ###############
 
 import sys,os
-import pickle as pk
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -98,12 +97,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-import SDFC.tools as sdt
 import NSSEA as ns
 import NSSEA.models as nsm
-from NSSEA.plot.__linkParams import LinkParams
-
-mpl.use("Qt5Agg")
 
 
 ####################
@@ -148,64 +143,58 @@ if __name__ == "__main__":
 	
 	## Load output
 	##============
-	climN,eventN = ns.from_netcdf( os.path.join( pathInp , "Normal" , "HW03_Normal_climCXCB.nc"   ) , nsm.Normal() )
-	climG,eventG = ns.from_netcdf( os.path.join( pathInp , "GEV"    , "HW19D3_GEV_climCXCB.nc"   ) , nsm.GEV() )
+	climN = ns.Climatology.from_netcdf( os.path.join( pathInp , "Normal" , "HW03_climCXCB.nc" ) , nsm.Normal() )
+	climG = ns.Climatology.from_netcdf( os.path.join( pathInp , "GEV"    , "HW19_climCXCB.nc" ) , nsm.GEV() )
 	
 	
 	## Plot itself
 	##============
-	
-	lp = LinkParams()
-	
 	nrow,ncol = 3,2
 	fs = 10
 	fig = plt.figure( figsize = ( fs * 1.5 , 0.4 * fs * nrow ) )
 	
-	m = "multi"
+	m = "Multi_Synthesis"
 	title = ["2003 French heatwave (Gaussian fit)","2019 French heatwave (GEV fit)"]
-	yminI  = -1
-	ymaxI  = 15
+	ylimI  = [(-1,17),(22,40)]
 	ymindI = -1
 	ymaxdI = 15
+	units = [r"(\mathrm{K},\ 61/90\ \mathrm{anomaly})","(°C)"]
 	
 	axes = [ [1,3,5] , [2,4,6] ]
 	
-	for i,clim,event in zip(range(2),[climN,climG],[eventN,eventG]):
+	for i,clim in zip(range(2),[climN,climG]):
 		
-		ylabel = "\mathrm{(" + event.unit_variable + ")}"
-		stats  = clim.stats
-		statsl = stats[:,1:,3:,:].quantile( ci / 2.      , dim = "sample" )
-		statsu = stats[:,1:,3:,:].quantile( 1. - ci / 2. , dim = "sample" )
+		event  = clim.event
+		ylabel = "\mathrm{(" + event.unit + ")}"
+		stats  = clim.statistics
+		statsl = stats[:,1:,[2,3,5],:].quantile( ci / 2.      , dim = "sample" )
+		statsu = stats[:,1:,[2,3,5],:].quantile( 1. - ci / 2. , dim = "sample" )
 		
 		ax = fig.add_subplot( nrow , ncol , axes[i][0] )
-		ax.plot( stats.time , stats.loc[:,"be","IF",m] , color = "red" , linestyle = "-" , marker = "" )
+		ax.plot( stats.time , stats.loc[:,"BE","IF",m] , color = "red" , linestyle = "-" , marker = "" )
 		ax.fill_between( stats.time , statsl.loc[:,"IF",m] , statsu.loc[:,"IF",m] , color = "red" , alpha = 0.5 )
 		ax.set_title( title[i] )
-		ax.set_ylim( (yminI,ymaxI) )
 		ax.set_xticks([])
-		ax.set_ylabel( r"${}$".format( "\mathbf{I}_F(t)\ " + ylabel ) )
+		ax.set_ylabel( r"${}$".format( "\mathbf{I}_F(t)\ " + units[i] ) )
 		xlim = ax.get_xlim()
-		ylim = ax.get_ylim()
-		ax.plot( [event.time,event.time] , ylim          , linestyle = "--" , marker = "" , color = "black" )
-		ax.hlines( stats.loc[event.time,"be","IF",m] , xlim[0] , xlim[1] , color = "black" , linestyle = "--" )
+		ax.plot( [event.time,event.time] , ylimI[i]       , linestyle = "--" , marker = "" , color = "black" )
+		ax.hlines( stats.loc[event.time,"BE","IF",m] , xlim[0] , xlim[1] , color = "black" , linestyle = "--" )
 		ax.set_xlim(xlim)
-		ax.set_ylim(ylim)
+		ax.set_ylim( ylimI[i] )
 		
 		ax = fig.add_subplot( nrow , ncol , axes[i][1] )
-		ax.plot( stats.time , stats.loc[:,"be","IC",m] , color = "red" , linestyle = "-" , marker = "" )
+		ax.plot( stats.time , stats.loc[:,"BE","IC",m] , color = "red" , linestyle = "-" , marker = "" )
 		ax.fill_between( stats.time , statsl.loc[:,"IC",m] , statsu.loc[:,"IC",m] , color = "red" , alpha = 0.5 )
-		ax.set_ylim( (yminI,ymaxI) )
 		ax.set_xticks([])
-		ax.set_ylabel( r"${}$".format( "\mathbf{I}_C(t)\ " + ylabel ) )
+		ax.set_ylabel( r"${}$".format( "\mathbf{I}_C(t)\ " + units[i] ) )
 		xlim = ax.get_xlim()
-		ylim = ax.get_ylim()
-		ax.plot( [event.time,event.time] , ylim          , linestyle = "--" , marker = "" , color = "black" )
-		ax.hlines( stats.loc[event.time,"be","IC",m] , xlim[0] , xlim[-1] , color = "black" , linestyle = "--" )
+		ax.plot( [event.time,event.time] , ylimI[i]       , linestyle = "--" , marker = "" , color = "black" )
+		ax.hlines( stats.loc[event.time,"BE","IC",m] , xlim[0] , xlim[-1] , color = "black" , linestyle = "--" )
 		ax.set_xlim(xlim)
-		ax.set_ylim(ylim)
+		ax.set_ylim(ylimI[i])
 		
 		ax = fig.add_subplot( nrow , ncol , axes[i][2] )
-		ax.plot( stats.time , stats.loc[:,"be","dI",m] , color = "red" , linestyle = "-" , marker = "" )
+		ax.plot( stats.time , stats.loc[:,"BE","dI",m] , color = "red" , linestyle = "-" , marker = "" )
 		ax.fill_between( stats.time , statsl.loc[:,"dI",m] , statsu.loc[:,"dI",m] , color = "red" , alpha = 0.5 )
 		ax.set_ylim( (ymindI,ymaxdI) )
 		ax.set_xlabel( "Time" )
@@ -214,7 +203,7 @@ if __name__ == "__main__":
 		ylim = ax.get_ylim()
 		ax.plot( [event.time,event.time] , ylim  , linestyle = "--" , marker = "" , color = "black" )
 		ax.plot( xlim                    , [0,0] , linestyle = "-"  , marker = "" , color = "black" )
-		ax.hlines( stats.loc[event.time,"be","dI",m] , xlim[0] , xlim[-1] , color = "black" , linestyle = "--" )
+		ax.hlines( stats.loc[event.time,"BE","dI",m] , xlim[0] , xlim[-1] , color = "black" , linestyle = "--" )
 		ax.set_xlim(xlim)
 		ax.set_ylim(ylim)
 	

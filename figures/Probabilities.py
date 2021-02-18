@@ -93,17 +93,15 @@ import sys,os
 import pickle as pk
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as mplgrid
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-import SDFC.tools as sdt
 import NSSEA as ns
 import NSSEA.models as nsm
-from NSSEA.plot.__linkParams import LinkParams
-
-mpl.use("Qt5Agg")
+import NSSEA.plot as nsp
 
 
 ####################
@@ -122,6 +120,28 @@ mpl.rcParams['font.size'] = 12
 ####################
 ## Plot functions ##
 ####################
+
+def split_into_valid_time( nan_values , ci ):##{{{
+	time_valid    = []
+	time_notvalid = []
+	t = int(nan_values.time[0])
+	on_valid      = bool(nan_values.loc[t] < ci)
+	curr = [t]
+	
+	for t in nan_values.time[1:]:
+		curr.append(int(t))
+		is_valid = bool(nan_values.loc[t] < ci)
+		if not is_valid == on_valid:
+			if on_valid: time_valid.append(curr)
+			else: time_notvalid.append(curr)
+			on_valid = not on_valid
+			curr = [int(t)]
+	if on_valid: time_valid.append(curr)
+	else: time_notvalid.append(curr)
+	
+	return time_valid,time_notvalid
+##}}}
+
 
 #############
 ## Classes ##
@@ -148,32 +168,25 @@ if __name__ == "__main__":
 	
 	## Load output
 	##============
-	climN,eventN = ns.from_netcdf( os.path.join( pathInp , "Normal" , "HW03_Normal_climCXCB.nc"   ) , nsm.Normal() )
-	climG,eventG = ns.from_netcdf( os.path.join( pathInp , "GEV"    , "HW19D3_GEV_climCXCB.nc"   ) , nsm.GEV() )
+	climN = ns.Climatology.from_netcdf( os.path.join( pathInp , "Normal" , "HW03_climCXCB.nc" ) , nsm.Normal() )
+	climG = ns.Climatology.from_netcdf( os.path.join( pathInp , "GEV"    , "HW19_climCXCB.nc" ) , nsm.GEV() )
 	
 	
 	## Plot itself
 	##============
 	
-	lp = LinkParams()
 	
-	nrow,ncol = 3,1
-	fs = 10
-	fig = plt.figure( figsize = ( 2 * fs * ncol , 0.4 * fs * nrow ) )
-	
-	axes = [ [ [0.05,0.67,0.41,0.3],
-	           [0.05,0.50,0.41,0.15],
-               [0.05,0.08,0.41,0.4] ],
-	         [ [0.55,0.67,0.41,0.3],
-	           [0.55,0.50,0.41,0.15],
-               [0.55,0.08,0.41,0.4] ]
-            ]
+	fs,nrow,ncol = 10,3,2
+	fig = plt.figure( figsize = ( fs * 1.5 , 0.4 * fs * nrow ) )
+	grid = mplgrid.GridSpec( nrows = nrow , ncols = ncol , height_ratios = [1,0.4,1] )
 	
 	title = ["2003 French heatwave (Gaussian fit)","2019 French heatwave (GEV fit)"]
+	lPR = nsp.LinkPR()
+	lp  = nsp.Linkp()
 	
-	for i,clim,event in zip(range(2),[climN,climG],[eventN,eventG]):
-		
-		stats  = clim.stats[:,:,:3,:]
+	for i,clim in zip(range(2),[climN,climG]):
+		stats = clim.statistics
+		event = clim.event
 		
 		## Find impossible values
 		##=======================
@@ -181,76 +194,96 @@ if __name__ == "__main__":
 		nan_values = nan_idx.sum( dim = "sample" ) / ( stats.sample.size - 1 )
 		imp_values = ( stats[:,1:,:,:].loc[:,:,"pC",:] == 0 ).sum( dim = "sample" ) / ( stats.sample.size - 1 )
 		
-		
 		## Find quantiles
 		##===============
-		qstats = stats[:,1:,:,:].quantile( [ci / 2 , 1 - ci / 2 , 0.4999 ] , dim = "sample" ).assign_coords( quantile = [ "ql" , "qu" , "be" ] )
-		if not be_is_median: qstats.loc["be",:,:,:] = stats[:,0,:,:]
+		qstats = stats[:,1:,:,:].quantile( [ci / 2 , 1 - ci / 2 , 0.5 ] , dim = "sample" ).assign_coords( quantile = [ "ql" , "qu" , "BE" ] )
+		if not clim.BE_is_median:
+			qstats.loc["BE",:,:,:] = stats[:,0,:,:]
 		
 		## Special case : PR
 		##==================
 		qstats.loc["qu",:,"PR",:] = qstats.loc["qu",:,"PR",:].where( nan_values < ci , np.inf )
 		qstats.loc["ql",:,"PR",:] = qstats.loc["ql",:,"PR",:].where( nan_values < ci , 0      )
+		if clim.BE_is_median:
+			qstats.loc["BE",:,"PR",:] = qstats.loc["BE",:,"PR",:].where( nan_values < ci , 1 )
 		
-		## Plot itself
-		##============
+		## Split into continuous time period
+		##==================================
+		time_validity = {}
+		for m in clim.model:
+			time_validity[m] = split_into_valid_time( nan_values.loc[:,m] , ci )
 		
+		time_valid,time_notvalid = time_validity[m]
 		
-		m = "multi"
-		ax = fig.add_axes( axes[i][0] )
-		ax.plot( stats.time , lp.fp(qstats.loc["be",:,"pF",m]) , color = "red"  , linestyle = "-" , marker = "" , label = r"$p_\mathrm{F}(t)$" )
-		ax.plot( stats.time , lp.fp(qstats.loc["be",:,"pC",m]) , color = "blue" , linestyle = "-" , marker = "" , label = r"$p_\mathrm{C}(t)$" )
-		ax.fill_between( stats.time , lp.fp(qstats.loc["ql",:,"pF",m]) , lp.fp(qstats.loc["qu",:,"pF",m]) , color = "red" , alpha = 0.5 )
-		ax.fill_between( stats.time , lp.fp(qstats.loc["ql",:,"pC",m]) , lp.fp(qstats.loc["qu",:,"pC",m]) , color = "blue" , alpha = 0.5 )
+		ax = fig.add_subplot(grid[0,i])
+		ax.plot( stats.time , lp.transform(qstats.loc["BE",:,"pF",m]) , color = "red"  , linestyle = "-" , marker = "" , label = r"$p^\mathrm{F}_t$" )
+		ax.plot( stats.time , lp.transform(qstats.loc["BE",:,"pC",m]) , color = "blue" , linestyle = "-" , marker = "" , label = r"$p^\mathrm{C}_t$" )
+		ax.fill_between( stats.time , lp.transform(qstats.loc["ql",:,"pF",m]) , lp.transform(qstats.loc["qu",:,"pF",m]) , color = "red"  , alpha = 0.5 )
+		ax.fill_between( stats.time , lp.transform(qstats.loc["ql",:,"pC",m]) , lp.transform(qstats.loc["qu",:,"pC",m]) , color = "blue" , alpha = 0.5 )
 		ax.legend( loc = "upper left" )
-		ax.set_ylim( (lp.p.values.min(),lp.p.values.max()) )
-		ax.set_yticks( lp.p.values )
-		ax.set_yticklabels( lp.p.names )
-		ax.set_title( title[i] )
+		ax.set_ylim( (lp.min,lp.max) )
+		ax.set_yticks( lp.ticks )
+		ax.set_yticklabels( lp.labels )
+		ax.set_title( title[i]  )
 		ax.set_xticks([])
-		ax.set_ylabel( "Probabilities" )
+		ax.set_ylabel( "Probability" )
+		
+		ax2 = fig.add_subplot( grid[0,i] , sharex = ax , frameon = False )
+		ax2.yaxis.tick_right()
+		ax2.set_yticks( lp.ticks )
+		ax2.set_yticklabels( lp.Rtlabels )
+		ax2.yaxis.set_label_position( "right" )
+		ax2.set_ylabel( "Return Time" , rotation = 270 )
+		ax2.set_ylim( (lp.min,lp.max) )
+		
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()
 		ax.plot( [event.time,event.time] , ylim          , linestyle = "--" , marker = "" , color = "black" )
 		ax.set_xlim(xlim)
 		ax.set_ylim(ylim)
 		
-		ax = fig.add_axes( axes[i][1] )
-		ax.plot( stats.time , lp.fp(nan_values.loc[:,m]) , color = "red"  , label = r"$p_\mathrm{F}=p_\mathrm{C}=0$" )
-		ax.plot( stats.time , lp.fp(imp_values.loc[:,m]) , color = "blue" , label = r"$p_\mathrm{C}=0$" )
+		ax = fig.add_subplot(grid[1,i])
+		ax.plot( stats.time , lp.transform(nan_values.loc[:,m]) , color = "red"  , label = r"$p^\mathrm{F}=p^\mathrm{C}=0$" )
+		ax.plot( stats.time , lp.transform(imp_values.loc[:,m]) , color = "blue" , label = r"$p^\mathrm{C}=0$" )
 		ax.plot( [event.time,event.time] , ylim          , linestyle = "--" , marker = "" , color = "black" )
-		ax.set_ylim( (lp.p.values.min(),lp.p.values.max()) )
-		ax.set_yticks( lp.p.values )
-		ax.set_yticklabels( lp.p.names )
-		ax.set_ylabel( "Probabilities" )
+		ax.set_ylim( (lp.min,lp.max) )
+		ax.set_yticks( lp.ticks )
+		ax.set_yticklabels( lp.labels )
+		ax.set_ylabel( "Probability" )
 		xlim = ax.get_xlim()
-		ax.hlines( lp.fp(ci) , xlim[0] , xlim[1] , color = "grey" , label = "Threshold" )
+		ax.hlines( lp.transform(ci) , xlim[0] , xlim[1] , color = "grey" , label = "Threshold" )
 		ax.set_xlim(xlim)
 		ax.set_xticks([])
 		ax.legend( loc = "upper right" )
 		
-		ax = fig.add_axes( axes[i][2] )
-		ax.plot( stats.time , lp.frr(qstats.loc["be",:,"PR",m]) , color = "red" , linestyle = "-" , marker = "" )
-		ax.fill_between( stats.time , lp.frr(qstats.loc["ql",:,"PR",m]) , lp.frr(qstats.loc["qu",:,"PR",m]) , color = "red" , alpha = 0.5 )
-		ax.set_ylim( (lp.rr.values.min(),lp.rr.values.max()) )
-		ax.set_yticks( lp.rr.values )
-		ax.set_yticklabels( lp.rr.names )
+		ax = fig.add_subplot(grid[2,i])
+		ax.plot( stats.time , lPR.transform(qstats.loc["BE",:,"PR",m]) , color = "red" , linestyle = "-" , marker = "" )
+		for t in time_valid:
+			ax.fill_between( t , lPR.transform(qstats.loc["ql",t,"PR",m]) , lPR.transform(qstats.loc["qu",t,"PR",m]) , color = "red" , alpha = 0.5 )
+		for t in time_notvalid:
+			ax.fill_between( t , lPR.transform(qstats.loc["ql",t,"PR",m]) , lPR.transform(qstats.loc["qu",t,"PR",m]) , color = "red" , alpha = 0.3 )
+		ax.set_ylim( (lPR.min,lPR.max) )
+		ax.set_yticks( lPR.ticks )
+		ax.set_yticklabels( lPR.labels )
 		ax.set_xlabel( r"$\mathrm{Time}$" )
-		ax.set_ylabel( r"$\mathrm{PR}(t)$" )
-		ax2 = fig.add_axes( axes[i][2] , sharex = ax , frameon = False )
+		ax.set_ylabel( r"$\mathrm{PR}_t$" )
+		ax2 = fig.add_subplot( grid[2,i] , sharex = ax , frameon = False )
 		ax2.yaxis.tick_right()
-		ax2.set_yticks( lp.rr.values )
-		ax2.set_yticklabels( lp.far.names )
+		ax2.set_yticks( lPR.ticks )
+		ax2.set_yticklabels( lPR.FARlabels )
 		ax2.yaxis.set_label_position( "right" )
-		ax2.set_ylabel( r"$\mathrm{FAR}(t)$" )
+		ax2.set_ylabel( r"$\mathrm{FAR}_t$" , rotation = 270 )
 		
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()
-		ax.plot( xlim                    , lp.frr([1,1]) , linestyle = "-"  , marker = "" , color = "black" )
-		ax.plot( [event.time,event.time] , ylim          , linestyle = "--" , marker = "" , color = "black" )
+		ax.hlines( lPR.transform(1) , xlim[0] , xlim[1] , linestyle = "-"  , color = "black" )
+		ax.vlines( event.time       , ylim[0] , ylim[1] , linestyle = "--" , color = "black" )
 		ax.set_xlim(xlim)
 		ax.set_ylim(ylim)
+		
+		
 	
+	plt.tight_layout()
 	plt.savefig( os.path.join( pathOut , "Probabilities.png" ) )
 	
 	
