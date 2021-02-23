@@ -155,7 +155,7 @@ if __name__ == "__main__":
 	
 	m = "Multi_Synthesis"
 	title = ["2003 French heatwave (Gaussian fit)","2019 French heatwave (GEV fit)"]
-	ylimI  = [(-1,17),(22,40)]
+	ylimI  = [(20,40),(22,40)]
 	ymindI = -1
 	ymaxdI = 15
 	units = [r"(\mathrm{K},\ 61/90\ \mathrm{anomaly})","(°C)"]
