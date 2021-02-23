@@ -90,7 +90,7 @@
 ###############
 
 import sys,os
-import pickle as pk
+import tarfile
 import warnings
 
 import numpy as np
@@ -135,75 +135,57 @@ def correct_miss( X , lo =  100 , up = 350 ):##{{{
 ##}}}
 
 def load_models_obs( path ):##{{{
+	with tarfile.open( os.path.join( path , "GEV.tar.gz" ) , "r" ) as tf:
+		tf.extractall( path )
 	
 	## List of models X
-	##=================
-	list_X = os.listdir( os.path.join( path , "X" ) )
-	list_X.sort()
-	
-	modelsX = list()
-	for lx in list_X:
-		## Extract name
-		split_name = lx.split(".")[0].split("_")
-		mod = split_name[-2] + "_" + split_name[-1]
-		modelsX.append(mod)
+	modelsX = [ "_".join(f.split("/")[-1][:-3].split("_")[-3:-1]) for f in os.listdir(os.path.join(pathInp,"GEV/X")) ]
+	modelsX.sort()
 	
 	## List of models Y
-	##=================
-	list_Y = os.listdir( os.path.join( path , "Y" ) )
-	list_Y.sort()
-	
-	modelsY = list()
-	for ly in list_Y:
-		## Extract name
-		split_name = ly.split(".")[0].split("_")
-		mod = split_name[-2] + "_" + split_name[-1]
-		modelsY.append(mod)
+	modelsY = [ "_".join(f.split("/")[-1][:-3].split("_")[-3:-1]) for f in os.listdir(os.path.join(pathInp,"GEV/Y")) ]
+	modelsY.sort()
 	
 	## Merge the two lists to keep only common models
-	##===============================================
 	modelsX.sort()
 	modelsY.sort()
 	models = list(set(modelsX) & set(modelsY))
 	models.sort()
 	
-	## Now load X
-	##===========
-	lX = list()
-	for lx in list_X:
-		## Extract name
-		split_name = lx.split(".")[0].split("_")
-		mod = split_name[-2] + "_" + split_name[-1]
+	## Load X and Y
+	lX = []
+	lY = []
+	for m in models:
 		
-		if mod in models:
-			## Read model
-			df = xr.open_dataset( os.path.join( path , "X" , lx ) , decode_times = False )
-			time = np.array( df.time.values.tolist() , dtype = np.int )
-			X = pd.DataFrame( df.tas.values.ravel() , columns = [mod] , index = time )
-			lX.append( correct_miss(X) )
-	
-	## And load Y
-	##===========
-	lY = list()
-	for ly in list_Y:
-		## Extract name
-		split_name = ly.split(".")[0].split("_")
-		mod = split_name[-2] + "_" + split_name[-1]
+		## Load X
+		df   = xr.open_dataset( os.path.join( pathInp , "GEV/X/tas_mon_historical-rcp85_{}_1850-2099.nc".format(m) ) )
+		time = df.time["time.year"].values
+		X    = pd.DataFrame( df.tas.values.ravel() , columns = [m] , index = time )
+		lX.append( correct_miss(X) )
 		
-		if mod in models:
-			## Read model
-			df = xr.open_dataset( os.path.join( path , "Y" , ly ) , decode_times = False )
-			time = np.array( df.time.values.tolist() , dtype = np.int )
-			Y = pd.DataFrame( df.tas.values.ravel() , columns = [mod] , index = time )
-			lY.append( correct_miss(Y) )
+		## Load Y
+		df   = xr.open_dataset( os.path.join( pathInp , "GEV/Y/tas_day_historical-rcp85_{}_1850-2099.nc".format(m) ) )
+		time = df.time["time.year"].values
+		Y    = pd.DataFrame( df.tas.values.ravel() , columns = [m] , index = time )
+		lY.append( correct_miss(Y) )
 	
-	## And finally load observations
-	##==============================
-	dXo = xr.open_dataset( os.path.join( path , "Xo.nc" ) )
-	Xo  = pd.DataFrame( dXo.temperature_anomaly.values.squeeze() , columns = ["Xo"] , index = np.arange( 1850 , 2019 , 1 , dtype = np.int ) )
+	## Load Xo
+	dXo = xr.open_dataset("input/GEV/Xo.nc")
+	Xo  = pd.DataFrame( dXo.tas_mean.values.squeeze() , columns = ["Xo"] , index = dXo.time["time.year"].values )
 	
-	dYo = xr.open_dataset( os.path.join( path , "Yo.nc" ) )
-	Yo  = pd.DataFrame( dYo.tg.values.squeeze() , columns = ["Yo"] , index = np.arange( 1950 , 2020 , 1 , dtype = np.int ) )
+	dYo = xr.open_dataset("input/GEV/Yo.nc")
+	Yo  = pd.DataFrame( dYo.TM.values.squeeze() , columns = ["Yo"] , index = dYo.time["time.year"].values )
+	
+	
+	for f in os.listdir( os.path.join( pathInp , "GEV/X" ) ):
+		os.remove( os.path.join( pathInp , "GEV/X/{}".format(f) ) )
+	for f in os.listdir( os.path.join( pathInp , "GEV/Y" ) ):
+		os.remove( os.path.join( pathInp , "GEV/Y/{}".format(f) ) )
+	os.remove( os.path.join( pathInp , "GEV/Xo.nc" ) )
+	os.remove( os.path.join( pathInp , "GEV/Yo.nc" ) )
+	os.rmdir( os.path.join( pathInp , "GEV/X" ) )
+	os.rmdir( os.path.join( pathInp , "GEV/Y" ) )
+	os.rmdir( os.path.join( pathInp , "GEV" ) )
 	
 	return models,lX,lY,Xo,Yo
 ##}}}
@@ -245,7 +227,7 @@ if __name__ == "__main__":
 	## Path
 	##=====
 	basepath = os.path.dirname(os.path.abspath(__file__))
-	pathInp  = os.path.join( basepath , "input/GEV"  )
+	pathInp  = os.path.join( basepath , "input"  )
 	pathOut  = os.path.join( basepath , "output/GEV" )
 	assert(os.path.exists(pathInp))
 	if not os.path.exists(pathOut):
