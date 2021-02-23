@@ -158,7 +158,7 @@ if __name__ == "__main__":
 	ylimI  = [(20,40),(22,40)]
 	ymindI = -1
 	ymaxdI = 15
-	units = [r"(\mathrm{K},\ 61/90\ \mathrm{anomaly})","(°C)"]
+	units = ["(°\mathrm{C})","(°\mathrm{C})"]
 	
 	axes = [ [1,3,5] , [2,4,6] ]
 	
@@ -175,7 +175,7 @@ if __name__ == "__main__":
 		ax.fill_between( stats.time , statsl.loc[:,"IF",m] , statsu.loc[:,"IF",m] , color = "red" , alpha = 0.5 )
 		ax.set_title( title[i] )
 		ax.set_xticks([])
-		ax.set_ylabel( r"${}$".format( "\mathbf{I}_F(t)\ " + units[i] ) )
+		ax.set_ylabel( r"${}$".format( "\mathbf{I}^\mathrm{F}_t\ " + units[i] ) )
 		xlim = ax.get_xlim()
 		ax.plot( [event.time,event.time] , ylimI[i]       , linestyle = "--" , marker = "" , color = "black" )
 		ax.hlines( stats.loc[event.time,"BE","IF",m] , xlim[0] , xlim[1] , color = "black" , linestyle = "--" )
@@ -186,7 +186,7 @@ if __name__ == "__main__":
 		ax.plot( stats.time , stats.loc[:,"BE","IC",m] , color = "red" , linestyle = "-" , marker = "" )
 		ax.fill_between( stats.time , statsl.loc[:,"IC",m] , statsu.loc[:,"IC",m] , color = "red" , alpha = 0.5 )
 		ax.set_xticks([])
-		ax.set_ylabel( r"${}$".format( "\mathbf{I}_C(t)\ " + units[i] ) )
+		ax.set_ylabel( r"${}$".format( "\mathbf{I}^\mathrm{C}_t\ " + units[i] ) )
 		xlim = ax.get_xlim()
 		ax.plot( [event.time,event.time] , ylimI[i]       , linestyle = "--" , marker = "" , color = "black" )
 		ax.hlines( stats.loc[event.time,"BE","IC",m] , xlim[0] , xlim[-1] , color = "black" , linestyle = "--" )
@@ -198,7 +198,7 @@ if __name__ == "__main__":
 		ax.fill_between( stats.time , statsl.loc[:,"dI",m] , statsu.loc[:,"dI",m] , color = "red" , alpha = 0.5 )
 		ax.set_ylim( (ymindI,ymaxdI) )
 		ax.set_xlabel( "Time" )
-		ax.set_ylabel( r"${}$".format( "\Delta\mathbf{I}(t)\ " + ylabel ) )
+		ax.set_ylabel( r"${}$".format( "\Delta\mathbf{I}_t\ " + ylabel ) )
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()
 		ax.plot( [event.time,event.time] , ylim  , linestyle = "--" , marker = "" , color = "black" )
