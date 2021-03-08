@@ -309,7 +309,7 @@ def KStest_model( KS , ofile , verbose = False ):##{{{
 	pb.print()
 	
 	## Add labels
-	ax.legend( ncol = 2 )
+	ax.legend( ncol = 2 , fontsize = 20 )
 	ax.set_xlabel( "KS statistics" )
 	ax.set_ylabel( r"$p$-value" )
 	
