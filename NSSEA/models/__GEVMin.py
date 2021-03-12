@@ -321,5 +321,13 @@ class GEVMin(AbstractModel):
 		sckwargs = self._get_sckwargs(t)
 		return -self.law.ppf( q , **sckwargs )
 	##}}}
-
-
+	
+	def kstest( self , Y ): ##{{{
+		
+		loc   = self.loct(Y.index).squeeze()
+		scale = self.scalet(Y.index).squeeze()
+		shape = self.shapet(Y.index).squeeze()
+		Z = ( Y.values.squeeze() - loc ) / scale
+		return list(sc.kstest( Z , lambda x : sc.genextreme.cdf( x , loc = 0 , scale = 1 , c = - shape ) ) )
+	##}}}
+	
