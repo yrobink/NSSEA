@@ -312,6 +312,10 @@ def KStest_model( KS , ofile , verbose = False ):##{{{
 	ax.legend( ncol = 2 , fontsize = 20 )
 	ax.set_xlabel( "KS statistics" )
 	ax.set_ylabel( r"$p$-value" )
+	ax.set_ylim((-0.05,1.05))
+	xlim = ax.get_xlim()
+	ax.set_xlim(-0.05,xlim[1])
+	
 	
 	## And now end
 	plt.tight_layout()
