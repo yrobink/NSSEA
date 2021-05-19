@@ -394,9 +394,10 @@ def _covariates_FC_GAM_statsmodels( clim , lX , XN , dof = 7 , verbose = False )
 		## Define GAM model and fit
 		bs      = gamapi.BSplines( dataf["timeF"] , df = dof - 1 , degree = 3 )
 		gam_bs  = gamapi.GLMGam.from_formula( "X ~ 1 + XN" , data = dataf , smoother = bs )
-		#res_fit = gam_bs.fit()
-		#alpha,_,_ = gam_bs.select_penweight()
-		#gam_bs  = gamapi.GLMGam.from_formula( 'X ~ 1 + ebm' , data = dataf , smoother = bs , alpha = alpha )
+		
+		res_fit = gam_bs.fit()
+		alpha,_,_ = gam_bs.select_penweight()
+		gam_bs  = gamapi.GLMGam.from_formula( 'X ~ 1 + ebm' , data = dataf , smoother = bs , alpha = alpha )
 		res_fit = gam_bs.fit()
 		
 		## Build design matrices and coefs
