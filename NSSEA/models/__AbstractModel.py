@@ -183,8 +183,9 @@ class AbstractModel:
 		self.set_params(sdlaw.coef_)
 	##}}}
 	
-	def drawn_bayesian( self , Y , X  , n_mcmc_drawn , prior , min_rate_accept = 0.25 ):##{{{
+	def drawn_bayesian( self , Y , X  , n_mcmc_drawn , prior , min_rate_accept = 0.25 , **kwargs ):##{{{
 		sdkwargs = self._get_sdkwargs(X)
+		sdkwargs = {**sdkwargs,**kwargs}
 		sdlaw = self.sdlaw( method = "bayesian" )
 		test_rate = False
 		while not test_rate:

@@ -139,8 +139,8 @@ class GEVMin(AbstractModel):
 		AbstractModel.fit( self , -Y , X )
 	##}}}
 	
-	def drawn_bayesian( self , Y , X  , n_mcmc_drawn , prior , min_rate_accept = 0.25 ):##{{{
-		return AbstractModel.drawn_bayesian( self , -Y , X , n_mcmc_drawn , prior , min_rate_accept )
+	def drawn_bayesian( self , Y , X  , n_mcmc_drawn , prior , min_rate_accept = 0.25 , **kwargs ):##{{{
+		return AbstractModel.drawn_bayesian( self , -Y , X , n_mcmc_drawn , prior , min_rate_accept , **kwargs )
 	##}}}
 	
 	## Stats methods
