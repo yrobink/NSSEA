@@ -256,11 +256,10 @@ class GEVRLSC(AbstractModel):
 		
 	##}}}
 	
-	def drawn_bayesian( self , Y , X  , n_mcmc_drawn , prior , min_rate_accept = 0.25 ):##{{{
+	def drawn_bayesian( self , Y , X  , n_mcmc_drawn , prior , min_rate_accept = 0.25 , **kwargs ):##{{{
 		X = X.reshape(-1,1)
 		Y = Y.reshape(-1,1)
 		
-		kwargs = {}
 		kwargs["n_mcmc_drawn"]    = n_mcmc_drawn
 		kwargs["prior"]           = prior
 		kwargs["min_rate_accept"] = min_rate_accept

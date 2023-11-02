@@ -249,7 +249,10 @@ def _constrain_law_all( climIn , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , verb
 	
 	
 	min_rate_accept = kwargs.get("min_rate_accept")
-	if min_rate_accept is None: min_rate_accept = 0.05
+	if min_rate_accept is None:
+		min_rate_accept = 0.05
+	else:
+		kwargs.pop("min_rate_accept")
 	
 	## Define prior
 	prior_mean   = clim.data["mm_mean"][-clim.n_coef:].values
@@ -261,7 +264,7 @@ def _constrain_law_all( climIn , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , verb
 		pb.print()
 		X   = clim.X.loc[Yo.index,s,"F","Multi_Synthesis"].values.squeeze()
 		n_mcmc_drawn = np.random.randint( n_mcmc_drawn_min , n_mcmc_drawn_max )
-		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law , min_rate_accept )
+		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law , min_rate_accept , **kwargs )
 		clim.law_coef.loc[:,s,"Multi_Synthesis"] = draw[-1,:]
 	
 	clim.law_coef.loc[:,"BE",:] = clim.law_coef[:,1:,:].median( dim = "sample" )
@@ -305,7 +308,7 @@ def _constrain_law_keep( climIn , Yo , keep , n_mcmc_drawn_min , n_mcmc_drawn_ma
 		pb.print()
 		X   = clim.X.loc[Yo.index,clim.sample[index[0]],"F","Multi_Synthesis"].values.squeeze()
 		n_mcmc_drawn = np.random.randint( n_mcmc_drawn_min , n_mcmc_drawn_max )
-		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law , min_rate_accept )
+		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law , min_rate_accept  , **kwargs )
 		draw = draw[n_mcmc_drawn_min:,:]
 		
 		clim.law_coef.loc[:,clim.sample[index],"Multi_Synthesis"] = draw[np.random.choice(draw.shape[0],len(index),False),:].T
@@ -371,7 +374,7 @@ def constrain_law( climIn , Yo , keep = "all" , n_mcmc_drawn_min = 5000 , n_mcmc
 #		pb.print()
 #		X   = clim.X.loc[Yo.index,s,"F","Multi_Synthesis"].values.squeeze()
 #		n_mcmc_drawn = np.random.randint( n_mcmc_drawn_min , n_mcmc_drawn_max )
-#		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law , min_rate_accept )
+#		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law , min_rate_accept  , **kwargs )
 #		clim.law_coef.loc[:,s,"Multi_Synthesis"] = draw[-1,:]
 #	
 #	clim.law_coef.loc[:,"BE",:] = clim.law_coef[:,1:,:].median( dim = "sample" )
