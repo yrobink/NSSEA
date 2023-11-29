@@ -341,7 +341,7 @@ def _covariates_FC_GAM_pygam( clim , lX , XN , dof = 7 , verbose = False, light=
 		## Distribution of GAM coefficients
 		gam_law = gam_model.error_distribution()
 		coefs_  = gam_law.rvs(n_sample)
-		if !light:
+		if not light:
 			for i,s in enumerate(samples[1:]):
 				pb.print()
 			

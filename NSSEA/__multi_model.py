@@ -129,7 +129,6 @@ class MultiModel:##{{{
 		cov_S = np.zeros( (n_params,n_params) )
 		for i in range(n_models):
 			cov_S += np.cov( mm_matrix[:,1:,i] )
-		
 		SSM     = np.cov( mm_matrix[:,0,:] ) * ( n_models - 1 )
 		cov_CMU = matrix_positive_part( SSM / ( n_models - 1 ) - cov_S / n_models )
 		self.cov  = ( n_models + 1 ) / n_models * cov_CMU + cov_S / n_models**2
