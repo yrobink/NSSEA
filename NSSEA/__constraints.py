@@ -328,6 +328,46 @@ def _constrain_law_keep( climIn , Yo , keep , n_mcmc_drawn_min , n_mcmc_drawn_ma
 	pass
 ##}}}
 
+def _constrain_law_ess( climIn , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , verbose , **kwargs ):##{{{
+	#Warning : Sample are saved given another coordinate : "sample_MCMC" with X sample attached
+	clim = climIn.copy()
+	
+	pb = ProgressBar( clim.n_sample + 1 , "constrain_law" , verbose )
+	
+	n_ess = kwargs.get("n_ess")
+	if n_ess is None:
+		n_ess = 10	
+	min_rate_accept = 0
+	ns_params_names = clim.ns_law.get_params_names()
+	n_features = clim.ns_law.n_ns_params
+	## Define prior
+	prior_mean   = clim.data["mm_mean"][-clim.n_coef:].values
+	prior_cov    = clim.data["mm_cov"][-clim.n_coef:,-clim.n_coef:].values
+	prior_law    = sc.multivariate_normal( mean = prior_mean , cov = prior_cov , allow_singular = True )
+	
+	#OUtput
+	results=np.array([])
+	sample_names =[s+"_"+str(i) for i in range(n_ess) for s in clim.sample[1:]]+["BE"]
+
+	law_coef_bay   = xr.DataArray( np.zeros( (n_features,(clim.n_sample)*n_ess + 1,1) ) , coords = [ ns_params_names , sample_names , ["Multi_Synthesis"] ] , dims = ["coef","sample_MCMC","model"] )
+	## And now MCMC loop
+	for s in clim.sample[1:]:
+		pb.print()
+		X   = clim.X.loc[Yo.index,s,"F","Multi_Synthesis"].values.squeeze()
+		n_mcmc_drawn = np.random.randint( n_mcmc_drawn_min , n_mcmc_drawn_max )
+		draw = clim.ns_law.drawn_bayesian( Yo.values.squeeze() , X , n_mcmc_drawn , prior_law , min_rate_accept , **kwargs )
+		n_tirage=(len(draw)//n_ess)
+		select=draw[0::n_tirage][:n_ess]
+		law_coef_bay.loc[:,[s+"_"+str(i) for i in range(n_ess)],"Multi_Synthesis"]=select.T
+	
+	clim.law_coef=law_coef_bay
+	clim.law_coef.loc[:,"BE",:] = clim.law_coef[:,1:,:].median( dim = "sample_MCMC" )
+	clim.BE_is_median = True
+	
+	pb.end()
+	
+	return clim
+
 def constrain_law( climIn , Yo , keep = "all" , n_mcmc_drawn_min = 5000 , n_mcmc_drawn_max = 10000 , verbose = False , **kwargs ):##{{{
 	"""
 	NSSEA.constrain_law
@@ -338,7 +378,7 @@ def constrain_law( climIn , Yo , keep = "all" , n_mcmc_drawn_min = 5000 , n_mcmc
 	---------
 	climIn : [NSSEA.Climatology] clim variable
 	Yo       : [pandas.DataFrame] Observations of ns_law
-	keep     : [ "all" or a float between 0 and 1] If keep < 1, only a ratio of 
+	keep     : [ "all", "ess", or a float between 0 and 1] If keep < 1, only a ratio of 
 	          keep covariates is used, and many coefficients are drawn for the
 	          same covariate. Faster, but can reduce confidence interval
 	          uncertainty.
@@ -350,8 +390,10 @@ def constrain_law( climIn , Yo , keep = "all" , n_mcmc_drawn_min = 5000 , n_mcmc
 	------
 	clim : [NSSEA.Climatology] A copy is returned
 	"""
-	
-	if keep == "all" or not keep < 1:
+	if keep == "ess":
+		return _constrain_law_ess( climIn , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , verbose , **kwargs )	
+	elif keep == "all" or not keep < 1:
+		#Maybe avoid a possible comparison between str and int ? put percentage as a kwarg ?
 		return _constrain_law_all( climIn , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , verbose , **kwargs )
 	else:
 		return _constrain_law_keep( climIn , Yo , keep , n_mcmc_drawn_min , n_mcmc_drawn_max , verbose , **kwargs )
