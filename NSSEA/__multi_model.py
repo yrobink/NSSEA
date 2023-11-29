@@ -129,7 +129,6 @@ class MultiModel:##{{{
 		cov_S = np.zeros( (n_params,n_params) )
 		for i in range(n_models):
 			cov_S += np.cov( mm_matrix[:,1:,i] )
-		
 		SSM     = np.cov( mm_matrix[:,0,:] ) * ( n_models - 1 )
 		cov_CMU = matrix_positive_part( SSM / ( n_models - 1 ) - cov_S / n_models )
 		self.cov  = ( n_models + 1 ) / n_models * cov_CMU + cov_S / n_models**2
@@ -152,13 +151,20 @@ class MultiModel:##{{{
 		self._fit(mm_matrix)
 	##}}}
 	
+	def rvs_old(self):##{{{
+		"""
+		Return a random sample from multi model
+		"""
+		### Depreciated for scipy 1.11.1
+		return self.mean + self.std @ np.random.normal(size = self.mean.size) 
+	##}}}
 	def rvs(self):##{{{
 		"""
 		Return a random sample from multi model
 		"""
-		return self.mean + self.std @ np.random.normal(size = self.mean.size)
+		### Added for scipy 1.11.1
+		return np.random.default_rng().multivariate_normal( mean=self.mean, cov = self.cov)
 	##}}}
-	
 	## Properties {{{
 	
 	@property

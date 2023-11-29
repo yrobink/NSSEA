@@ -555,7 +555,7 @@ def build_params_along_time( clim , verbose = False ):##{{{
 	"""
 	NSSEA.extremes_stats
 	====================
-	Build trajectories of params alon time
+	Build trajectories of params along time
 	
 	Arguments
 	---------
@@ -595,5 +595,50 @@ def build_params_along_time( clim , verbose = False ):##{{{
 	return s_params
 ##}}}
 
+
+def build_params_along_time_ess( clim , verbose = False ):##{{{
+	"""
+	NSSEA.extremes_stats
+	====================
+	Build trajectories of params along time
+	Adaptated for MCMC sample changes with ess
+	Beware: Only function I adapted
+	
+	Arguments
+	---------
+	clim : NSSEA.Climatology
+		A clim variable
+	verbose: bool
+		Print state of execution or not
+	
+	Return
+	------
+	params : xr.DataArray
+		An array containing params along time
+	
+	"""
+	ns_law = clim.ns_law
+	
+	l_params = [k for k in clim.ns_law.lparams]
+	xrdims   = ["time","sample","forcing","param","model"]
+	xrcoords = [clim.time,clim.law_coef.sample_MCMC,["F","C"],l_params,clim.model]
+	s_params = xr.DataArray( np.zeros( (clim.n_time,len(clim.law_coef.sample_MCMC),2,len(l_params),clim.n_model) ) , dims = xrdims , coords = xrcoords )
+	
+	
+	pb = ProgressBar(  clim.n_model * (len(clim.law_coef.sample_MCMC)) , "build_params_along_time" , verbose = verbose )
+	for m in clim.model:
+		for s in s_params.sample:
+			pb.print()
+			s_X=str(s.values).split("_")[0]
+			clim.ns_law.set_params( clim.law_coef.loc[:,s,m].values )
+			for f in s_params.forcing:
+				clim.ns_law.set_covariable( clim.X.loc[clim.time,s_X,f,m].values , clim.time )
+				for p in l_params:
+					s_params.loc[:,s,f,p,m] = clim.ns_law.lparams[p](clim.time)
+	
+	
+	if verbose: pb.end()
+	
+	return s_params
 
 

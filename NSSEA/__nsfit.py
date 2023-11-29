@@ -94,11 +94,12 @@ import xarray as xr
 from .__tools import ProgressBar
 
 
+
 ###############
 ## Functions ##
 ###############
 
-def nslaw_fit( lY , clim , verbose = False ):
+def nslaw_fit( lY , clim , verbose = False, light=False ):
 	"""
 	NSSEA.nslaw_fit
 	===============
@@ -139,21 +140,21 @@ def nslaw_fit( lY , clim , verbose = False ):
 		law = clim.ns_law
 		law.fit(Y.values,X.values)
 		law_coef.loc[:,"BE",model] = law.get_params()
-		
-		for s in sample:
-			pb.print()
+		if not light:
+			for s in sample:
+				pb.print()
 			
-			fit_is_valid = False
-			while not fit_is_valid:
+				fit_is_valid = False
+				while not fit_is_valid:
 			
-				idx = np.random.choice( tY.size , tY.size , replace = True )
+					idx = np.random.choice( tY.size , tY.size , replace = True )
 				
-				tYs = tY.values[idx]
-				Ys = Y.iloc[idx].values
-				Xs = clim.X.loc[tYs,s,"F",model].values
-				law.fit(Ys,Xs)
-				fit_is_valid = law.check( Y.values.squeeze() , X.values.squeeze() , np.arange( 0 , tY.size , 1 ) )
-			law_coef.loc[:,s,model] = law.get_params()
+					tYs = tY.values[idx]
+					Ys = Y.iloc[idx].values
+					Xs = clim.X.loc[tYs,s,"F",model].values
+					law.fit(Ys,Xs)
+					fit_is_valid = law.check( Y.values.squeeze() , X.values.squeeze() , np.arange( 0 , tY.size , 1 ) )
+				law_coef.loc[:,s,model] = law.get_params()
 	
 	clim.law_coef = law_coef
 	pb.end()
