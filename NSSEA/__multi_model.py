@@ -152,13 +152,20 @@ class MultiModel:##{{{
 		self._fit(mm_matrix)
 	##}}}
 	
+	def rvs_old(self):##{{{
+		"""
+		Return a random sample from multi model
+		"""
+		### Depreciated for scipy 1.11.1
+		return self.mean + self.std @ np.random.normal(size = self.mean.size) 
+	##}}}
 	def rvs(self):##{{{
 		"""
 		Return a random sample from multi model
 		"""
-		return self.mean + self.std @ np.random.normal(size = self.mean.size)
+		### Added for scipy 1.11.1
+		return np.random.default_rng().multivariate_normal( mean=self.mean, cov = self.cov)
 	##}}}
-	
 	## Properties {{{
 	
 	@property
