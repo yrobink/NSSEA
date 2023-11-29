@@ -261,7 +261,7 @@ class GAM_FC:##{{{
 
 ##}}}
 
-def covariates_FC_GAM( clim , lX , XN , dof = 7 , method = "pygam" , verbose = False ):##{{{
+def covariates_FC_GAM( clim , lX , XN , dof = 7 , method = "pygam" , verbose = False, light=False ):##{{{
 	"""
 	NSSEA.covariates_FC_GAM
 	=======================
@@ -288,15 +288,16 @@ def covariates_FC_GAM( clim , lX , XN , dof = 7 , method = "pygam" , verbose = F
 	method : [str] "statsmodels" or "pygam", select the package used to solve
 	         GAM model
 	verbose : [bool] If we print the progress of the fit or not.
+	light: [bool] Only Best estimate or several samples. Only Best Estimate only possible for pygam
 	
 	"""
 	if method == "pygam":
-		return _covariates_FC_GAM_pygam( clim , lX , XN , dof , verbose )
+		return _covariates_FC_GAM_pygam( clim , lX , XN , dof , verbose, light )
 	else:
 		return _covariates_FC_GAM_statsmodels( clim , lX , XN , dof , verbose )
 ##}}}
 
-def _covariates_FC_GAM_pygam( clim , lX , XN , dof = 7 , verbose = False ):##{{{
+def _covariates_FC_GAM_pygam( clim , lX , XN , dof = 7 , verbose = False, light=False ):##{{{
 	"""
 	NSSEA.covariates_FC_GAM_pygam
 	=============================
@@ -340,20 +341,20 @@ def _covariates_FC_GAM_pygam( clim , lX , XN , dof = 7 , verbose = False ):##{{{
 		## Distribution of GAM coefficients
 		gam_law = gam_model.error_distribution()
 		coefs_  = gam_law.rvs(n_sample)
-		
-		for i,s in enumerate(samples[1:]):
-			pb.print()
+		if !light:
+			for i,s in enumerate(samples[1:]):
+				pb.print()
 			
-			xn = XN.values[:,i+1]
-			XF = np.stack( (time  ,xn) , -1 )
-			XC = np.stack( (time_C,xn) , -1 )
+				xn = XN.values[:,i+1]
+				XF = np.stack( (time  ,xn) , -1 )
+				XC = np.stack( (time_C,xn) , -1 )
 			
-			## Perturbation
-			gam_model.coef_ = coefs_[i,:]
+				## Perturbation
+				gam_model.coef_ = coefs_[i,:]
 			
-			## Final decomposition
-			dX.loc[:,s,"F",model] = gam_model.predict( XF )
-			dX.loc[:,s,"C",model] = gam_model.predict( XC )
+				## Final decomposition
+				dX.loc[:,s,"F",model] = gam_model.predict( XF )
+				dX.loc[:,s,"C",model] = gam_model.predict( XC )
 	
 	clim.X = dX
 	pb.end()
