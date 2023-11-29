@@ -194,7 +194,7 @@ class AbstractModel:
 		test_rate = False
 		while not test_rate:
 			sdlaw.fit( Y , n_mcmc_drawn = n_mcmc_drawn , prior = prior , **sdkwargs )
-			print(sdlaw.info_.draw)
+			print(sdlaw.info_.rate_accept)
 			test_rate = sdlaw.info_.rate_accept > min_rate_accept
 		return sdlaw.info_.draw
 	##}}}

@@ -253,7 +253,7 @@ def _constrain_law_all( climIn , Yo , n_mcmc_drawn_min , n_mcmc_drawn_max , verb
 		min_rate_accept = 0.05
 	else:
 		kwargs.pop("min_rate_accept")
-	
+	print(kwargs.get("transition_type"))
 	## Define prior
 	prior_mean   = clim.data["mm_mean"][-clim.n_coef:].values
 	prior_cov    = clim.data["mm_cov"][-clim.n_coef:,-clim.n_coef:].values
