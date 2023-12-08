@@ -172,7 +172,8 @@ class MultiModel:##{{{
 	@cov.setter
 	def cov( self , _cov ):
 		self._cov = _cov
-		self.std = matrix_squareroot(self._cov)
+		u,s,v = np.linalg.svd(_cov)
+		self.std = u @ np.sqrt(np.diag(s)) @ v.T
 	
 	##}}}
 	
@@ -245,7 +246,6 @@ def infer_multi_model( clim , verbose = False ):
 		mm_params.loc[:,s,name]     = draw[(2*n_time):]
 	pb.print()
 	
-	
 	## Add multimodel to clim
 	##=======================
 	data = xr.Dataset( { "X" : mm_sample , "law_coef" : mm_params } )
@@ -260,6 +260,7 @@ def infer_multi_model( clim , verbose = False ):
 	dmm_mean  = xr.DataArray( mmodel.mean , dims = ["mm_coef"] , coords = [index] )
 	dmm_cov   = xr.DataArray( mmodel.cov  , dims = ["mm_coef","mm_coef"] , coords = [index,index] )
 	clim.data = clim.data.assign( { "mm_mean" : dmm_mean , "mm_cov" : dmm_cov } )
+	
 	
 	pb.end()
 	

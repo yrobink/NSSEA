@@ -176,8 +176,8 @@ class AbstractModel:
 		return sdkwargs
 	##}}}
 	
-	def fit( self , Y , X ):##{{{
-		sdkwargs = self._get_sdkwargs(X)
+	def fit( self , Y , X , **kwargs ):##{{{
+		sdkwargs = { **kwargs , **self._get_sdkwargs(X) }
 		sdlaw = self.sdlaw( method = "MLE" )
 		sdlaw.fit( Y , **sdkwargs )
 		self.set_params(sdlaw.coef_)

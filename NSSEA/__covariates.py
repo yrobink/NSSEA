@@ -388,7 +388,7 @@ def _covariates_FC_GAM_statsmodels( clim , lX , XN , dof = 7 , verbose = False )
 		
 		## All data in a dataframe
 		model = X.columns[0]
-		Xg    = X.groupby(np.int).aggregate(np.mean)
+		Xg    = X.groupby(int).aggregate(np.mean)
 		dataf = pd.DataFrame( np.array([Xg.index,np.repeat(Xg.index[0],Xg.size),XN.loc[Xg.index,0].values.squeeze(),Xg.values.squeeze()]).T , columns = ["timeF","timeC","XN","X"] )
 		
 		## Define GAM model and fit
